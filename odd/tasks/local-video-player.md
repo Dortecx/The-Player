@@ -101,6 +101,13 @@ A simple local web app solves the immediate workflow without requiring FFmpeg, t
   - Preserve exact selected-set restore only when it is the newest meaningful activity for the selected files.
   - Evidence: initial restore now builds one recency-sorted candidate set from exact selected-set activity, per-file recent-active records, and meaningful per-file progress records for the current selection; first-unwatched/index 0 remain fallback only when no selected-file activity candidate exists. `node --check public/app.js` passed. `PORT=3139 npm run web` readiness check passed after one transient pre-readiness curl failure. Manual browser subset/progress restore check remains pending.
 
+- [x] LV-011 — Refine dark cinematic UI style
+  - Use a near-black but not pure-black background.
+  - Add subtle tiny white particle/dust-like background points without making it look dirty.
+  - Use thin white borders for panels, controls, video, and playlist cards.
+  - Add soft border glow on hover/focus for buttons and interactive playlist rows.
+  - Evidence: updated `public/styles.css` with near-black layered background, sparse tiny white particle gradients, thin white borders on panels/controls/video/playlist cards, and consistent hover/focus-visible glow states. Static CSS readback passed. `PORT=3143 npm run web` readiness check passed.
+
 ## Acceptance Criteria
 - Running `npm run web` starts a local server without requiring a framework dev server.
 - The browser app can select a folder or multiple files.
@@ -119,6 +126,7 @@ A simple local web app solves the immediate workflow without requiring FFmpeg, t
 - 2026-09-18: Completed LV-008 subset-aware last-active restoration; README now documents exact selected-set restore, cross-subset recent-active restore, first-unwatched fallback, and IndexedDB recent-active storage.
 - 2026-09-18: Completed LV-009 source-aware last-active persistence; automatic initial selection no longer rewrites selected-set or recent-active restore records, and newer recent-active records can beat legacy source-less exact selected-set records.
 - 2026-09-18: Completed LV-010 latest selected-file activity restore; initial selection now compares exact selected-set, recent-active, and meaningful progress `updatedAt` records by recency before falling back to first-unwatched/index 0.
+- 2026-09-18: Completed LV-011 dark cinematic visual refresh using CSS-only near-black background, subtle particle points, thin white borders, and accessible soft hover/focus glows.
 
 ## Verification Evidence
 - `node --check server.js` — passed in worker and parent verification.
@@ -146,6 +154,8 @@ A simple local web app solves the immediate workflow without requiring FFmpeg, t
 - Independent LV-007 verifier: `node --check public/app.js` and `PORT=3132 npm run web` readiness check passed; verifier confirmed the IndexedDB `sessions` store, deterministic selected-set key, remembered-active preference over first-unwatched fallback, and shared `playIndex` active-item persistence. Browser-manual checks remain pending.
 - Independent LV-006 verifier: `node --check public/app.js` and `PORT=3129 npm run web` readiness check passed; verifier confirmed `Skip next` disables threshold watched completion, `Mark watched & next` explicitly marks watched, first-unwatched selection exists, and browser-language Spanish detection uses `es`/`es-*`. Browser-manual checks remain pending.
 - Independent verifier: syntax checks passed and `PORT=3126 npm run web` readiness check passed; verifier reported implementation evidence for static path safety, playlist IDs, sorting, object URL lifecycle, auto-next/error behavior, and IndexedDB logic. Browser-manual checks remain pending.
+- Static readback of `public/styles.css` — passed for CSS syntax plausibility after LV-011 styling changes.
+- `PORT=3143 npm run web` with `curl -fsS http://127.0.0.1:3143/` readiness check — passed after LV-011 styling changes.
 
 ## Pending Manual Checks
 - Select a folder and confirm playlist ordering with nested relative paths.
@@ -162,6 +172,7 @@ A simple local web app solves the immediate workflow without requiring FFmpeg, t
 - Confirm `Skip next` saves current progress but does not mark the item watched, including near the end of a video.
 - Confirm `Mark watched & next` marks the current item watched and advances.
 - Confirm Spanish browser languages (`es`/`es-*`) show Spanish UI/status/error copy, while other languages show English.
+- Visually confirm LV-011 styling in a browser: near-black background is not pure black, particles stay subtle/clean, thin white borders are visible without clutter, and hover/focus glows are soft and accessible.
 
 ## Next Step
-Run the pending manual browser checks with representative local video files, prioritizing the LV-010 subset progress restore, LV-009 no-auto-persist, and legacy-exact-vs-newer-recent restore scenarios.
+Run the pending manual browser checks with representative local video files, prioritizing the LV-010 subset progress restore, LV-009 no-auto-persist, legacy-exact-vs-newer-recent restore scenarios, and LV-011 visual review.
