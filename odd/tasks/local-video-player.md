@@ -95,6 +95,12 @@ A simple local web app solves the immediate workflow without requiring FFmpeg, t
   - Add source metadata where useful so future restore can distinguish intentional activity from legacy/automatic selections.
   - Evidence: `playIndex` now writes selected-set/recent-active records only when called with an intentional `source`; `handleFiles` initial restore calls `playIndex` without a source, so it does not persist automatic initial selection. New session/recent-active records include `source`; legacy exact selected-set records without `source` yield to a newer selected-file recent-active record. `node --check public/app.js` passed. `PORT=3136 npm run web` readiness check passed after one transient pre-readiness curl failure. Manual browser checks remain pending.
 
+- [x] LV-010 — Restore by latest selected-file activity
+  - Consider per-file progress `updatedAt` together with recent-active records when selecting an initial item.
+  - Prefer the most recently active/progressed selected file over stale exact selected-set records.
+  - Preserve exact selected-set restore only when it is the newest meaningful activity for the selected files.
+  - Evidence: initial restore now builds one recency-sorted candidate set from exact selected-set activity, per-file recent-active records, and meaningful per-file progress records for the current selection; first-unwatched/index 0 remain fallback only when no selected-file activity candidate exists. `node --check public/app.js` passed. `PORT=3139 npm run web` readiness check passed after one transient pre-readiness curl failure. Manual browser subset/progress restore check remains pending.
+
 ## Acceptance Criteria
 - Running `npm run web` starts a local server without requiring a framework dev server.
 - The browser app can select a folder or multiple files.
@@ -112,6 +118,7 @@ A simple local web app solves the immediate workflow without requiring FFmpeg, t
 - 2026-09-18: Completed LV-007 last-active video restoration for reselected file sets; README now documents last-active precedence before first-unwatched fallback.
 - 2026-09-18: Completed LV-008 subset-aware last-active restoration; README now documents exact selected-set restore, cross-subset recent-active restore, first-unwatched fallback, and IndexedDB recent-active storage.
 - 2026-09-18: Completed LV-009 source-aware last-active persistence; automatic initial selection no longer rewrites selected-set or recent-active restore records, and newer recent-active records can beat legacy source-less exact selected-set records.
+- 2026-09-18: Completed LV-010 latest selected-file activity restore; initial selection now compares exact selected-set, recent-active, and meaningful progress `updatedAt` records by recency before falling back to first-unwatched/index 0.
 
 ## Verification Evidence
 - `node --check server.js` — passed in worker and parent verification.
@@ -132,6 +139,10 @@ A simple local web app solves the immediate workflow without requiring FFmpeg, t
 - `PORT=3136 npm run web` with `curl -fsS http://127.0.0.1:3136/` readiness check — passed after one transient pre-readiness curl failure.
 - Parent LV-009 spot check: `node --check server.js`, `node --check public/app.js`, and `PORT=3137 npm run web` readiness check passed.
 - Independent LV-009 verifier: `node --check public/app.js` and `PORT=3138 npm run web` readiness check passed; verifier confirmed source-less initial restore does not persist last-active, intentional navigation callsites pass source metadata, legacy source-less exact records can yield to newer recent-active records, and skip/mark-watched behavior remains intact. Browser-manual checks remain pending.
+- `node --check public/app.js` — passed after LV-010 changes.
+- `PORT=3140 npm run web` with `curl -fsS http://127.0.0.1:3140/` readiness check — passed after one transient pre-readiness curl failure.
+- Parent LV-010 spot check: `node --check server.js`, `node --check public/app.js`, and `PORT=3141 npm run web` readiness check passed.
+- Independent LV-010 verifier: `node --check public/app.js` and `PORT=3142 npm run web` readiness check passed; verifier confirmed timestamp-first restore across exact session, recent-active, and meaningful progress; progress with `currentTime === 0` and not watched is ignored; source-less initial restore does not write last-active; skip and mark-watched behavior remains intact. Browser-manual checks remain pending.
 - Independent LV-007 verifier: `node --check public/app.js` and `PORT=3132 npm run web` readiness check passed; verifier confirmed the IndexedDB `sessions` store, deterministic selected-set key, remembered-active preference over first-unwatched fallback, and shared `playIndex` active-item persistence. Browser-manual checks remain pending.
 - Independent LV-006 verifier: `node --check public/app.js` and `PORT=3129 npm run web` readiness check passed; verifier confirmed `Skip next` disables threshold watched completion, `Mark watched & next` explicitly marks watched, first-unwatched selection exists, and browser-language Spanish detection uses `es`/`es-*`. Browser-manual checks remain pending.
 - Independent verifier: syntax checks passed and `PORT=3126 npm run web` readiness check passed; verifier reported implementation evidence for static path safety, playlist IDs, sorting, object URL lifecycle, auto-next/error behavior, and IndexedDB logic. Browser-manual checks remain pending.
@@ -147,9 +158,10 @@ A simple local web app solves the immediate workflow without requiring FFmpeg, t
 - Select three videos, click/play the second, reload, reselect only the first two files, and confirm the second video is selected through recent-active subset restore.
 - Select `[video1, video2]` in a fresh/cleared browser profile and confirm initial auto-selection of `video1` does not create selected-set or recent-active last-active records before user navigation.
 - With a legacy source-less exact selected-set record for `[video1, video2]` pointing to `video1` and a newer recent-active record for `video2`, reselect `[video1, video2]` and confirm `video2` is selected.
+- Select `[video1, video2, video3]`, advance to and save progress on `video3`, then select subset `[video2, video3]` and confirm `video3` is selected when its progress/recent activity is newest among the subset.
 - Confirm `Skip next` saves current progress but does not mark the item watched, including near the end of a video.
 - Confirm `Mark watched & next` marks the current item watched and advances.
 - Confirm Spanish browser languages (`es`/`es-*`) show Spanish UI/status/error copy, while other languages show English.
 
 ## Next Step
-Run the pending manual browser checks with representative local video files, prioritizing the LV-009 no-auto-persist and legacy-exact-vs-newer-recent restore scenarios.
+Run the pending manual browser checks with representative local video files, prioritizing the LV-010 subset progress restore, LV-009 no-auto-persist, and legacy-exact-vs-newer-recent restore scenarios.

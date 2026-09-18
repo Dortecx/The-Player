@@ -250,27 +250,62 @@ async function writeRecentActive(record) {
   });
 }
 
-async function readMostRecentActiveRecord(items) {
+async function readRecentActiveRecords(items) {
   const records = await Promise.all(items.map((item) => readRecentActive(item.id)));
-  return records
-    .filter(Boolean)
-    .sort((a, b) => Date.parse(b.updatedAt || '') - Date.parse(a.updatedAt || ''))[0] || null;
+  return records.filter(Boolean);
 }
 
-function getRestoreCandidate({ exactSession = null, recentActive = null } = {}) {
-  if (!exactSession?.activeItemId) return recentActive?.id || null;
-  if (!recentActive?.id) return exactSession.activeItemId;
+function getTimestamp(record) {
+  const timestamp = Date.parse(record?.updatedAt || '');
+  return Number.isFinite(timestamp) ? timestamp : null;
+}
 
-  const exactHasIntentionalSource = Boolean(exactSession.source);
-  if (exactHasIntentionalSource) return exactSession.activeItemId;
+function hasMeaningfulProgress(progress) {
+  return Boolean(progress?.watched) || Number(progress?.currentTime || 0) > 0;
+}
 
-  const exactUpdatedAt = Date.parse(exactSession.updatedAt || '');
-  const recentUpdatedAt = Date.parse(recentActive.updatedAt || '');
-  if (Number.isFinite(recentUpdatedAt) && (!Number.isFinite(exactUpdatedAt) || recentUpdatedAt > exactUpdatedAt)) {
-    return recentActive.id;
+function addRestoreCandidate(candidates, candidate) {
+  const updatedAt = getTimestamp(candidate.record);
+  if (updatedAt === null || !candidate.itemId) return;
+  candidates.push({
+    itemId: candidate.itemId,
+    updatedAt,
+    priority: candidate.priority
+  });
+}
+
+function getLatestRestoreItemId(items, { exactSession = null, recentActiveRecords = [] } = {}) {
+  const selectedItemIds = new Set(items.map((item) => item.id));
+  const candidates = [];
+
+  if (selectedItemIds.has(exactSession?.activeItemId)) {
+    addRestoreCandidate(candidates, {
+      itemId: exactSession.activeItemId,
+      record: exactSession,
+      priority: 2
+    });
   }
 
-  return exactSession.activeItemId;
+  recentActiveRecords.forEach((recentActive) => {
+    if (!selectedItemIds.has(recentActive?.id)) return;
+    addRestoreCandidate(candidates, {
+      itemId: recentActive.id,
+      record: recentActive,
+      priority: 1
+    });
+  });
+
+  items.forEach((item) => {
+    if (!hasMeaningfulProgress(item.progress)) return;
+    addRestoreCandidate(candidates, {
+      itemId: item.id,
+      record: item.progress,
+      priority: 0
+    });
+  });
+
+  return candidates
+    .sort((a, b) => (b.updatedAt - a.updatedAt) || (b.priority - a.priority))[0]?.itemId || null;
 }
 
 async function rememberActiveItem(item, source) {
@@ -374,12 +409,9 @@ function findItemIndexById(items, itemId) {
   return itemId ? items.findIndex((item) => item.id === itemId) : -1;
 }
 
-function getInitialIndex(items, { exactActiveItemId = null, recentActiveItemId = null } = {}) {
-  const exactActiveIndex = findItemIndexById(items, exactActiveItemId);
-  if (exactActiveIndex >= 0) return exactActiveIndex;
-
-  const recentActiveIndex = findItemIndexById(items, recentActiveItemId);
-  if (recentActiveIndex >= 0) return recentActiveIndex;
+function getInitialIndex(items, restoreItemId = null) {
+  const restoreIndex = findItemIndexById(items, restoreItemId);
+  if (restoreIndex >= 0) return restoreIndex;
 
   const firstUnwatched = items.findIndex((item) => !item.progress?.watched);
   return firstUnwatched >= 0 ? firstUnwatched : 0;
@@ -413,7 +445,7 @@ async function handleFiles(fileList) {
 
   const selectionId = createSelectionId(items);
   let exactSession = null;
-  let recentActive = null;
+  let recentActiveRecords = [];
   if (selectionId) {
     try {
       exactSession = await readSession(selectionId);
@@ -421,9 +453,9 @@ async function handleFiles(fileList) {
       console.warn('Could not read selected-set active video', error);
     }
     try {
-      recentActive = await readMostRecentActiveRecord(items);
+      recentActiveRecords = await readRecentActiveRecords(items);
     } catch (error) {
-      console.warn('Could not read recent active video', error);
+      console.warn('Could not read recent active videos', error);
     }
   }
 
@@ -441,8 +473,8 @@ async function handleFiles(fileList) {
   }
 
   updateStatus(t('statusLoaded', { count: items.length, rejected }));
-  const restoreItemId = getRestoreCandidate({ exactSession, recentActive });
-  await playIndex(getInitialIndex(items, { exactActiveItemId: restoreItemId }), {
+  const restoreItemId = getLatestRestoreItemId(items, { exactSession, recentActiveRecords });
+  await playIndex(getInitialIndex(items, restoreItemId), {
     autoplay: false,
     saveCurrent: false
   });
