@@ -16,21 +16,7 @@
         </div>
       </header>
 
-      <section class="panel controls" aria-labelledby="source-heading">
-        <h2 id="source-heading" data-i18n="chooseVideos">Choose videos</h2>
-        <div class="input-row">
-          <label class="file-button">
-            <span data-i18n="selectFolder">Select folder</span>
-            <input id="folderInput" type="file" webkitdirectory multiple>
-          </label>
-          <label class="file-button secondary">
-            <span data-i18n="selectFiles">Select files</span>
-            <input id="fileInput" type="file" multiple accept=".mp4,.mkv,.webm,.m4v,.mov,video/mp4,video/webm,video/quicktime">
-          </label>
-        </div>
-        <p class="hint" data-i18n="supportedHint">Supported extensions: .mp4, .webm, .m4v, .mov, and .mkv where your browser can play it.</p>
-        <p id="status" class="status" role="status" data-i18n="statusNoVideos">No videos selected.</p>
-      </section>
+      <p id="status" class="status sr-only" role="status" data-i18n="statusNoVideos">No videos selected.</p>
 
       <section class="layout">
         <section class="panel player-panel" aria-labelledby="player-heading">
@@ -47,10 +33,32 @@
           <p id="errorMessage" class="error" role="alert" hidden></p>
         </section>
 
-        <section class="panel playlist-panel" aria-labelledby="playlist-heading">
-          <div class="section-title-row">
+        <section id="playlistPanel" class="panel playlist-panel is-empty" aria-labelledby="playlist-heading">
+          <div class="section-title-row playlist-header">
             <h2 id="playlist-heading" data-i18n="playlistHeading">Playlist</h2>
-            <span id="playlistCount" class="count">0 videos</span>
+            <div class="input-row playlist-actions" aria-label="Video selection">
+              <label class="file-button playlist-action-button" data-i18n-aria-label="selectFolder">
+                <svg class="action-icon" aria-hidden="true" viewBox="0 0 24 24" focusable="false">
+                  <path d="M3.75 6.75A2.25 2.25 0 0 1 6 4.5h4.15c.6 0 1.17.24 1.59.66l1.1 1.09H18A2.25 2.25 0 0 1 20.25 8.5v8.75A2.25 2.25 0 0 1 18 19.5H6a2.25 2.25 0 0 1-2.25-2.25V6.75Z"/>
+                </svg>
+                <span class="button-text" data-i18n="selectFolder">Select folder</span>
+                <input id="folderInput" type="file" webkitdirectory multiple>
+              </label>
+              <label class="file-button secondary playlist-action-button" data-i18n-aria-label="selectFiles">
+                <svg class="action-icon" aria-hidden="true" viewBox="0 0 24 24" focusable="false">
+                  <path d="M7 3.75h6.35c.6 0 1.17.24 1.59.66l2.65 2.65c.42.42.66.99.66 1.59V20.25H7A2.25 2.25 0 0 1 4.75 18V6A2.25 2.25 0 0 1 7 3.75Zm7 1.8V8h2.45L14 5.55Z"/>
+                </svg>
+                <span class="button-text" data-i18n="selectFiles">Select files</span>
+                <input id="fileInput" type="file" multiple accept=".mp4,.mkv,.webm,.m4v,.mov,video/mp4,video/webm,video/quicktime">
+              </label>
+              <button id="clearPlaylistButton" class="playlist-action-button clear-playlist-button" type="button" data-i18n-aria-label="clearPlaylistButton" hidden>
+                <svg class="action-icon" aria-hidden="true" viewBox="0 0 24 24" focusable="false">
+                  <path d="M8.25 4.5 9 3.75h6l.75.75H20v1.5H4v-1.5h4.25Zm-1 3h9.5l-.55 11.02a2.25 2.25 0 0 1-2.25 2.13h-3.9a2.25 2.25 0 0 1-2.25-2.13L7.25 7.5Zm3.1 2.25.3 8.25h1.5l-.3-8.25h-1.5Zm3.8 0-.3 8.25h1.5l.3-8.25h-1.5Z"/>
+                </svg>
+                <span class="button-text" data-i18n="clearPlaylistButton">Clear</span>
+              </button>
+            </div>
+            <span id="playlistCount" class="count sr-only">0 videos</span>
           </div>
           <ol id="playlist" class="playlist" aria-live="polite"></ol>
         </section>

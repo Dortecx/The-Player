@@ -108,6 +108,27 @@ A simple local web app solves the immediate workflow without requiring FFmpeg, t
   - Add soft border glow on hover/focus for buttons and interactive playlist rows.
   - Evidence: updated `public/styles.css` with near-black layered background, sparse tiny white particle gradients, thin white borders on panels/controls/video/playlist cards, and consistent hover/focus-visible glow states. Static CSS readback passed. `PORT=3143 npm run web` readiness check passed.
 
+- [x] LV-012 — Switch to black twinkling random particle background
+  - Make the page background true black.
+  - Replace regular particle pattern with more random-looking tiny white points.
+  - Animate points softly so they turn on/off at different timings without distracting from playback.
+  - Preserve the existing thin white borders and hover/focus glow style.
+  - Evidence: updated `public/styles.css` with true-black page background, irregular tiny white particle points on CSS pseudo-element layers, soft staggered opacity twinkle, and `prefers-reduced-motion: reduce` disabling animation. Static CSS readback passed for syntax plausibility. `PORT=3145 npm run web` readiness check passed after one transient pre-readiness curl failure. Manual visual check remains pending.
+
+- [x] LV-013 — Simplify video selection UI
+  - Remove the standalone choose-videos panel.
+  - Move only `Select folder` and `Select files` controls into the Playlist header area.
+  - Remove visible supported-extensions copy, selected-videos/status copy, and playlist count.
+  - Preserve file selection behavior and accessible live status where practical.
+  - Evidence: removed the standalone selection panel from `public/index.html`, kept `#folderInput` and `#fileInput` inside the Playlist header with localized `data-i18n` spans, kept `#status` as a visually hidden live status, and hid `#playlistCount` for script compatibility without visible count copy. `node --check server.js` passed. `node --check public/app.js` passed. `PORT=3148 npm run web` readiness check passed after one transient pre-readiness curl failure. Static readback/diff confirmed the supported-extensions, visible selected-status, and visible playlist-count copy were removed. Manual browser visual and file-picker checks remain pending.
+
+- [x] LV-014 — Add adaptive playlist actions and clear list
+  - When the playlist is empty, center the folder/file selection controls horizontally and vertically inside the Playlist panel.
+  - When files are loaded, move those controls to the top Playlist header and show them as icon-only buttons.
+  - Add a Clear/Vaciar button that empties the current playlist without deleting saved progress.
+  - Keep folder/file picker behavior, playlist restore/progress records, and hidden live status intact.
+  - Evidence: added `#playlistPanel` empty/loaded state classes, SVG icons for folder/files/clear actions, `clearPlaylist()` that resets only current in-memory playlist/player/input state, and CSS that centers empty controls then switches loaded controls to icon-only header actions. `node --check server.js` passed. `node --check public/app.js` passed. `PORT=3149 npm run web` readiness check passed after transient pre-readiness curl failures. Independent LV-014 verifier passed static behavior/readiness checks with manual browser checks remaining.
+
 ## Acceptance Criteria
 - Running `npm run web` starts a local server without requiring a framework dev server.
 - The browser app can select a folder or multiple files.
@@ -127,6 +148,9 @@ A simple local web app solves the immediate workflow without requiring FFmpeg, t
 - 2026-09-18: Completed LV-009 source-aware last-active persistence; automatic initial selection no longer rewrites selected-set or recent-active restore records, and newer recent-active records can beat legacy source-less exact selected-set records.
 - 2026-09-18: Completed LV-010 latest selected-file activity restore; initial selection now compares exact selected-set, recent-active, and meaningful progress `updatedAt` records by recency before falling back to first-unwatched/index 0.
 - 2026-09-18: Completed LV-011 dark cinematic visual refresh using CSS-only near-black background, subtle particle points, thin white borders, and accessible soft hover/focus glows.
+- 2026-09-18: Completed LV-012 true-black visual refresh with CSS-only irregular twinkling white particle points and reduced-motion fallback.
+- 2026-09-18: Completed LV-013 selection UI simplification by moving folder/file controls into the Playlist header, hiding status/count live compatibility elements, and removing visible choose-videos, supported-extensions, selected-status, and playlist-count copy.
+- 2026-09-18: Completed LV-014 adaptive Playlist actions: empty state centers folder/file controls, loaded state switches to icon-only header controls, and Clear/Vaciar empties only the current list/player state without deleting progress.
 
 ## Verification Evidence
 - `node --check server.js` — passed in worker and parent verification.
@@ -156,6 +180,18 @@ A simple local web app solves the immediate workflow without requiring FFmpeg, t
 - Independent verifier: syntax checks passed and `PORT=3126 npm run web` readiness check passed; verifier reported implementation evidence for static path safety, playlist IDs, sorting, object URL lifecycle, auto-next/error behavior, and IndexedDB logic. Browser-manual checks remain pending.
 - Static readback of `public/styles.css` — passed for CSS syntax plausibility after LV-011 styling changes.
 - `PORT=3143 npm run web` with `curl -fsS http://127.0.0.1:3143/` readiness check — passed after LV-011 styling changes.
+- Static readback of `public/styles.css` — passed for CSS syntax plausibility after LV-012 styling changes.
+- `PORT=3145 npm run web` with `curl -fsS http://127.0.0.1:3145/` readiness check — passed after one transient pre-readiness curl failure; server printed `Local video player available at http://127.0.0.1:3145` and the page responded.
+- Parent LV-012 spot check: `node --check server.js`, `node --check public/app.js`, and `PORT=3146 npm run web` readiness check passed.
+- Independent LV-012 verifier: `node --check server.js`, `node --check public/app.js`, and `PORT=3147 npm run web` readiness check passed; verifier confirmed true-black body background, CSS-only irregular pseudo-element particle layers, staggered twinkle animation, reduced-motion fallback, and preserved border/glow affordances. Browser-manual visual checks remain pending.
+- `node --check server.js` — passed after LV-013 changes.
+- `node --check public/app.js` — passed after LV-013 changes.
+- `PORT=3148 npm run web` with `curl -fsS http://127.0.0.1:3148/` readiness check — passed after one transient pre-readiness curl failure; response included `#folderInput`, `#fileInput`, and visually hidden `#status`.
+- Static readback/diff of `public/index.html`, `public/styles.css`, and `odd/tasks/local-video-player.md` — passed for LV-013 plausibility; confirmed the standalone choose-videos panel and visible supported/status/count copy were removed while script-facing DOM IDs remain present.
+- `node --check server.js` — passed after LV-014 changes.
+- `node --check public/app.js` — passed after LV-014 changes.
+- `PORT=3149 npm run web` with `curl -fsS http://127.0.0.1:3149/` readiness check — passed after transient pre-readiness curl failures; response included `#playlistPanel`, `#folderInput`, `#fileInput`, and `#clearPlaylistButton`.
+- Independent LV-014 verifier: `node --check server.js`, `node --check public/app.js`, and `PORT=3150 npm run web` readiness check passed; verifier confirmed empty-state centering classes, loaded icon-only CSS/state toggles, Clear/Vaciar behavior does not delete IndexedDB records, stable folder/file input IDs, and hidden status/count copy. Manual browser checks remain pending.
 
 ## Pending Manual Checks
 - Select a folder and confirm playlist ordering with nested relative paths.
@@ -173,6 +209,11 @@ A simple local web app solves the immediate workflow without requiring FFmpeg, t
 - Confirm `Mark watched & next` marks the current item watched and advances.
 - Confirm Spanish browser languages (`es`/`es-*`) show Spanish UI/status/error copy, while other languages show English.
 - Visually confirm LV-011 styling in a browser: near-black background is not pure black, particles stay subtle/clean, thin white borders are visible without clutter, and hover/focus glows are soft and accessible.
+- Visually confirm LV-012 styling in a browser: background is true black, particle positions feel irregular rather than grid-like, twinkle remains subtle over video, thin borders/glows are preserved, and reduced-motion disables twinkle.
+- Visually confirm LV-013 layout in a browser: there is no standalone choose-videos panel, only the Playlist header shows `Select folder` and `Select files`, and no supported-extensions, selected-videos/status, or playlist-count copy is visible.
+- Manually confirm LV-013 file picking: `Select folder` and `Select files` still open pickers and populate the playlist.
+- Visually confirm LV-014 layout in a browser: empty Playlist panel centers selection controls horizontally/vertically, loaded Playlist header shows folder/files/clear controls as icons, and the icon buttons remain understandable through hover/focus/assistive labels.
+- Manually confirm LV-014 Clear/Vaciar empties the visible playlist/player without deleting saved progress; reselecting the same files should still restore prior progress.
 
 ## Next Step
-Run the pending manual browser checks with representative local video files, prioritizing the LV-010 subset progress restore, LV-009 no-auto-persist, legacy-exact-vs-newer-recent restore scenarios, and LV-011 visual review.
+Run the pending manual browser checks with representative local video files, prioritizing the LV-014 adaptive actions/Clear behavior, LV-010 subset progress restore, LV-009 no-auto-persist, legacy-exact-vs-newer-recent restore scenarios, and LV-012 visual/reduced-motion review.

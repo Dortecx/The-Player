@@ -17,6 +17,7 @@ const COPY = {
     chooseVideos: 'Choose videos',
     selectFolder: 'Select folder',
     selectFiles: 'Select files',
+    clearPlaylistButton: 'Clear',
     supportedHint: 'Supported extensions: .mp4, .webm, .m4v, .mov, and .mkv where your browser can play it.',
     statusNoVideos: 'No videos selected.',
     statusNoSupported: 'No supported video files found in the selection.',
@@ -50,6 +51,7 @@ const COPY = {
     chooseVideos: 'Elegir videos',
     selectFolder: 'Seleccionar carpeta',
     selectFiles: 'Seleccionar archivos',
+    clearPlaylistButton: 'Vaciar',
     supportedHint: 'Extensiones admitidas: .mp4, .webm, .m4v, .mov y .mkv cuando el navegador pueda reproducirlo.',
     statusNoVideos: 'No hay videos seleccionados.',
     statusNoSupported: 'No se encontraron videos compatibles en la selección.',
@@ -100,6 +102,7 @@ const elements = {
   folderInput: document.querySelector('#folderInput'),
   fileInput: document.querySelector('#fileInput'),
   status: document.querySelector('#status'),
+  playlistPanel: document.querySelector('#playlistPanel'),
   playlist: document.querySelector('#playlist'),
   playlistCount: document.querySelector('#playlistCount'),
   nowPlaying: document.querySelector('#nowPlaying'),
@@ -107,7 +110,8 @@ const elements = {
   error: document.querySelector('#errorMessage'),
   prevButton: document.querySelector('#prevButton'),
   nextButton: document.querySelector('#nextButton'),
-  markWatchedButton: document.querySelector('#markWatchedButton')
+  markWatchedButton: document.querySelector('#markWatchedButton'),
+  clearPlaylistButton: document.querySelector('#clearPlaylistButton')
 };
 
 function t(key, params = {}) {
@@ -119,6 +123,9 @@ function applyStaticCopy() {
   document.documentElement.lang = locale;
   document.querySelectorAll('[data-i18n]').forEach((node) => {
     node.textContent = t(node.dataset.i18n);
+  });
+  document.querySelectorAll('[data-i18n-aria-label]').forEach((node) => {
+    node.setAttribute('aria-label', t(node.dataset.i18nAriaLabel));
   });
 }
 
@@ -347,10 +354,15 @@ function clearError() {
 }
 
 function updateControls() {
+  const hasItems = state.items.length > 0;
   const hasActiveItem = state.activeIndex >= 0 && state.activeIndex < state.items.length;
   elements.prevButton.disabled = !hasActiveItem || state.activeIndex <= 0;
   elements.nextButton.disabled = !hasActiveItem || state.activeIndex >= state.items.length - 1;
   elements.markWatchedButton.disabled = !hasActiveItem;
+  elements.clearPlaylistButton.hidden = !hasItems;
+  elements.clearPlaylistButton.disabled = !hasItems;
+  elements.playlistPanel.classList.toggle('is-empty', !hasItems);
+  elements.playlistPanel.classList.toggle('has-items', hasItems);
   elements.playlistCount.textContent = t('playlistCount', { count: state.items.length });
 }
 
@@ -583,11 +595,29 @@ async function handleEnded() {
   }
 }
 
+async function clearPlaylist() {
+  await saveActiveProgress();
+  revokeCurrentObjectUrl();
+  state.items = [];
+  state.activeIndex = -1;
+  state.selectionId = null;
+  state.lastSaveAt = 0;
+  elements.folderInput.value = '';
+  elements.fileInput.value = '';
+  elements.video.removeAttribute('src');
+  elements.video.load();
+  elements.nowPlaying.textContent = t('nothingPlaying');
+  clearError();
+  renderPlaylist();
+  updateStatus(t('statusNoVideos'));
+}
+
 elements.folderInput.addEventListener('change', (event) => handleFiles(event.target.files));
 elements.fileInput.addEventListener('change', (event) => handleFiles(event.target.files));
 elements.prevButton.addEventListener('click', () => playRelative(-1, { source: 'previous' }));
 elements.nextButton.addEventListener('click', skipToNext);
 elements.markWatchedButton.addEventListener('click', markCurrentWatchedAndNext);
+elements.clearPlaylistButton.addEventListener('click', clearPlaylist);
 elements.video.addEventListener('pause', () => saveActiveProgress());
 elements.video.addEventListener('ended', handleEnded);
 elements.video.addEventListener('error', () => {
