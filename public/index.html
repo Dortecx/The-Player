@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title data-i18n="appTitle">Local Video Player</title>
+    <link rel="stylesheet" href="styles.css">
+  </head>
+  <body>
+    <main class="app-shell">
+      <header class="hero">
+        <div>
+          <p class="eyebrow" data-i18n="phaseLabel">Phase 1</p>
+          <h1 data-i18n="appTitle">Local Video Player</h1>
+          <p data-i18n="heroDescription">Select a folder or several video files, then play them as an ordered local playlist.</p>
+        </div>
+      </header>
+
+      <section class="panel controls" aria-labelledby="source-heading">
+        <h2 id="source-heading" data-i18n="chooseVideos">Choose videos</h2>
+        <div class="input-row">
+          <label class="file-button">
+            <span data-i18n="selectFolder">Select folder</span>
+            <input id="folderInput" type="file" webkitdirectory multiple>
+          </label>
+          <label class="file-button secondary">
+            <span data-i18n="selectFiles">Select files</span>
+            <input id="fileInput" type="file" multiple accept=".mp4,.mkv,.webm,.m4v,.mov,video/mp4,video/webm,video/quicktime">
+          </label>
+        </div>
+        <p class="hint" data-i18n="supportedHint">Supported extensions: .mp4, .webm, .m4v, .mov, and .mkv where your browser can play it.</p>
+        <p id="status" class="status" role="status" data-i18n="statusNoVideos">No videos selected.</p>
+      </section>
+
+      <section class="layout">
+        <section class="panel player-panel" aria-labelledby="player-heading">
+          <div class="section-title-row">
+            <h2 id="player-heading" data-i18n="playerHeading">Player</h2>
+            <span id="nowPlaying" class="now-playing" data-i18n="nothingPlaying">Nothing playing</span>
+          </div>
+          <video id="videoPlayer" controls playsinline preload="metadata"></video>
+          <div class="transport">
+            <button id="prevButton" type="button" data-i18n="previousButton">Previous</button>
+            <button id="nextButton" type="button" data-i18n="skipNextButton">Skip next</button>
+            <button id="markWatchedButton" type="button" data-i18n="markWatchedButton">Mark watched & next</button>
+          </div>
+          <p id="errorMessage" class="error" role="alert" hidden></p>
+        </section>
+
+        <section class="panel playlist-panel" aria-labelledby="playlist-heading">
+          <div class="section-title-row">
+            <h2 id="playlist-heading" data-i18n="playlistHeading">Playlist</h2>
+            <span id="playlistCount" class="count">0 videos</span>
+          </div>
+          <ol id="playlist" class="playlist" aria-live="polite"></ol>
+        </section>
+      </section>
+    </main>
+
+    <script src="app.js" defer></script>
+  </body>
+</html>
