@@ -213,20 +213,45 @@ function initParticleBackground() {
     }));
     const visiblePoints = drawPoints.filter(({ particle, amount }) => !particle.dormant || amount > 0.08);
 
-    context.lineWidth = 0.55;
+    context.lineWidth = 0.42;
+    const passivePoints = visiblePoints.filter(({ particle }) => !particle.dormant);
+    passivePoints.forEach((point, index) => {
+      const nearest = passivePoints
+        .map((candidate, candidateIndex) => ({
+          candidate,
+          candidateIndex,
+          distance: candidateIndex === index ? Number.POSITIVE_INFINITY : Math.hypot(point.x - candidate.x, point.y - candidate.y)
+        }))
+        .filter(({ distance }) => distance < 220)
+        .sort((a, b) => a.distance - b.distance)
+        .slice(0, 2);
+
+      nearest.forEach(({ candidate, distance }) => {
+        const proximity = 1 - distance / 220;
+        context.strokeStyle = `rgba(255, 255, 255, ${0.008 + proximity * 0.025})`;
+        context.beginPath();
+        context.moveTo(point.x, point.y);
+        context.lineTo(candidate.x, candidate.y);
+        context.stroke();
+      });
+    });
+
+    context.lineWidth = 0.62;
     for (let i = 0; i < visiblePoints.length; i += 1) {
       for (let j = i + 1; j < visiblePoints.length; j += 1) {
         const a = visiblePoints[i];
         const b = visiblePoints[j];
         const activity = Math.max(a.amount, b.amount);
-        const maxDistance = 108 + activity * 92;
+        if (activity <= 0.04) continue;
+
+        const maxDistance = 118 + activity * 108;
         const distance = Math.hypot(a.x - b.x, a.y - b.y);
         if (distance >= maxDistance) continue;
 
         const proximity = 1 - distance / maxDistance;
-        const dormantLift = (a.particle.dormant || b.particle.dormant) ? activity * 0.05 : 0;
-        const alpha = 0.012 + proximity * 0.045 + activity * 0.16 + dormantLift;
-        context.strokeStyle = `rgba(255, 255, 255, ${Math.min(0.28, alpha)})`;
+        const dormantLift = (a.particle.dormant || b.particle.dormant) ? activity * 0.07 : 0;
+        const alpha = 0.02 + proximity * 0.075 + activity * 0.18 + dormantLift;
+        context.strokeStyle = `rgba(255, 255, 255, ${Math.min(0.34, alpha)})`;
         context.beginPath();
         context.moveTo(a.x, a.y);
         context.lineTo(b.x, b.y);

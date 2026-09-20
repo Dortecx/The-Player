@@ -192,6 +192,13 @@ A simple local web app solves the immediate workflow without requiring FFmpeg, t
   - Keep the effect monochrome and readable over the player UI.
   - Evidence: updated Canvas particle generation to target 170–360 particles with 38% dormant nodes; dormant nodes stay nearly invisible until pointer influence exceeds threshold; node-to-node connection range/opacity now scales with cursor activity; cursor-to-node links use only visible/activated nodes. `node --check server.js` passed. `node --check public/app.js` passed. `PORT=3162 npm run web` readiness check passed after transient pre-readiness curl failures.
 
+- [x] LV-025 — Refine passive particle activity and playlist action morphs
+  - Connect passive background nodes to up to two nearby nodes very subtly.
+  - Increase node and link intensity around the active cursor area.
+  - Wake dormant nodes near the cursor.
+  - Morph playlist action buttons from compact icon-only controls to text labels on hover/focus/focus-within.
+  - Evidence: parent updated `public/app.js` Canvas behavior so passive node-to-node links remain subtle, cursor-proximate nodes/links intensify, and dormant nodes wake near the pointer; this update changed `public/styles.css` so folder/file/clear playlist action buttons default to compact icon-only controls, expand on hover/focus/focus-within, hide the icon while showing the text label, and preserve native `[hidden]` behavior for Clear/Vaciar. `node --check server.js` passed. `node --check public/app.js` passed. `PORT=3163 npm run web` readiness check passed after transient pre-readiness curl failures. Static readback/diff confirmed `.playlist-action-button` morph CSS and this task log entry.
+
 ## Acceptance Criteria
 - Running `npm run web` starts a local server without requiring a framework dev server.
 - The browser app can select a folder or multiple files.
@@ -224,6 +231,7 @@ A simple local web app solves the immediate workflow without requiring FFmpeg, t
 - 2026-09-20: Completed LV-022 Canvas particle density and cursor-link enhancement so nearby nodes visibly connect to the pointer.
 - 2026-09-20: Completed LV-023 Canvas particle network visibility boost with more particles, longer connection distances, and brighter monochrome lines.
 - 2026-09-20: Completed LV-024 dormant cursor-activated particle behavior so the passive background is quieter while nearby hidden nodes/links wake up around the cursor.
+- 2026-09-20: Completed LV-025 passive particle/activity evidence and playlist action button morphs: parent `public/app.js` changes keep passive node-to-node network connects subtle, intensify the active cursor area, and wake dormant nodes near the cursor; CSS now makes playlist action buttons compact icon-only by default and text-only while expanded on hover/focus.
 
 ## Verification Evidence
 - `node --check server.js` — passed in worker and parent verification.
@@ -296,6 +304,10 @@ A simple local web app solves the immediate workflow without requiring FFmpeg, t
 - `node --check server.js` — passed after LV-024 changes.
 - `node --check public/app.js` — passed after LV-024 changes.
 - `PORT=3162 npm run web` with `curl -fsS http://127.0.0.1:3162/` readiness check — passed after transient pre-readiness curl failures; response included `id="particleCanvas"`.
+- `node --check server.js` — passed after LV-025 CSS/task-log update.
+- `node --check public/app.js` — passed after LV-025 CSS/task-log update and parent `public/app.js` particle changes.
+- `PORT=3163 npm run web` with `curl -fsS http://127.0.0.1:3163/` readiness check — passed after transient pre-readiness curl failures; response included `id="particleCanvas"`.
+- Static readback/diff of `public/styles.css` and `odd/tasks/local-video-player.md` — passed for LV-025 plausibility; confirmed `.playlist-action-button` compact icon-only default, hover/focus/focus-within expansion, icon fade/width collapse, text reveal, and LV-025 task/progress/evidence entries.
 
 ## Pending Manual Checks
 - Select a folder and confirm playlist ordering with nested relative paths.

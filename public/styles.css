@@ -179,38 +179,57 @@ button:focus-visible,
 }
 
 .playlist-action-button {
+  border-radius: 999px;
+  gap: 0;
+  height: 2.75rem;
   min-height: 2.75rem;
+  overflow: hidden;
+  padding: 0;
+  width: 2.75rem;
+  transition: border-color 160ms ease, box-shadow 160ms ease, background 160ms ease, color 160ms ease, width 180ms ease, padding 180ms ease, gap 180ms ease;
+}
+
+.playlist-action-button:hover:not(:disabled),
+.playlist-action-button:focus-visible,
+.playlist-action-button:focus-within {
+  gap: 0.45rem;
+  padding: 0 0.95rem;
+  width: 7rem;
 }
 
 .action-icon {
-  display: none;
+  display: block;
   fill: currentColor;
+  flex: 0 0 auto;
   height: 1.15rem;
+  opacity: 1;
+  transform: scale(1);
+  transition: opacity 140ms ease, transform 140ms ease, width 180ms ease;
   width: 1.15rem;
 }
 
-.playlist-panel.has-items .playlist-action-button {
-  border-radius: 999px;
-  height: 2.75rem;
-  padding: 0;
-  width: 2.75rem;
-}
-
-.playlist-panel.has-items .playlist-action-button .button-text {
-  border: 0;
-  clip: rect(0 0 0 0);
-  clip-path: inset(50%);
-  height: 1px;
-  margin: -1px;
+.playlist-action-button .button-text {
+  display: inline-block;
+  max-width: 0;
+  opacity: 0;
   overflow: hidden;
-  padding: 0;
-  position: absolute;
   white-space: nowrap;
-  width: 1px;
+  transition: max-width 180ms ease, opacity 140ms ease;
 }
 
-.playlist-panel.has-items .action-icon {
-  display: block;
+.playlist-action-button:hover:not(:disabled) .action-icon,
+.playlist-action-button:focus-visible .action-icon,
+.playlist-action-button:focus-within .action-icon {
+  opacity: 0;
+  transform: scale(0.8);
+  width: 0;
+}
+
+.playlist-action-button:hover:not(:disabled) .button-text,
+.playlist-action-button:focus-visible .button-text,
+.playlist-action-button:focus-within .button-text {
+  max-width: 5.5rem;
+  opacity: 1;
 }
 
 .clear-playlist-button {
