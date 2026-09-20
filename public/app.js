@@ -15,8 +15,8 @@ const COPY = {
     phaseLabel: 'Phase 1',
     heroDescription: 'Select a folder or several video files, then play them as an ordered local playlist.',
     chooseVideos: 'Choose videos',
-    selectFolder: 'Select folder',
-    selectFiles: 'Select files',
+    selectFolder: 'Folder',
+    selectFiles: 'File',
     clearPlaylistButton: 'Clear',
     supportedHint: 'Supported extensions: .mp4, .webm, .m4v, .mov, and .mkv where your browser can play it.',
     statusNoVideos: 'No videos selected.',
@@ -49,8 +49,8 @@ const COPY = {
     phaseLabel: 'Fase 1',
     heroDescription: 'Elegí una carpeta o varios videos, y reproducilos como una playlist local ordenada.',
     chooseVideos: 'Elegir videos',
-    selectFolder: 'Seleccionar carpeta',
-    selectFiles: 'Seleccionar archivos',
+    selectFolder: 'Carpeta',
+    selectFiles: 'Archivo',
     clearPlaylistButton: 'Vaciar',
     supportedHint: 'Extensiones admitidas: .mp4, .webm, .m4v, .mov y .mkv cuando el navegador pueda reproducirlo.',
     statusNoVideos: 'No hay videos seleccionados.',
@@ -375,31 +375,37 @@ function renderPlaylist() {
     if (index === state.activeIndex) listItem.classList.add('active');
     if (item.progress?.watched) listItem.classList.add('watched');
 
+    const button = document.createElement('button');
+    button.type = 'button';
+    button.className = 'playlist-card-button';
+    button.addEventListener('click', () => playIndex(index, { source: 'playlist-click' }));
+
     const number = document.createElement('span');
     number.className = 'index';
     number.textContent = String(index + 1).padStart(2, '0');
 
-    const content = document.createElement('div');
-    const button = document.createElement('button');
-    button.type = 'button';
-    button.className = 'title';
-    button.textContent = item.relativePath;
-    button.addEventListener('click', () => playIndex(index, { source: 'playlist-click' }));
+    const content = document.createElement('span');
+    content.className = 'playlist-item-content';
+
+    const title = document.createElement('span');
+    title.className = 'title';
+    title.textContent = item.relativePath;
 
     if (item.progress?.watched) {
       const watched = document.createElement('span');
       watched.className = 'watched-label';
       watched.textContent = t('watchedLabel');
-      button.append(' ', watched);
+      title.append(' ', watched);
     }
 
-    const meta = document.createElement('div');
+    const meta = document.createElement('span');
     meta.className = 'meta';
     const savedTime = item.progress?.currentTime ? ` · ${t('savedAt', { time: formatTime(item.progress.currentTime) })}` : '';
     meta.textContent = `${formatBytes(item.file.size)}${savedTime}`;
 
-    content.append(button, meta);
-    listItem.append(number, content);
+    content.append(title, meta);
+    button.append(number, content);
+    listItem.append(button);
     elements.playlist.append(listItem);
   });
 

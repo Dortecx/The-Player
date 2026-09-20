@@ -30,17 +30,6 @@ body {
 
 body::before,
 body::after {
-  animation: twinkle 7.5s ease-in-out infinite alternate;
-  background-image:
-    radial-gradient(circle at 7% 14%, rgba(255, 255, 255, 0.75) 0 0.045rem, transparent 0.055rem),
-    radial-gradient(circle at 18% 73%, rgba(255, 255, 255, 0.36) 0 0.035rem, transparent 0.045rem),
-    radial-gradient(circle at 28% 31%, rgba(255, 255, 255, 0.55) 0 0.04rem, transparent 0.05rem),
-    radial-gradient(circle at 39% 88%, rgba(255, 255, 255, 0.42) 0 0.035rem, transparent 0.045rem),
-    radial-gradient(circle at 51% 22%, rgba(255, 255, 255, 0.68) 0 0.045rem, transparent 0.055rem),
-    radial-gradient(circle at 63% 67%, rgba(255, 255, 255, 0.34) 0 0.035rem, transparent 0.045rem),
-    radial-gradient(circle at 76% 39%, rgba(255, 255, 255, 0.6) 0 0.04rem, transparent 0.05rem),
-    radial-gradient(circle at 89% 82%, rgba(255, 255, 255, 0.38) 0 0.035rem, transparent 0.045rem),
-    radial-gradient(circle at 94% 18%, rgba(255, 255, 255, 0.5) 0 0.04rem, transparent 0.05rem);
   background-repeat: no-repeat;
   content: "";
   inset: 0;
@@ -49,40 +38,109 @@ body::after {
   z-index: 0;
 }
 
-body::after {
-  animation-duration: 11s;
-  animation-delay: -3s;
+body::before {
+  animation: pulse-stars-a 8.5s steps(1, end) infinite;
   background-image:
-    radial-gradient(circle at 11% 47%, rgba(255, 255, 255, 0.32) 0 0.035rem, transparent 0.045rem),
-    radial-gradient(circle at 23% 9%, rgba(255, 255, 255, 0.58) 0 0.04rem, transparent 0.05rem),
-    radial-gradient(circle at 36% 59%, rgba(255, 255, 255, 0.46) 0 0.035rem, transparent 0.045rem),
-    radial-gradient(circle at 47% 83%, rgba(255, 255, 255, 0.64) 0 0.045rem, transparent 0.055rem),
-    radial-gradient(circle at 58% 11%, rgba(255, 255, 255, 0.34) 0 0.035rem, transparent 0.045rem),
-    radial-gradient(circle at 69% 53%, rgba(255, 255, 255, 0.52) 0 0.04rem, transparent 0.05rem),
-    radial-gradient(circle at 82% 26%, rgba(255, 255, 255, 0.4) 0 0.035rem, transparent 0.045rem),
-    radial-gradient(circle at 96% 61%, rgba(255, 255, 255, 0.66) 0 0.045rem, transparent 0.055rem);
+    radial-gradient(circle at 4% 11%, rgba(255, 255, 255, 0.82) 0 0.045rem, transparent 0.055rem),
+    radial-gradient(circle at 9% 64%, rgba(255, 255, 255, 0.3) 0 0.03rem, transparent 0.04rem),
+    radial-gradient(circle at 13% 28%, rgba(255, 255, 255, 0.52) 0 0.035rem, transparent 0.045rem),
+    radial-gradient(circle at 17% 84%, rgba(255, 255, 255, 0.68) 0 0.04rem, transparent 0.05rem),
+    radial-gradient(circle at 22% 8%, rgba(255, 255, 255, 0.38) 0 0.03rem, transparent 0.04rem),
+    radial-gradient(circle at 27% 72%, rgba(255, 255, 255, 0.75) 0 0.045rem, transparent 0.055rem),
+    radial-gradient(circle at 31% 43%, rgba(255, 255, 255, 0.34) 0 0.03rem, transparent 0.04rem),
+    radial-gradient(circle at 36% 18%, rgba(255, 255, 255, 0.56) 0 0.035rem, transparent 0.045rem),
+    radial-gradient(circle at 41% 91%, rgba(255, 255, 255, 0.44) 0 0.035rem, transparent 0.045rem),
+    radial-gradient(circle at 47% 57%, rgba(255, 255, 255, 0.7) 0 0.04rem, transparent 0.05rem),
+    radial-gradient(circle at 52% 24%, rgba(255, 255, 255, 0.36) 0 0.03rem, transparent 0.04rem),
+    radial-gradient(circle at 58% 79%, rgba(255, 255, 255, 0.6) 0 0.04rem, transparent 0.05rem),
+    radial-gradient(circle at 63% 36%, rgba(255, 255, 255, 0.32) 0 0.03rem, transparent 0.04rem),
+    radial-gradient(circle at 69% 7%, rgba(255, 255, 255, 0.66) 0 0.04rem, transparent 0.05rem),
+    radial-gradient(circle at 73% 68%, rgba(255, 255, 255, 0.42) 0 0.035rem, transparent 0.045rem),
+    radial-gradient(circle at 79% 47%, rgba(255, 255, 255, 0.8) 0 0.045rem, transparent 0.055rem),
+    radial-gradient(circle at 84% 15%, rgba(255, 255, 255, 0.28) 0 0.03rem, transparent 0.04rem),
+    radial-gradient(circle at 91% 89%, rgba(255, 255, 255, 0.5) 0 0.035rem, transparent 0.045rem),
+    radial-gradient(circle at 96% 31%, rgba(255, 255, 255, 0.64) 0 0.04rem, transparent 0.05rem),
+    radial-gradient(circle at 2% 38%, rgba(255, 255, 255, 0.28) 0 0.025rem, transparent 0.035rem),
+    radial-gradient(circle at 7% 92%, rgba(255, 255, 255, 0.46) 0 0.03rem, transparent 0.04rem),
+    radial-gradient(circle at 15% 52%, rgba(255, 255, 255, 0.24) 0 0.025rem, transparent 0.035rem),
+    radial-gradient(circle at 20% 33%, rgba(255, 255, 255, 0.6) 0 0.035rem, transparent 0.045rem),
+    radial-gradient(circle at 25% 96%, rgba(255, 255, 255, 0.32) 0 0.025rem, transparent 0.035rem),
+    radial-gradient(circle at 33% 66%, rgba(255, 255, 255, 0.48) 0 0.03rem, transparent 0.04rem),
+    radial-gradient(circle at 38% 29%, rgba(255, 255, 255, 0.22) 0 0.025rem, transparent 0.035rem),
+    radial-gradient(circle at 45% 10%, rgba(255, 255, 255, 0.58) 0 0.035rem, transparent 0.045rem),
+    radial-gradient(circle at 50% 88%, rgba(255, 255, 255, 0.26) 0 0.025rem, transparent 0.035rem),
+    radial-gradient(circle at 56% 41%, rgba(255, 255, 255, 0.5) 0 0.03rem, transparent 0.04rem),
+    radial-gradient(circle at 65% 83%, rgba(255, 255, 255, 0.3) 0 0.025rem, transparent 0.035rem),
+    radial-gradient(circle at 70% 51%, rgba(255, 255, 255, 0.54) 0 0.035rem, transparent 0.045rem),
+    radial-gradient(circle at 77% 4%, rgba(255, 255, 255, 0.36) 0 0.025rem, transparent 0.035rem),
+    radial-gradient(circle at 86% 63%, rgba(255, 255, 255, 0.44) 0 0.03rem, transparent 0.04rem),
+    radial-gradient(circle at 99% 47%, rgba(255, 255, 255, 0.34) 0 0.025rem, transparent 0.035rem);
 }
 
-@keyframes twinkle {
-  from {
-    opacity: 0.18;
-  }
+body::after {
+  animation: pulse-stars-b 12s steps(1, end) infinite;
+  background-image:
+    radial-gradient(circle at 6% 51%, rgba(255, 255, 255, 0.46) 0 0.035rem, transparent 0.045rem),
+    radial-gradient(circle at 12% 93%, rgba(255, 255, 255, 0.74) 0 0.045rem, transparent 0.055rem),
+    radial-gradient(circle at 19% 39%, rgba(255, 255, 255, 0.34) 0 0.03rem, transparent 0.04rem),
+    radial-gradient(circle at 24% 16%, rgba(255, 255, 255, 0.62) 0 0.04rem, transparent 0.05rem),
+    radial-gradient(circle at 29% 61%, rgba(255, 255, 255, 0.42) 0 0.035rem, transparent 0.045rem),
+    radial-gradient(circle at 34% 86%, rgba(255, 255, 255, 0.26) 0 0.03rem, transparent 0.04rem),
+    radial-gradient(circle at 39% 5%, rgba(255, 255, 255, 0.58) 0 0.04rem, transparent 0.05rem),
+    radial-gradient(circle at 44% 32%, rgba(255, 255, 255, 0.38) 0 0.035rem, transparent 0.045rem),
+    radial-gradient(circle at 49% 73%, rgba(255, 255, 255, 0.86) 0 0.045rem, transparent 0.055rem),
+    radial-gradient(circle at 55% 12%, rgba(255, 255, 255, 0.3) 0 0.03rem, transparent 0.04rem),
+    radial-gradient(circle at 61% 54%, rgba(255, 255, 255, 0.52) 0 0.035rem, transparent 0.045rem),
+    radial-gradient(circle at 67% 95%, rgba(255, 255, 255, 0.7) 0 0.04rem, transparent 0.05rem),
+    radial-gradient(circle at 72% 23%, rgba(255, 255, 255, 0.36) 0 0.03rem, transparent 0.04rem),
+    radial-gradient(circle at 78% 77%, rgba(255, 255, 255, 0.56) 0 0.04rem, transparent 0.05rem),
+    radial-gradient(circle at 83% 42%, rgba(255, 255, 255, 0.32) 0 0.03rem, transparent 0.04rem),
+    radial-gradient(circle at 88% 9%, rgba(255, 255, 255, 0.68) 0 0.04rem, transparent 0.05rem),
+    radial-gradient(circle at 93% 59%, rgba(255, 255, 255, 0.4) 0 0.035rem, transparent 0.045rem),
+    radial-gradient(circle at 98% 81%, rgba(255, 255, 255, 0.76) 0 0.045rem, transparent 0.055rem),
+    radial-gradient(circle at 3% 76%, rgba(255, 255, 255, 0.38) 0 0.025rem, transparent 0.035rem),
+    radial-gradient(circle at 8% 22%, rgba(255, 255, 255, 0.54) 0 0.03rem, transparent 0.04rem),
+    radial-gradient(circle at 16% 6%, rgba(255, 255, 255, 0.26) 0 0.025rem, transparent 0.035rem),
+    radial-gradient(circle at 21% 70%, rgba(255, 255, 255, 0.62) 0 0.035rem, transparent 0.045rem),
+    radial-gradient(circle at 26% 45%, rgba(255, 255, 255, 0.34) 0 0.025rem, transparent 0.035rem),
+    radial-gradient(circle at 32% 13%, rgba(255, 255, 255, 0.44) 0 0.03rem, transparent 0.04rem),
+    radial-gradient(circle at 37% 77%, rgba(255, 255, 255, 0.22) 0 0.025rem, transparent 0.035rem),
+    radial-gradient(circle at 43% 49%, rgba(255, 255, 255, 0.56) 0 0.035rem, transparent 0.045rem),
+    radial-gradient(circle at 51% 3%, rgba(255, 255, 255, 0.3) 0 0.025rem, transparent 0.035rem),
+    radial-gradient(circle at 57% 66%, rgba(255, 255, 255, 0.48) 0 0.03rem, transparent 0.04rem),
+    radial-gradient(circle at 64% 19%, rgba(255, 255, 255, 0.25) 0 0.025rem, transparent 0.035rem),
+    radial-gradient(circle at 71% 84%, rgba(255, 255, 255, 0.58) 0 0.035rem, transparent 0.045rem),
+    radial-gradient(circle at 81% 56%, rgba(255, 255, 255, 0.36) 0 0.025rem, transparent 0.035rem),
+    radial-gradient(circle at 87% 35%, rgba(255, 255, 255, 0.52) 0 0.03rem, transparent 0.04rem),
+    radial-gradient(circle at 95% 17%, rgba(255, 255, 255, 0.28) 0 0.025rem, transparent 0.035rem);
+}
 
-  45% {
-    opacity: 0.7;
-  }
+@keyframes pulse-stars-a {
+  0%, 100% { opacity: 0.1; }
+  18% { opacity: 0.8; }
+  37% { opacity: 0.18; }
+  63% { opacity: 0.62; }
+  82% { opacity: 0.12; }
+}
 
-  to {
-    opacity: 0.28;
-  }
+@keyframes pulse-stars-b {
+  0%, 100% { opacity: 0.14; }
+  24% { opacity: 0.52; }
+  49% { opacity: 0.08; }
+  71% { opacity: 0.86; }
+  90% { opacity: 0.16; }
 }
 
 @media (prefers-reduced-motion: reduce) {
   body::before,
   body::after {
     animation: none;
-    opacity: 0.3;
+    opacity: 0.35;
   }
+}
+
+[hidden] {
+  display: none !important;
 }
 
 button,
@@ -325,14 +383,9 @@ video {
 }
 
 .playlist-item {
-  align-items: start;
   background: var(--panel-strong);
   border: 1px solid var(--line-soft);
   border-radius: 0.75rem;
-  display: grid;
-  gap: 0.25rem;
-  grid-template-columns: auto 1fr;
-  padding: 0.75rem;
   transition: border-color 160ms ease, box-shadow 160ms ease, background 160ms ease;
 }
 
@@ -361,20 +414,36 @@ video {
   text-transform: uppercase;
 }
 
-.playlist-item button {
+.playlist-card-button {
+  align-items: start;
   background: transparent;
   border: 0;
+  border-radius: inherit;
   box-shadow: none;
   color: inherit;
-  padding: 0;
+  display: grid;
+  gap: 0.25rem;
+  grid-template-columns: auto 1fr;
+  padding: 0.75rem;
   text-align: left;
+  width: 100%;
 }
 
-.playlist-item button:hover:not(:disabled),
-.playlist-item button:focus-visible {
+.playlist-card-button:hover:not(:disabled),
+.playlist-card-button:focus-visible {
   background: transparent;
   border-color: transparent;
   box-shadow: none;
+}
+
+.playlist-card-button:focus-visible {
+  outline: none;
+}
+
+.playlist-item-content {
+  display: grid;
+  gap: 0.15rem;
+  min-width: 0;
 }
 
 .index {

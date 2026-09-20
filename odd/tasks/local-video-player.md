@@ -129,6 +129,40 @@ A simple local web app solves the immediate workflow without requiring FFmpeg, t
   - Keep folder/file picker behavior, playlist restore/progress records, and hidden live status intact.
   - Evidence: added `#playlistPanel` empty/loaded state classes, SVG icons for folder/files/clear actions, `clearPlaylist()` that resets only current in-memory playlist/player/input state, and CSS that centers empty controls then switches loaded controls to icon-only header actions. `node --check server.js` passed. `node --check public/app.js` passed. `PORT=3149 npm run web` readiness check passed after transient pre-readiness curl failures. Independent LV-014 verifier passed static behavior/readiness checks with manual browser checks remaining.
 
+- [x] LV-015 — Shorten empty selection labels and keep clear hidden initially
+  - Keep the Clear/Vaciar action hidden while the playlist is empty.
+  - Keep folder/file selection controls on the same horizontal row in the empty Playlist state.
+  - Shorten selection labels to `Folder`/`File` in English and `Carpeta`/`Archivo` in Spanish.
+  - Evidence: updated `public/app.js` localized selection labels; `#clearPlaylistButton` remains hidden in initial HTML and gated by `updateControls()` when `state.items.length === 0`; `.playlist-actions` remains flex-row. `node --check server.js` passed. `node --check public/app.js` passed. `PORT=3151 npm run web` readiness check passed after transient pre-readiness curl failures.
+
+- [x] LV-016 — Preserve native hidden behavior under button flex styles
+  - Ensure `hidden` elements stay visually hidden even when shared button styles set `display: inline-flex`.
+  - Keep Clear/Vaciar invisible before files are loaded.
+  - Evidence: added explicit `[hidden] { display: none !important; }` before shared button styles in `public/styles.css`. `node --check server.js` passed. `node --check public/app.js` passed. `PORT=3152 npm run web` readiness check passed after transient pre-readiness curl failures; response confirmed `#clearPlaylistButton` starts with `hidden`.
+
+- [x] LV-017 — Make full playlist cards selectable
+  - Allow selecting/changing videos by clicking anywhere inside a playlist card, not only the filename.
+  - Preserve keyboard accessibility with a button covering the full card.
+  - Keep existing active/watched/progress metadata display.
+  - Evidence: changed playlist rendering so each `<li>` contains a full-width `.playlist-card-button` wrapping the index, title, watched label, and metadata; CSS moved grid/padding onto that button so the full card is clickable/focusable. `node --check server.js` passed. `node --check public/app.js` passed. `PORT=3153 npm run web` readiness check passed after transient pre-readiness curl failures. Manual browser click check remains pending.
+
+- [x] LV-018 — Hide native video download control
+  - Remove the redundant download option from the browser video controls menu for local playback.
+  - Preserve native playback controls otherwise.
+  - Evidence: added `controlsList="nodownload"` to `#videoPlayer` in `public/index.html`. `node --check server.js` passed. `node --check public/app.js` passed. `PORT=3154 npm run web` readiness check passed after transient pre-readiness curl failures and response included `controlsList="nodownload"`.
+
+- [x] LV-019 — Increase pulsing starfield density
+  - Add more tiny white points to the black background.
+  - Make the points pulse by appearing and disappearing in staggered layers for a more space-like feel.
+  - Keep reduced-motion fallback.
+  - Evidence: expanded `body::before` and `body::after` star layers in `public/styles.css` to 37 irregular radial-gradient points and replaced smooth twinkle with stepped `pulse-stars-a`/`pulse-stars-b` opacity pulses. `node --check server.js` passed. `node --check public/app.js` passed. `PORT=3155 npm run web` readiness check passed. Manual visual check remains pending.
+
+- [x] LV-020 — Densify starfield further and merge work to main
+  - Increase visible pulsing point density because the starfield still looked too sparse.
+  - Keep CSS-only star rendering and reduced-motion fallback.
+  - Integrate the feature branch back into `main` because RDD is explicitly left pending in `/mnt/c`.
+  - Evidence: increased `public/styles.css` star layers to 67 `radial-gradient(circle at ...)` points. `node --check server.js` passed. `node --check public/app.js` passed. `PORT=3156 npm run web` readiness check passed after transient pre-readiness curl failures. Merge evidence pending.
+
 ## Acceptance Criteria
 - Running `npm run web` starts a local server without requiring a framework dev server.
 - The browser app can select a folder or multiple files.
@@ -151,6 +185,12 @@ A simple local web app solves the immediate workflow without requiring FFmpeg, t
 - 2026-09-18: Completed LV-012 true-black visual refresh with CSS-only irregular twinkling white particle points and reduced-motion fallback.
 - 2026-09-18: Completed LV-013 selection UI simplification by moving folder/file controls into the Playlist header, hiding status/count live compatibility elements, and removing visible choose-videos, supported-extensions, selected-status, and playlist-count copy.
 - 2026-09-18: Completed LV-014 adaptive Playlist actions: empty state centers folder/file controls, loaded state switches to icon-only header controls, and Clear/Vaciar empties only the current list/player state without deleting progress.
+- 2026-09-18: Completed LV-015 selection label tightening: empty-state buttons remain horizontal, Clear/Vaciar stays hidden until files are loaded, and labels are shortened to Folder/File and Carpeta/Archivo.
+- 2026-09-18: Completed LV-016 hidden-attribute CSS fix so Clear/Vaciar remains hidden before files are loaded despite shared `display: inline-flex` button styling.
+- 2026-09-18: Completed LV-017 full-card playlist selection by making each playlist row a full-width button instead of limiting selection to the filename text.
+- 2026-09-18: Completed LV-018 native video controls cleanup by adding `controlsList="nodownload"` to the local video element.
+- 2026-09-18: Completed LV-019 starfield density/pulse refresh with more irregular points and stepped appearing/disappearing layers.
+- 2026-09-18: Completed LV-020 additional starfield density increase to 67 CSS points and prepared integration back to `main` because RDD is explicitly pending for this `/mnt/c` worktree.
 
 ## Verification Evidence
 - `node --check server.js` — passed in worker and parent verification.
@@ -192,6 +232,24 @@ A simple local web app solves the immediate workflow without requiring FFmpeg, t
 - `node --check public/app.js` — passed after LV-014 changes.
 - `PORT=3149 npm run web` with `curl -fsS http://127.0.0.1:3149/` readiness check — passed after transient pre-readiness curl failures; response included `#playlistPanel`, `#folderInput`, `#fileInput`, and `#clearPlaylistButton`.
 - Independent LV-014 verifier: `node --check server.js`, `node --check public/app.js`, and `PORT=3150 npm run web` readiness check passed; verifier confirmed empty-state centering classes, loaded icon-only CSS/state toggles, Clear/Vaciar behavior does not delete IndexedDB records, stable folder/file input IDs, and hidden status/count copy. Manual browser checks remain pending.
+- `node --check server.js` — passed after LV-015 changes.
+- `node --check public/app.js` — passed after LV-015 changes.
+- `PORT=3151 npm run web` with `curl -fsS http://127.0.0.1:3151/` readiness check — passed after transient pre-readiness curl failures; response confirmed `#clearPlaylistButton` starts with `hidden` and folder/file controls remain in `.playlist-actions`.
+- `node --check server.js` — passed after LV-016 changes.
+- `node --check public/app.js` — passed after LV-016 changes.
+- `PORT=3152 npm run web` with `curl -fsS http://127.0.0.1:3152/` readiness check — passed after transient pre-readiness curl failures; response confirmed `#clearPlaylistButton` starts with `hidden`, and CSS now explicitly preserves `[hidden]` display behavior.
+- `node --check server.js` — passed after LV-017 changes.
+- `node --check public/app.js` — passed after LV-017 changes.
+- `PORT=3153 npm run web` with `curl -fsS http://127.0.0.1:3153/` readiness check — passed after transient pre-readiness curl failures.
+- `node --check server.js` — passed after LV-018 changes.
+- `node --check public/app.js` — passed after LV-018 changes.
+- `PORT=3154 npm run web` with `curl -fsS http://127.0.0.1:3154/` readiness check — passed after transient pre-readiness curl failures; response included `controlsList="nodownload"`.
+- `node --check server.js` — passed after LV-019 changes.
+- `node --check public/app.js` — passed after LV-019 changes.
+- `PORT=3155 npm run web` with `curl -fsS http://127.0.0.1:3155/` readiness check — passed after LV-019 starfield changes.
+- `node --check server.js` — passed after LV-020 changes.
+- `node --check public/app.js` — passed after LV-020 changes.
+- `PORT=3156 npm run web` with `curl -fsS http://127.0.0.1:3156/` readiness check — passed after transient pre-readiness curl failures; `public/styles.css` now contains 67 `radial-gradient(circle at ...)` star points.
 
 ## Pending Manual Checks
 - Select a folder and confirm playlist ordering with nested relative paths.
@@ -214,6 +272,9 @@ A simple local web app solves the immediate workflow without requiring FFmpeg, t
 - Manually confirm LV-013 file picking: `Select folder` and `Select files` still open pickers and populate the playlist.
 - Visually confirm LV-014 layout in a browser: empty Playlist panel centers selection controls horizontally/vertically, loaded Playlist header shows folder/files/clear controls as icons, and the icon buttons remain understandable through hover/focus/assistive labels.
 - Manually confirm LV-014 Clear/Vaciar empties the visible playlist/player without deleting saved progress; reselecting the same files should still restore prior progress.
+- Manually confirm LV-017 playlist interaction: clicking anywhere in a playlist card, including empty space or metadata, selects that video.
+- Manually confirm LV-018 browser behavior: the native video controls menu no longer shows a download option in supported browsers.
+- Visually confirm LV-019 starfield: more points are visible, the pulse feels like points appearing/disappearing, and it stays subtle over video playback.
 
 ## Next Step
 Run the pending manual browser checks with representative local video files, prioritizing the LV-014 adaptive actions/Clear behavior, LV-010 subset progress restore, LV-009 no-auto-persist, legacy-exact-vs-newer-recent restore scenarios, and LV-012 visual/reduced-motion review.
