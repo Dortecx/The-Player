@@ -95,7 +95,8 @@ const state = {
   currentObjectUrl: null,
   selectionId: null,
   dbPromise: null,
-  lastSaveAt: 0
+  lastSaveAt: 0,
+  clearTransitionTimer: null
 };
 
 const elements = {
@@ -228,7 +229,7 @@ function initParticleBackground() {
 
       nearest.forEach(({ candidate, distance }) => {
         const proximity = 1 - distance / 220;
-        context.strokeStyle = `rgba(255, 255, 255, ${0.012 + proximity * 0.035})`;
+        context.strokeStyle = `rgba(255, 255, 255, ${0.018 + proximity * 0.047})`;
         context.beginPath();
         context.moveTo(point.x, point.y);
         context.lineTo(candidate.x, candidate.y);
@@ -579,6 +580,21 @@ function updateControls() {
   elements.playlistCount.textContent = t('playlistCount', { count: state.items.length });
 }
 
+function stagePlaylistClearTransition() {
+  if (state.clearTransitionTimer) {
+    window.clearTimeout(state.clearTransitionTimer);
+    state.clearTransitionTimer = null;
+  }
+
+  elements.playlistPanel.classList.remove('is-clearing');
+  void elements.playlistPanel.offsetWidth;
+  elements.playlistPanel.classList.add('is-clearing');
+  state.clearTransitionTimer = window.setTimeout(() => {
+    elements.playlistPanel.classList.remove('is-clearing');
+    state.clearTransitionTimer = null;
+  }, 280);
+}
+
 function renderPlaylist() {
   elements.playlist.innerHTML = '';
 
@@ -827,6 +843,7 @@ async function clearPlaylist() {
   elements.video.load();
   elements.nowPlaying.textContent = t('nothingPlaying');
   clearError();
+  stagePlaylistClearTransition();
   renderPlaylist();
   updateStatus(t('statusNoVideos'));
 }

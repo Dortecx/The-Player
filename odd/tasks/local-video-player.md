@@ -206,6 +206,12 @@ A simple local web app solves the immediate workflow without requiring FFmpeg, t
   - Increase passive Canvas node-link opacity slightly while keeping links monochrome and subtle.
   - Evidence: added SVG/icon-plus-`.button-text` transport button structure in `public/index.html`; moved transport text i18n onto inner spans and aria labels onto button roots; extended morph CSS in `public/styles.css` to `.transport-action-button`; adjusted passive background line opacity in `public/app.js`. `node --check server.js` passed. `node --check public/app.js` passed. `PORT=3165 npm run web` readiness check passed after one transient pre-readiness curl failure. Static diff/readback confirmed compact transport morph CSS, inner localized text spans, aria-label i18n on button roots, and passive link alpha increase.
 
+- [x] LV-027 — Lift passive Canvas links and animate Clear empty transition
+  - Increase passive distant Canvas node-to-node link alpha moderately while keeping the network monochrome and behind the foreground UI.
+  - Make Clear/Vaciar transition from populated Playlist header to centered empty selection controls feel animated instead of snapping.
+  - Keep `clearPlaylist()` limited to current in-memory playlist/player/input state and do not delete progress/session/recentActive records.
+  - Evidence: increased passive link alpha in `public/app.js` from `0.012 + proximity * 0.035` to `0.018 + proximity * 0.047`; added a deterministic transient `is-clearing` class for Clear/Vaciar; added CSS transitions/settle animation for `.playlist-panel`, `.playlist-header`, `.playlist-actions`, and `.playlist` with reduced-motion fallback. `node --check server.js` passed. `node --check public/app.js` passed. `PORT=3167 npm run web` readiness check passed. Static diff/readback confirmed the alpha boost and empty/has-items transition styling/class behavior. Manual visual checks remain pending.
+
 ## Acceptance Criteria
 - Running `npm run web` starts a local server without requiring a framework dev server.
 - The browser app can select a folder or multiple files.
@@ -240,6 +246,7 @@ A simple local web app solves the immediate workflow without requiring FFmpeg, t
 - 2026-09-20: Completed LV-024 dormant cursor-activated particle behavior so the passive background is quieter while nearby hidden nodes/links wake up around the cursor.
 - 2026-09-20: Completed LV-025 passive particle/activity evidence and playlist action button morphs: parent `public/app.js` changes keep passive node-to-node network connects subtle, intensify the active cursor area, and wake dormant nodes near the cursor; CSS now makes playlist action buttons compact icon-only by default and text-only while expanded on hover/focus.
 - 2026-09-20: Completed LV-026 transport action morphs and passive link visibility refinement: Previous, Skip next, and Mark watched & next now share the playlist compact-icon-to-expanded-text interaction without root `data-i18n`, and passive Canvas links are slightly more visible while remaining subtle.
+- 2026-09-20: Completed LV-027 passive Canvas/clear-transition refinement: distant passive links are moderately more visible, and Clear/Vaciar now applies a short deterministic empty-state transition instead of snapping header controls directly to center.
 
 ## Verification Evidence
 - `node --check server.js` — passed in worker and parent verification.
@@ -320,6 +327,10 @@ A simple local web app solves the immediate workflow without requiring FFmpeg, t
 - `node --check public/app.js` — passed after LV-026 changes.
 - `PORT=3165 npm run web` with `curl -fsS http://127.0.0.1:3165/` readiness check — passed after one transient pre-readiness curl failure; response included `id="particleCanvas"`.
 - Static diff/readback of `public/index.html`, `public/app.js`, `public/styles.css`, and `odd/tasks/local-video-player.md` — passed for LV-026 plausibility; confirmed transport button roots no longer use `data-i18n`, inner `.button-text` spans carry localized copy, button roots carry `data-i18n-aria-label`, `.transport-action-button` shares the compact-to-expanded morph, icons collapse while text reveals, and passive Canvas link alpha increased from `0.008 + proximity * 0.025` to `0.012 + proximity * 0.035`.
+- `node --check server.js` — passed after LV-027 changes.
+- `node --check public/app.js` — passed after LV-027 changes.
+- `PORT=3167 npm run web` with `curl -fsS http://127.0.0.1:3167/` readiness check — passed after one transient pre-readiness curl failure; response included `id="particleCanvas"`.
+- Static diff/readback of `public/app.js`, `public/styles.css`, and `odd/tasks/local-video-player.md` — passed for LV-027 plausibility; confirmed passive Canvas link alpha increased from `0.012 + proximity * 0.035` to `0.018 + proximity * 0.047`, `clearPlaylist()` still resets only in-memory playlist/player/input state, and `.playlist-panel`/`.playlist-header`/`.playlist-actions`/`.playlist` transition or animate empty-state movement with a reduced-motion fallback.
 
 ## Pending Manual Checks
 - Select a folder and confirm playlist ordering with nested relative paths.
@@ -347,7 +358,8 @@ A simple local web app solves the immediate workflow without requiring FFmpeg, t
 - Visually confirm LV-019 starfield: more points are visible, the pulse feels like points appearing/disappearing, and it stays subtle over video playback.
 - Visually confirm LV-021/LV-022/LV-023/LV-024 Canvas background in a browser: passive network is quieter away from the cursor, dormant nodes wake up near the pointer, nearby lines get stronger around the cursor, and video/player UI behavior remains unchanged.
 - Visually confirm LV-026 transport/background refinement in a browser: Previous, Skip next, and Mark watched & next are compact icon-only by default, expand to readable English/Spanish text on hover/focus/focus-within, preserve accessible compact labels, and passive background links are slightly easier to see without becoming foreground/neon.
-- Manually confirm LV-021 reduced-motion behavior: with `prefers-reduced-motion: reduce`, the canvas renders a static frame without constant particle movement.
+- Visually confirm LV-027 background/clear refinement in a browser: distant passive Canvas links are more visible but still second-plane/monochrome, and Clear/Vaciar visibly moves folder/file controls from header to centered empty state without a snap.
+- Manually confirm LV-021/LV-027 reduced-motion behavior: with `prefers-reduced-motion: reduce`, the canvas renders a static frame without constant particle movement and the Clear/Vaciar empty-state transition does not animate.
 
 ## Next Step
 Run the pending manual browser checks with representative local video files, prioritizing the LV-021 Canvas particle visual/reduced-motion review, LV-014 adaptive actions/Clear behavior, LV-010 subset progress restore, LV-009 no-auto-persist, and legacy-exact-vs-newer-recent restore scenarios.
