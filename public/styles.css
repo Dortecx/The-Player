@@ -178,7 +178,8 @@ button:focus-visible,
   justify-content: flex-end;
 }
 
-.playlist-action-button {
+.playlist-action-button,
+.transport-action-button {
   border-radius: 999px;
   gap: 0;
   height: 2.75rem;
@@ -190,11 +191,45 @@ button:focus-visible,
 }
 
 .playlist-action-button:hover:not(:disabled),
+.playlist-action-button:focus,
 .playlist-action-button:focus-visible,
-.playlist-action-button:focus-within {
+.playlist-action-button:focus-within,
+.transport-action-button:hover:not(:disabled),
+.transport-action-button:focus,
+.transport-action-button:focus-visible,
+.transport-action-button:focus-within {
   gap: 0.45rem;
   padding: 0 0.95rem;
   width: 7rem;
+}
+
+.transport-action-button {
+  flex: 0 0 auto;
+}
+
+#prevButton.transport-action-button {
+  width: 2.75rem;
+}
+
+#prevButton.transport-action-button:hover:not(:disabled),
+#prevButton.transport-action-button:focus,
+#prevButton.transport-action-button:focus-visible,
+#prevButton.transport-action-button:focus-within {
+  width: 7.5rem;
+}
+
+#nextButton.transport-action-button:hover:not(:disabled),
+#nextButton.transport-action-button:focus,
+#nextButton.transport-action-button:focus-visible,
+#nextButton.transport-action-button:focus-within {
+  width: 8.5rem;
+}
+
+.mark-watched-action-button:hover:not(:disabled),
+.mark-watched-action-button:focus,
+.mark-watched-action-button:focus-visible,
+.mark-watched-action-button:focus-within {
+  width: 13.5rem;
 }
 
 .action-icon {
@@ -208,7 +243,8 @@ button:focus-visible,
   width: 1.15rem;
 }
 
-.playlist-action-button .button-text {
+.playlist-action-button .button-text,
+.transport-action-button .button-text {
   display: inline-block;
   max-width: 0;
   opacity: 0;
@@ -218,17 +254,27 @@ button:focus-visible,
 }
 
 .playlist-action-button:hover:not(:disabled) .action-icon,
+.playlist-action-button:focus .action-icon,
 .playlist-action-button:focus-visible .action-icon,
-.playlist-action-button:focus-within .action-icon {
+.playlist-action-button:focus-within .action-icon,
+.transport-action-button:hover:not(:disabled) .action-icon,
+.transport-action-button:focus .action-icon,
+.transport-action-button:focus-visible .action-icon,
+.transport-action-button:focus-within .action-icon {
   opacity: 0;
   transform: scale(0.8);
   width: 0;
 }
 
 .playlist-action-button:hover:not(:disabled) .button-text,
+.playlist-action-button:focus .button-text,
 .playlist-action-button:focus-visible .button-text,
-.playlist-action-button:focus-within .button-text {
-  max-width: 5.5rem;
+.playlist-action-button:focus-within .button-text,
+.transport-action-button:hover:not(:disabled) .button-text,
+.transport-action-button:focus .button-text,
+.transport-action-button:focus-visible .button-text,
+.transport-action-button:focus-within .button-text {
+  max-width: 11.5rem;
   opacity: 1;
 }
 

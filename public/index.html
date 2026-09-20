@@ -27,9 +27,24 @@
           </div>
           <video id="videoPlayer" controls controlsList="nodownload" playsinline preload="metadata"></video>
           <div class="transport">
-            <button id="prevButton" type="button" data-i18n="previousButton">Previous</button>
-            <button id="nextButton" type="button" data-i18n="skipNextButton">Skip next</button>
-            <button id="markWatchedButton" type="button" data-i18n="markWatchedButton">Mark watched & next</button>
+            <button id="prevButton" class="transport-action-button" type="button" data-i18n-aria-label="previousButton">
+              <svg class="action-icon" aria-hidden="true" viewBox="0 0 24 24" focusable="false">
+                <path d="M8.75 12 17 5.75v12.5L8.75 12Zm-2.25-6.25H8v12.5H6.5V5.75Z"/>
+              </svg>
+              <span class="button-text" data-i18n="previousButton">Previous</span>
+            </button>
+            <button id="nextButton" class="transport-action-button" type="button" data-i18n-aria-label="skipNextButton">
+              <svg class="action-icon" aria-hidden="true" viewBox="0 0 24 24" focusable="false">
+                <path d="M15.25 12 7 18.25V5.75L15.25 12Zm.75-6.25h1.5v12.5H16V5.75Z"/>
+              </svg>
+              <span class="button-text" data-i18n="skipNextButton">Skip next</span>
+            </button>
+            <button id="markWatchedButton" class="transport-action-button mark-watched-action-button" type="button" data-i18n-aria-label="markWatchedButton">
+              <svg class="action-icon" aria-hidden="true" viewBox="0 0 24 24" focusable="false">
+                <path d="M9.6 16.8 4.95 12.15 6 11.1l3.6 3.6L18 6.3l1.05 1.05L9.6 16.8Zm8.4-3.05h1.5v4.75H14.75V17H18v-3.25Z"/>
+              </svg>
+              <span class="button-text" data-i18n="markWatchedButton">Mark watched & next</span>
+            </button>
           </div>
           <p id="errorMessage" class="error" role="alert" hidden></p>
         </section>

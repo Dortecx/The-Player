@@ -228,7 +228,7 @@ function initParticleBackground() {
 
       nearest.forEach(({ candidate, distance }) => {
         const proximity = 1 - distance / 220;
-        context.strokeStyle = `rgba(255, 255, 255, ${0.008 + proximity * 0.025})`;
+        context.strokeStyle = `rgba(255, 255, 255, ${0.012 + proximity * 0.035})`;
         context.beginPath();
         context.moveTo(point.x, point.y);
         context.lineTo(candidate.x, candidate.y);
