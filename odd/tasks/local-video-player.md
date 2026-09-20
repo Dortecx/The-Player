@@ -185,6 +185,13 @@ A simple local web app solves the immediate workflow without requiring FFmpeg, t
   - Keep the effect monochrome, technical, and not neon.
   - Evidence: updated Canvas parameters to target 130–280 particles, 165px node-link distance, 240px cursor-link distance, thicker/brighter strokes, stronger cursor influence, and brighter influenced nodes. `node --check server.js` passed. `node --check public/app.js` passed. `PORT=3161 npm run web` readiness check passed after transient pre-readiness curl failures.
 
+- [x] LV-024 — Add dormant cursor-activated particles
+  - Reduce passive network line density and opacity when the cursor is not nearby.
+  - Add hidden/dormant particles that activate visually only near the cursor.
+  - Increase local node/line activation around the cursor.
+  - Keep the effect monochrome and readable over the player UI.
+  - Evidence: updated Canvas particle generation to target 170–360 particles with 38% dormant nodes; dormant nodes stay nearly invisible until pointer influence exceeds threshold; node-to-node connection range/opacity now scales with cursor activity; cursor-to-node links use only visible/activated nodes. `node --check server.js` passed. `node --check public/app.js` passed. `PORT=3162 npm run web` readiness check passed after transient pre-readiness curl failures.
+
 ## Acceptance Criteria
 - Running `npm run web` starts a local server without requiring a framework dev server.
 - The browser app can select a folder or multiple files.
@@ -216,6 +223,7 @@ A simple local web app solves the immediate workflow without requiring FFmpeg, t
 - 2026-09-20: Completed LV-021 Canvas 2D particle network background, replacing the CSS radial-gradient pseudo-element starfield while keeping the dark monochrome UI and reduced-motion static fallback.
 - 2026-09-20: Completed LV-022 Canvas particle density and cursor-link enhancement so nearby nodes visibly connect to the pointer.
 - 2026-09-20: Completed LV-023 Canvas particle network visibility boost with more particles, longer connection distances, and brighter monochrome lines.
+- 2026-09-20: Completed LV-024 dormant cursor-activated particle behavior so the passive background is quieter while nearby hidden nodes/links wake up around the cursor.
 
 ## Verification Evidence
 - `node --check server.js` — passed in worker and parent verification.
@@ -285,6 +293,9 @@ A simple local web app solves the immediate workflow without requiring FFmpeg, t
 - `node --check server.js` — passed after LV-023 changes.
 - `node --check public/app.js` — passed after LV-023 changes.
 - `PORT=3161 npm run web` with `curl -fsS http://127.0.0.1:3161/` readiness check — passed after transient pre-readiness curl failures; response included `id="particleCanvas"`.
+- `node --check server.js` — passed after LV-024 changes.
+- `node --check public/app.js` — passed after LV-024 changes.
+- `PORT=3162 npm run web` with `curl -fsS http://127.0.0.1:3162/` readiness check — passed after transient pre-readiness curl failures; response included `id="particleCanvas"`.
 
 ## Pending Manual Checks
 - Select a folder and confirm playlist ordering with nested relative paths.
@@ -310,7 +321,7 @@ A simple local web app solves the immediate workflow without requiring FFmpeg, t
 - Manually confirm LV-017 playlist interaction: clicking anywhere in a playlist card, including empty space or metadata, selects that video.
 - Manually confirm LV-018 browser behavior: the native video controls menu no longer shows a download option in supported browsers.
 - Visually confirm LV-019 starfield: more points are visible, the pulse feels like points appearing/disappearing, and it stays subtle over video playback.
-- Visually confirm LV-021/LV-022/LV-023 Canvas background in a browser: particles are dense enough, motion is slow/smooth, connecting lines and cursor-to-node links are visible enough without becoming neon/noisy, and video/player UI behavior remains unchanged.
+- Visually confirm LV-021/LV-022/LV-023/LV-024 Canvas background in a browser: passive network is quieter away from the cursor, dormant nodes wake up near the pointer, nearby lines get stronger around the cursor, and video/player UI behavior remains unchanged.
 - Manually confirm LV-021 reduced-motion behavior: with `prefers-reduced-motion: reduce`, the canvas renders a static frame without constant particle movement.
 
 ## Next Step

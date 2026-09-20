@@ -132,19 +132,21 @@ function initParticleBackground() {
 
   function getParticleCount() {
     const area = window.innerWidth * window.innerHeight;
-    return Math.max(130, Math.min(280, Math.round(area / 6000)));
+    return Math.max(170, Math.min(360, Math.round(area / 4600)));
   }
 
   function createParticle() {
     const angle = Math.random() * Math.PI * 2;
     const speed = 2 + Math.random() * 7;
+    const dormant = Math.random() < 0.38;
     return {
       x: Math.random() * width,
       y: Math.random() * height,
       vx: Math.cos(angle) * speed,
       vy: Math.sin(angle) * speed,
-      radius: 0.55 + Math.random() * 1.25,
-      alpha: 0.28 + Math.random() * 0.58
+      radius: dormant ? 0.45 + Math.random() * 0.85 : 0.55 + Math.random() * 1.25,
+      alpha: dormant ? 0.02 + Math.random() * 0.04 : 0.24 + Math.random() * 0.48,
+      dormant
     };
   }
 
@@ -209,19 +211,22 @@ function initParticleBackground() {
       particle,
       ...getPointerInfluence(particle)
     }));
+    const visiblePoints = drawPoints.filter(({ particle, amount }) => !particle.dormant || amount > 0.08);
 
-    context.lineWidth = 0.65;
-    for (let i = 0; i < drawPoints.length; i += 1) {
-      for (let j = i + 1; j < drawPoints.length; j += 1) {
-        const a = drawPoints[i];
-        const b = drawPoints[j];
+    context.lineWidth = 0.55;
+    for (let i = 0; i < visiblePoints.length; i += 1) {
+      for (let j = i + 1; j < visiblePoints.length; j += 1) {
+        const a = visiblePoints[i];
+        const b = visiblePoints[j];
+        const activity = Math.max(a.amount, b.amount);
+        const maxDistance = 108 + activity * 92;
         const distance = Math.hypot(a.x - b.x, a.y - b.y);
-        const maxDistance = 165;
         if (distance >= maxDistance) continue;
 
         const proximity = 1 - distance / maxDistance;
-        const cursorLift = Math.max(a.amount, b.amount) * 0.06;
-        context.strokeStyle = `rgba(255, 255, 255, ${0.035 + proximity * 0.13 + cursorLift})`;
+        const dormantLift = (a.particle.dormant || b.particle.dormant) ? activity * 0.05 : 0;
+        const alpha = 0.012 + proximity * 0.045 + activity * 0.16 + dormantLift;
+        context.strokeStyle = `rgba(255, 255, 255, ${Math.min(0.28, alpha)})`;
         context.beginPath();
         context.moveTo(a.x, a.y);
         context.lineTo(b.x, b.y);
@@ -230,14 +235,14 @@ function initParticleBackground() {
     }
 
     if (pointer.active && !reducedMotionQuery.matches) {
-      const cursorLinkDistance = 240;
-      drawPoints.forEach(({ x, y, amount }) => {
-        if (amount <= 0) return;
+      const cursorLinkDistance = 260;
+      visiblePoints.forEach(({ x, y, amount }) => {
+        if (amount <= 0.05) return;
         const distance = Math.hypot(x - pointer.x, y - pointer.y);
         if (distance >= cursorLinkDistance) return;
 
         const proximity = 1 - distance / cursorLinkDistance;
-        context.strokeStyle = `rgba(255, 255, 255, ${0.055 + proximity * 0.2})`;
+        context.strokeStyle = `rgba(255, 255, 255, ${0.07 + proximity * 0.24})`;
         context.beginPath();
         context.moveTo(pointer.x, pointer.y);
         context.lineTo(x, y);
@@ -245,8 +250,12 @@ function initParticleBackground() {
       });
     }
 
-    drawPoints.forEach(({ particle, x, y, amount }) => {
-      context.fillStyle = `rgba(255, 255, 255, ${Math.min(0.98, particle.alpha + amount * 0.32)})`;
+    visiblePoints.forEach(({ particle, x, y, amount }) => {
+      const alpha = particle.dormant
+        ? Math.min(0.86, amount * 0.88)
+        : Math.min(0.98, particle.alpha + amount * 0.32);
+      if (alpha <= 0.01) return;
+      context.fillStyle = `rgba(255, 255, 255, ${alpha})`;
       context.beginPath();
       context.arc(x, y, particle.radius, 0, Math.PI * 2);
       context.fill();
