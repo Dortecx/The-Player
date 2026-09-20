@@ -163,6 +163,21 @@ A simple local web app solves the immediate workflow without requiring FFmpeg, t
   - Integrate the feature branch back into `main` because RDD is explicitly left pending in `/mnt/c`.
   - Evidence: increased `public/styles.css` star layers to 67 `radial-gradient(circle at ...)` points. `node --check server.js` passed. `node --check public/app.js` passed. `PORT=3156 npm run web` readiness check passed after transient pre-readiness curl failures. Merge evidence pending.
 
+- [x] LV-021 — Replace CSS starfield with Canvas 2D particle network
+  - Add a fixed background `<canvas>` behind the app UI.
+  - Render many monochrome particles with slow movement.
+  - Draw very thin low-opacity lines between nearby particles.
+  - React subtly to cursor proximity without aggressive motion.
+  - Respect `prefers-reduced-motion` with static or stopped animation behavior.
+  - Remove or disable the previous CSS radial-gradient starfield to avoid duplicate effects.
+  - Evidence: added fixed `#particleCanvas` in `public/index.html`; implemented dependency-free Canvas 2D particles, low-opacity neighbor lines, subtle pointer proximity displacement/brightness, and `prefers-reduced-motion: reduce` static-frame handling in `public/app.js`; replaced the old `body::before`/`body::after` CSS radial-gradient starfield with canvas positioning in `public/styles.css`. `node --check server.js` passed. `node --check public/app.js` passed. `PORT=3158 npm run web` readiness check passed after transient pre-readiness curl failures. Static readback/diff confirmed the canvas element/setup, reduced-motion handling, and old radial-gradient pseudo-element removal. Manual browser visual/reduced-motion checks remain pending.
+
+- [x] LV-022 — Increase Canvas particles and cursor links
+  - Increase Canvas particle density slightly.
+  - Draw subtle connection lines from the cursor to nearby nodes.
+  - Keep cursor response monochrome and non-aggressive.
+  - Evidence: updated `getParticleCount()` to target 95–210 particles based on viewport area; added cursor-to-node line rendering for nearby influenced particles; increased cursor-proximity point brightness slightly. `node --check server.js` passed. `node --check public/app.js` passed. `PORT=3160 npm run web` readiness check passed after transient pre-readiness curl failures.
+
 ## Acceptance Criteria
 - Running `npm run web` starts a local server without requiring a framework dev server.
 - The browser app can select a folder or multiple files.
@@ -191,6 +206,8 @@ A simple local web app solves the immediate workflow without requiring FFmpeg, t
 - 2026-09-18: Completed LV-018 native video controls cleanup by adding `controlsList="nodownload"` to the local video element.
 - 2026-09-18: Completed LV-019 starfield density/pulse refresh with more irregular points and stepped appearing/disappearing layers.
 - 2026-09-18: Completed LV-020 additional starfield density increase to 67 CSS points and prepared integration back to `main` because RDD is explicitly pending for this `/mnt/c` worktree.
+- 2026-09-20: Completed LV-021 Canvas 2D particle network background, replacing the CSS radial-gradient pseudo-element starfield while keeping the dark monochrome UI and reduced-motion static fallback.
+- 2026-09-20: Completed LV-022 Canvas particle density and cursor-link enhancement so nearby nodes visibly connect to the pointer.
 
 ## Verification Evidence
 - `node --check server.js` — passed in worker and parent verification.
@@ -250,6 +267,13 @@ A simple local web app solves the immediate workflow without requiring FFmpeg, t
 - `node --check server.js` — passed after LV-020 changes.
 - `node --check public/app.js` — passed after LV-020 changes.
 - `PORT=3156 npm run web` with `curl -fsS http://127.0.0.1:3156/` readiness check — passed after transient pre-readiness curl failures; `public/styles.css` now contains 67 `radial-gradient(circle at ...)` star points.
+- `node --check server.js` — passed after LV-021 changes.
+- `node --check public/app.js` — passed after LV-021 changes.
+- `PORT=3158 npm run web` with `curl -fsS http://127.0.0.1:3158/` readiness check — passed after transient pre-readiness curl failures; response included `id="particleCanvas"`.
+- Static readback/diff of `public/index.html`, `public/app.js`, and `public/styles.css` — passed for LV-021 plausibility; confirmed fixed `#particleCanvas`, Canvas 2D setup, particle animation loop, thin line drawing, pointer proximity handling, `prefers-reduced-motion: reduce` static-frame behavior, and removal of old CSS `body::before`/`body::after` radial-gradient starfield rules.
+- `node --check server.js` — passed after LV-022 changes.
+- `node --check public/app.js` — passed after LV-022 changes.
+- `PORT=3160 npm run web` with `curl -fsS http://127.0.0.1:3160/` readiness check — passed after transient pre-readiness curl failures; response included `id="particleCanvas"`.
 
 ## Pending Manual Checks
 - Select a folder and confirm playlist ordering with nested relative paths.
@@ -275,6 +299,8 @@ A simple local web app solves the immediate workflow without requiring FFmpeg, t
 - Manually confirm LV-017 playlist interaction: clicking anywhere in a playlist card, including empty space or metadata, selects that video.
 - Manually confirm LV-018 browser behavior: the native video controls menu no longer shows a download option in supported browsers.
 - Visually confirm LV-019 starfield: more points are visible, the pulse feels like points appearing/disappearing, and it stays subtle over video playback.
+- Visually confirm LV-021/LV-022 Canvas background in a browser: monochrome particles are dense enough, motion is slow/smooth, connecting lines stay thin/low-opacity, cursor-to-node links appear near the pointer, and video/player UI behavior remains unchanged.
+- Manually confirm LV-021 reduced-motion behavior: with `prefers-reduced-motion: reduce`, the canvas renders a static frame without constant particle movement.
 
 ## Next Step
-Run the pending manual browser checks with representative local video files, prioritizing the LV-014 adaptive actions/Clear behavior, LV-010 subset progress restore, LV-009 no-auto-persist, legacy-exact-vs-newer-recent restore scenarios, and LV-012 visual/reduced-motion review.
+Run the pending manual browser checks with representative local video files, prioritizing the LV-021 Canvas particle visual/reduced-motion review, LV-014 adaptive actions/Clear behavior, LV-010 subset progress restore, LV-009 no-auto-persist, and legacy-exact-vs-newer-recent restore scenarios.

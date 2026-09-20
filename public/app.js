@@ -114,6 +114,185 @@ const elements = {
   clearPlaylistButton: document.querySelector('#clearPlaylistButton')
 };
 
+const particleCanvas = document.querySelector('#particleCanvas');
+
+function initParticleBackground() {
+  if (!particleCanvas) return;
+
+  const context = particleCanvas.getContext('2d');
+  if (!context) return;
+
+  const reducedMotionQuery = window.matchMedia('(prefers-reduced-motion: reduce)');
+  const pointer = { x: 0, y: 0, active: false };
+  let particles = [];
+  let animationFrameId = null;
+  let width = 0;
+  let height = 0;
+  let lastFrameTime = 0;
+
+  function getParticleCount() {
+    const area = window.innerWidth * window.innerHeight;
+    return Math.max(95, Math.min(210, Math.round(area / 8200)));
+  }
+
+  function createParticle() {
+    const angle = Math.random() * Math.PI * 2;
+    const speed = 2 + Math.random() * 7;
+    return {
+      x: Math.random() * width,
+      y: Math.random() * height,
+      vx: Math.cos(angle) * speed,
+      vy: Math.sin(angle) * speed,
+      radius: 0.55 + Math.random() * 1.25,
+      alpha: 0.28 + Math.random() * 0.58
+    };
+  }
+
+  function resizeCanvas() {
+    const devicePixelRatio = Math.min(window.devicePixelRatio || 1, 2);
+    width = window.innerWidth;
+    height = window.innerHeight;
+    particleCanvas.width = Math.floor(width * devicePixelRatio);
+    particleCanvas.height = Math.floor(height * devicePixelRatio);
+    context.setTransform(devicePixelRatio, 0, 0, devicePixelRatio, 0, 0);
+    particles = Array.from({ length: getParticleCount() }, createParticle);
+    drawFrame(0);
+  }
+
+  function getPointerInfluence(particle) {
+    if (!pointer.active || reducedMotionQuery.matches) {
+      return { x: particle.x, y: particle.y, amount: 0 };
+    }
+
+    const maxDistance = 145;
+    const dx = particle.x - pointer.x;
+    const dy = particle.y - pointer.y;
+    const distance = Math.hypot(dx, dy);
+    if (distance <= 0 || distance >= maxDistance) {
+      return { x: particle.x, y: particle.y, amount: 0 };
+    }
+
+    const amount = 1 - distance / maxDistance;
+    const offset = amount * 5;
+    return {
+      x: particle.x + (dx / distance) * offset,
+      y: particle.y + (dy / distance) * offset,
+      amount
+    };
+  }
+
+  function updateParticles(deltaSeconds) {
+    particles.forEach((particle) => {
+      particle.x += particle.vx * deltaSeconds;
+      particle.y += particle.vy * deltaSeconds;
+
+      if (particle.x < -10) particle.x = width + 10;
+      if (particle.x > width + 10) particle.x = -10;
+      if (particle.y < -10) particle.y = height + 10;
+      if (particle.y > height + 10) particle.y = -10;
+    });
+  }
+
+  function drawFrame(timestamp) {
+    const deltaSeconds = lastFrameTime ? Math.min((timestamp - lastFrameTime) / 1000, 0.05) : 0;
+    lastFrameTime = timestamp;
+
+    if (!reducedMotionQuery.matches) {
+      updateParticles(deltaSeconds);
+    }
+
+    context.clearRect(0, 0, width, height);
+    context.fillStyle = '#000';
+    context.fillRect(0, 0, width, height);
+
+    const drawPoints = particles.map((particle) => ({
+      particle,
+      ...getPointerInfluence(particle)
+    }));
+
+    context.lineWidth = 0.45;
+    for (let i = 0; i < drawPoints.length; i += 1) {
+      for (let j = i + 1; j < drawPoints.length; j += 1) {
+        const a = drawPoints[i];
+        const b = drawPoints[j];
+        const distance = Math.hypot(a.x - b.x, a.y - b.y);
+        const maxDistance = 112;
+        if (distance >= maxDistance) continue;
+
+        const proximity = 1 - distance / maxDistance;
+        const cursorLift = Math.max(a.amount, b.amount) * 0.035;
+        context.strokeStyle = `rgba(255, 255, 255, ${0.018 + proximity * 0.07 + cursorLift})`;
+        context.beginPath();
+        context.moveTo(a.x, a.y);
+        context.lineTo(b.x, b.y);
+        context.stroke();
+      }
+    }
+
+    if (pointer.active && !reducedMotionQuery.matches) {
+      const cursorLinkDistance = 150;
+      drawPoints.forEach(({ x, y, amount }) => {
+        if (amount <= 0) return;
+        const distance = Math.hypot(x - pointer.x, y - pointer.y);
+        if (distance >= cursorLinkDistance) return;
+
+        const proximity = 1 - distance / cursorLinkDistance;
+        context.strokeStyle = `rgba(255, 255, 255, ${0.025 + proximity * 0.11})`;
+        context.beginPath();
+        context.moveTo(pointer.x, pointer.y);
+        context.lineTo(x, y);
+        context.stroke();
+      });
+    }
+
+    drawPoints.forEach(({ particle, x, y, amount }) => {
+      context.fillStyle = `rgba(255, 255, 255, ${Math.min(0.95, particle.alpha + amount * 0.22)})`;
+      context.beginPath();
+      context.arc(x, y, particle.radius, 0, Math.PI * 2);
+      context.fill();
+    });
+  }
+
+  function animate(timestamp) {
+    drawFrame(timestamp);
+    if (!reducedMotionQuery.matches) {
+      animationFrameId = window.requestAnimationFrame(animate);
+    }
+  }
+
+  function startAnimation() {
+    if (animationFrameId !== null) {
+      window.cancelAnimationFrame(animationFrameId);
+      animationFrameId = null;
+    }
+    lastFrameTime = 0;
+    if (reducedMotionQuery.matches) {
+      drawFrame(0);
+      return;
+    }
+    animationFrameId = window.requestAnimationFrame(animate);
+  }
+
+  window.addEventListener('resize', resizeCanvas);
+  window.addEventListener('pointermove', (event) => {
+    pointer.x = event.clientX;
+    pointer.y = event.clientY;
+    pointer.active = true;
+  });
+  window.addEventListener('pointerleave', () => {
+    pointer.active = false;
+  });
+
+  if (typeof reducedMotionQuery.addEventListener === 'function') {
+    reducedMotionQuery.addEventListener('change', startAnimation);
+  } else if (typeof reducedMotionQuery.addListener === 'function') {
+    reducedMotionQuery.addListener(startAnimation);
+  }
+
+  resizeCanvas();
+  startAnimation();
+}
+
 function t(key, params = {}) {
   const value = COPY[locale][key] || COPY.en[key] || key;
   return typeof value === 'function' ? value(params) : value;
@@ -645,3 +824,4 @@ window.addEventListener('beforeunload', () => {
 
 applyStaticCopy();
 updateControls();
+initParticleBackground();
