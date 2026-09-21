@@ -11,7 +11,7 @@ const WATCHED_THRESHOLD = 0.9;
 
 const COPY = {
   en: {
-    appTitle: 'Local Video Player',
+    appTitle: 'The Player',
     phaseLabel: 'Phase 1',
     heroDescription: 'Select a folder or several video files, then play them as an ordered local playlist.',
     chooseVideos: 'Choose videos',
@@ -45,7 +45,7 @@ const COPY = {
     thisFile: 'this file'
   },
   es: {
-    appTitle: 'Reproductor de video local',
+    appTitle: 'El Reproductor',
     phaseLabel: 'Fase 1',
     heroDescription: 'Elegí una carpeta o varios videos, y reproducilos como una playlist local ordenada.',
     chooseVideos: 'Elegir videos',
