@@ -109,6 +109,7 @@ const elements = {
   nowPlaying: document.querySelector('#nowPlaying'),
   video: document.querySelector('#videoPlayer'),
   error: document.querySelector('#errorMessage'),
+  playerPanel: document.querySelector('.player-panel'),
   prevButton: document.querySelector('#prevButton'),
   nextButton: document.querySelector('#nextButton'),
   markWatchedButton: document.querySelector('#markWatchedButton'),
@@ -850,6 +851,105 @@ async function handleEnded() {
   }
 }
 
+
+function isEditableShortcutTarget(target) {
+  if (!(target instanceof Element)) return false;
+  const tagName = target.tagName.toLowerCase();
+  return target.isContentEditable
+    || ['input', 'textarea', 'select', 'button'].includes(tagName)
+    || target.closest('[contenteditable="true"], [contenteditable=""]') !== null
+    || target.closest('label, button') !== null;
+}
+
+function clamp(value, min, max) {
+  return Math.min(max, Math.max(min, value));
+}
+
+async function togglePlayback() {
+  if (!elements.video.src) return;
+  if (elements.video.paused || elements.video.ended) {
+    try {
+      await elements.video.play();
+      clearError();
+    } catch (error) {
+      showError(t('autoplayBlocked', { message: error.message || '' }));
+    }
+    return;
+  }
+  elements.video.pause();
+}
+
+function seekBy(seconds) {
+  if (!elements.video.src) return;
+  const currentTime = Number.isFinite(elements.video.currentTime) ? elements.video.currentTime : 0;
+  const duration = Number.isFinite(elements.video.duration) ? elements.video.duration : Number.POSITIVE_INFINITY;
+  elements.video.currentTime = clamp(currentTime + seconds, 0, duration);
+}
+
+function changeVolumeBy(delta) {
+  elements.video.volume = clamp(elements.video.volume + delta, 0, 1);
+}
+
+function getFullscreenElement() {
+  return document.fullscreenElement
+    || document.webkitFullscreenElement
+    || document.mozFullScreenElement
+    || document.msFullscreenElement
+    || null;
+}
+
+function requestFullscreen(element) {
+  const request = element.requestFullscreen
+    || element.webkitRequestFullscreen
+    || element.mozRequestFullScreen
+    || element.msRequestFullscreen;
+  return request ? request.call(element) : Promise.resolve();
+}
+
+function exitFullscreen() {
+  const exit = document.exitFullscreen
+    || document.webkitExitFullscreen
+    || document.mozCancelFullScreen
+    || document.msExitFullscreen;
+  return exit ? exit.call(document) : Promise.resolve();
+}
+
+async function toggleFullscreen() {
+  try {
+    if (getFullscreenElement()) {
+      await exitFullscreen();
+      return;
+    }
+    await requestFullscreen(elements.playerPanel || elements.video);
+  } catch (error) {
+    console.warn('Could not toggle fullscreen', error);
+  }
+}
+
+function handleKeyboardShortcuts(event) {
+  if (event.defaultPrevented || event.altKey || event.ctrlKey || event.metaKey || event.shiftKey) return;
+  if (isEditableShortcutTarget(event.target)) return;
+
+  const repeatLockedCodes = new Set(['Space', 'KeyA', 'KeyD', 'KeyW', 'KeyF']);
+  const shortcutActions = {
+    Space: () => togglePlayback(),
+    ArrowLeft: () => seekBy(-5),
+    ArrowRight: () => seekBy(5),
+    KeyA: () => playRelative(-1, { source: 'previous' }),
+    KeyD: () => skipToNext(),
+    KeyW: () => markCurrentWatchedAndNext(),
+    KeyF: () => toggleFullscreen(),
+    ArrowUp: () => changeVolumeBy(0.05),
+    ArrowDown: () => changeVolumeBy(-0.05)
+  };
+  const action = shortcutActions[event.code];
+  if (!action) return;
+
+  event.preventDefault();
+  if (event.repeat && repeatLockedCodes.has(event.code)) return;
+  void action();
+}
+
 async function clearPlaylist() {
   await saveActiveProgress();
   revokeCurrentObjectUrl();
@@ -874,6 +974,7 @@ elements.prevButton.addEventListener('click', () => playRelative(-1, { source: '
 elements.nextButton.addEventListener('click', skipToNext);
 elements.markWatchedButton.addEventListener('click', markCurrentWatchedAndNext);
 elements.clearPlaylistButton.addEventListener('click', clearPlaylist);
+window.addEventListener('keydown', handleKeyboardShortcuts);
 elements.video.addEventListener('pause', () => saveActiveProgress());
 elements.video.addEventListener('ended', handleEnded);
 elements.video.addEventListener('error', () => {

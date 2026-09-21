@@ -8,10 +8,11 @@ The Player es un reproductor local de video, amigable para uso portátil, que co
 
 - Descargá el ZIP portátil de Windows, descomprimilo y ejecutá `start.cmd` sin `npm install`.
 - Seleccioná una carpeta o varios archivos de video y reproducilos en una lista determinística.
-- Avanzá por los videos con controles de Anterior, Saltar siguiente y Marcar visto y seguir.
+- Avanzá por los videos con controles de Anterior, Saltar siguiente, Marcar visto y seguir, y atajos de teclado.
 - Recordá progreso, estado visto, último video activo y actividad reciente en IndexedDB del navegador.
 - Usá inglés por defecto y español automáticamente cuando el idioma del navegador/sistema sea `es` o `es-*`.
 - Mantené los videos locales en el navegador; los archivos seleccionados no se suben al servidor Node.
+- Publicado bajo licencia MIT.
 
 ## Requisitos
 
@@ -117,10 +118,21 @@ El servidor Node solo sirve la app estática por localhost. Los bytes de los vid
 2. Abrí la página local en el navegador si no se abre automáticamente.
 3. Elegí `Carpeta` para cargar una carpeta, o `Archivo` para seleccionar uno o más videos.
 4. Seleccioná un elemento de la playlist, o dejá que la app elija el elemento significativo más reciente desde el estado local guardado.
-5. Mirá videos con los controles nativos del navegador.
+5. Mirá videos con los controles nativos del navegador o con atajos de teclado.
 6. Usá `Saltar siguiente` para guardar el progreso actual y avanzar sin marcar el elemento como visto.
 7. Usá `Marcar visto y seguir` para completar el elemento actual y avanzar.
 8. Usá `Vaciar` para limpiar la playlist actual sin borrar el progreso guardado.
+
+Atajos de teclado:
+
+- `Space`: alternar reproducir/pausar
+- `ArrowLeft` / `ArrowRight`: retroceder/avanzar 5 segundos
+- `A` / `D`: video anterior / saltar al siguiente sin marcar visto
+- `W`: marcar visto y reproducir el siguiente
+- `F`: alternar pantalla completa
+- `ArrowUp` / `ArrowDown`: subir/bajar volumen de a 5 %
+
+Los atajos se ignoran mientras escribís en campos o enfocás botones/controles de la interfaz.
 
 Extensiones de archivo soportadas:
 
@@ -138,4 +150,4 @@ El portátil de Windows está soportado mediante el release ZIP v1.0.0 y el scri
 
 ## Licencia
 
-Licencia no declarada todavía.
+Licencia MIT. Ver [LICENSE](LICENSE).

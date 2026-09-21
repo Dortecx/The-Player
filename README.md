@@ -8,10 +8,11 @@ The Player is a portable-friendly local video player that runs in your browser, 
 
 - Download the Windows portable release ZIP, unzip it, and run `start.cmd` with no `npm install`.
 - Select a folder or multiple video files and play them in a deterministic playlist.
-- Continue through videos with Previous, Skip next, and Mark watched & next controls.
+- Continue through videos with Previous, Skip next, Mark watched & next controls, and keyboard shortcuts.
 - Remember progress, watched state, last active video, and recent activity in the browser's IndexedDB.
 - Use English by default and Spanish automatically when the browser/system language is `es` or `es-*`.
 - Keep video files local in the browser; selected files are not uploaded to the Node server.
+- Released under the MIT License.
 
 ## Requirements
 
@@ -117,10 +118,21 @@ The Node server only serves the static app over localhost. Selected video bytes 
 2. Open the local browser page if it does not open automatically.
 3. Choose `Folder` to load a folder, or `File` to select one or more video files.
 4. Select a playlist item, or let the app choose the most recent meaningful item from saved local state.
-5. Watch videos with the native browser controls.
+5. Watch videos with the native browser controls or keyboard shortcuts.
 6. Use `Skip next` to save current progress and move on without marking the item watched.
 7. Use `Mark watched & next` to complete the current item and advance.
 8. Use `Clear` to empty the current playlist without deleting saved progress.
+
+Keyboard shortcuts:
+
+- `Space`: play/pause toggle
+- `ArrowLeft` / `ArrowRight`: seek backward/forward 5 seconds
+- `A` / `D`: previous video / skip next without marking watched
+- `W`: mark watched and play next
+- `F`: toggle fullscreen
+- `ArrowUp` / `ArrowDown`: volume up/down by 5%
+
+Shortcuts are ignored while typing in fields or focusing UI buttons/controls.
 
 Supported file extensions:
 
@@ -138,4 +150,4 @@ Windows portable is supported through the v1.0.0 ZIP release and the Windows por
 
 ## License
 
-License not declared yet.
+MIT License. See [LICENSE](LICENSE).

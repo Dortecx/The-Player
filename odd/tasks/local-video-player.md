@@ -244,6 +244,13 @@ A simple local web app solves the immediate workflow without requiring FFmpeg, t
   - Lead with the downloadable Windows release ZIP path, preserve source/build paths, document local File API/object URL/IndexedDB flow with Mermaid, and clarify codec/MKV/license limitations.
   - Evidence: `README.md` and `README.es.md` now include title, language link, product description, features, requirements, setup choices, Windows portable download/build/run, Windows source checkout, WSL/Linux source checkout, Mermaid how-it-works, usage, platform support, and license-not-declared text because no LICENSE file exists. `node --check server.js` passed. `node --check public/app.js` passed. Static readback/diff confirmed README structure and Spanish counterpart.
 
+- [x] LV-033 — Add MIT license, favicon, and keyboard shortcuts
+  - Add a project MIT license with Dortecx as copyright holder.
+  - Add a self-contained monochrome SVG favicon and link it from the main page.
+  - Add global keyboard shortcuts for play/pause, seek, previous/skip/watched-next, fullscreen, and volume while preserving typing/native control behavior and preventing page scroll for handled keys.
+  - Document the MIT license and shortcuts in English and Spanish READMEs.
+  - Evidence: added `LICENSE`, `public/favicon.svg`, favicon link in `public/index.html`, shortcut handler/fullscreen helpers in `public/app.js`, and bilingual README updates. `node --check server.js` passed. `node --check public/app.js` passed. `PORT=3175 npm run web` readiness check passed after one transient pre-readiness curl failure. Static readback/diff confirmed favicon link, shortcut code, and README MIT/license text. Manual browser shortcut testing remains pending.
+
 ## Acceptance Criteria
 - Running `npm run web` starts a local server without requiring a framework dev server.
 - The browser app can select a folder or multiple files.
@@ -284,8 +291,13 @@ A simple local web app solves the immediate workflow without requiring FFmpeg, t
 - 2026-09-21: Completed LV-030 Windows portable packaging alignment with the prior versioned release style: release name and ZIP derive from `package.json`, staging uses `%TEMP%` plus version/PID, the ZIP root matches the release name, and cleanup is limited to that temp stage root in `finally`.
 - 2026-09-21: Completed LV-031 release version alignment by setting `package.json` to `1.0.0` and documenting the concrete `portable-win/The-Player-1.0.0-windows.zip` and `The-Player-1.0.0-windows/` portable release layout.
 - 2026-09-21: Completed LV-032 README style alignment with the El Exportador structure and added `README.es.md` with reciprocal language links, release download/build/source setup paths, Mermaid flow, usage, platform support, and license-not-declared wording.
+- 2026-09-21: Completed LV-033 MIT license, monochrome favicon, keyboard shortcuts, and bilingual documentation updates.
 
 ## Verification Evidence
+- `node --check server.js` — passed after LV-033 changes.
+- `node --check public/app.js` — passed after LV-033 changes.
+- `PORT=3175 npm run web` with `curl -fsS http://127.0.0.1:3175/` readiness check — passed after one transient pre-readiness curl failure.
+- Static readback/diff after LV-033 — confirmed `public/index.html` favicon link, `public/app.js` shortcut/fullscreen code, README/README.es MIT license text and keyboard shortcut sections, and `LICENSE` MIT text.
 - `node --check server.js` — passed in worker and parent verification.
 - `node --check public/app.js` — passed in worker and parent verification.
 - `node --check public/app.js` — passed after LV-006 changes.
