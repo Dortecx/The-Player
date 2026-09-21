@@ -26,16 +26,16 @@ Build it on Windows with Node 18 or newer available on `PATH`:
 npm run build:portable:win
 ```
 
-The build creates `portable-win/ThePlayer-portable-win.zip` and refuses to overwrite an existing ZIP. Unzip it, then double-click `ThePlayer\start.cmd`. The launcher starts the local server with the packaged `runtime\node.exe`, writes logs beside the launcher in `logs\server.log`, waits for readiness, and opens <http://127.0.0.1:3000/>.
+The build derives a versioned release name from `package.json`, creates `portable-win/The-Player-<version>-windows.zip`, and refuses to overwrite an existing ZIP. For release `1.0.0`, the ZIP is `portable-win/The-Player-1.0.0-windows.zip`. Unzip it, then double-click `The-Player-1.0.0-windows\start.cmd` from the release root. The launcher starts the local server with the packaged `runtime\node.exe`, writes logs beside the launcher in `logs\server.log`, waits for readiness, and opens <http://127.0.0.1:3000/>.
 
-The portable ZIP intentionally contains only:
+The portable ZIP intentionally contains only this release root for version `1.0.0`:
 
-- `ThePlayer\start.cmd`
-- `ThePlayer\runtime\node.exe`
-- `ThePlayer\app\package.json`
-- `ThePlayer\app\server.js`
-- `ThePlayer\app\public\`
-- `ThePlayer\app\README.md`
+- `The-Player-1.0.0-windows\start.cmd`
+- `The-Player-1.0.0-windows\runtime\node.exe`
+- `The-Player-1.0.0-windows\app\package.json`
+- `The-Player-1.0.0-windows\app\server.js`
+- `The-Player-1.0.0-windows\app\public\`
+- `The-Player-1.0.0-windows\app\README.md`
 
 It does not include `node_modules`, Git metadata, local Pi runtime state, tests, backups, or secrets.
 

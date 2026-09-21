@@ -225,6 +225,19 @@ A simple local web app solves the immediate workflow without requiring FFmpeg, t
   - Add `npm run build:portable:win`, ignore generated `portable-win/`, and document portable build/use without `npm install`.
   - Evidence: added `scripts/build-portable-win.ps1`, package script, README portable section, and `.gitignore` entry. `node --check server.js` passed. `node --check public/app.js` passed. `PORT=3171 npm run web` readiness check passed after one transient pre-readiness curl failure. PowerShell parser check was not available in this Linux/WSL environment because neither `pwsh` nor `powershell.exe` was found. Static readback/diff confirmed the script copies only explicit app/runtime assets, refuses an existing ZIP, requires Node >=18, and leaves Windows build execution/manual launcher checks pending.
 
+- [x] LV-030 — Align Windows portable packaging with versioned release layout
+  - Derive release name from `package.json` as `The-Player-<version>-windows`.
+  - Keep default output directory `portable-win/` and write `portable-win/The-Player-<version>-windows.zip`.
+  - Stage under Windows `%TEMP%` with a version/PID-specific directory and make the ZIP root folder match the release name.
+  - Clean up only the version/PID-specific temp stage root in `finally` while preserving the explicit asset copy list, bundled `runtime/node.exe`, no end-user `npm install`, and no packaged `node_modules`.
+  - Evidence: updated `scripts/build-portable-win.ps1` and README portable packaging docs. `node --check server.js` passed. `node --check public/app.js` passed. PowerShell parser check was not available in this Linux/WSL environment because neither `pwsh` nor `powershell.exe` was found. Static readback/diff confirmed versioned release name/ZIP/root folder, `%TEMP%` staging as `the-player-<version>-$PID`, output root creation before compression, explicit asset copy list, bundled `runtime/node.exe`, and scoped `finally` cleanup. Windows build execution/manual launcher checks remain pending.
+
+- [x] LV-031 — Set Windows portable release version to 1.0.0
+  - Set `package.json` version to `1.0.0` so the derived release name is `The-Player-1.0.0-windows`.
+  - Document the concrete `portable-win/The-Player-1.0.0-windows.zip` path and `The-Player-1.0.0-windows/` release root in README.
+  - Keep Windows manual checks pending for ZIP creation, overwrite refusal, ZIP contents, and launcher behavior on a Windows host.
+  - Evidence: updated `package.json`, README release examples, and this task log. `node --check server.js` passed. `node --check public/app.js` passed. PowerShell parser check was not available in this Linux/WSL environment because neither `pwsh` nor `powershell.exe` was found. Static readback/diff confirmed version `1.0.0`, derived release name usage in `scripts/build-portable-win.ps1`, concrete README 1.0.0 ZIP/root examples, `%TEMP%` version/PID staging, scoped cleanup, explicit asset copy list, bundled `runtime/node.exe`, and no `node_modules` packaging.
+
 ## Acceptance Criteria
 - Running `npm run web` starts a local server without requiring a framework dev server.
 - The browser app can select a folder or multiple files.
@@ -262,6 +275,8 @@ A simple local web app solves the immediate workflow without requiring FFmpeg, t
 - 2026-09-20: Completed LV-027 passive Canvas/clear-transition refinement: distant passive links are moderately more visible, and Clear/Vaciar now applies a short deterministic empty-state transition instead of snapping header controls directly to center.
 - 2026-09-21: Completed LV-028 jittered cell placement for Canvas particles so initial distribution covers the viewport more evenly while retaining randomized movement, dormant nodes, cursor activation, passive links, and reduced-motion behavior.
 - 2026-09-21: Completed LV-029 Windows portable packaging script/docs so a Windows build machine can create a no-`npm install` ZIP with bundled `node.exe`, explicit app assets, and a double-click `start.cmd` launcher while generated artifacts stay ignored.
+- 2026-09-21: Completed LV-030 Windows portable packaging alignment with the prior versioned release style: release name and ZIP derive from `package.json`, staging uses `%TEMP%` plus version/PID, the ZIP root matches the release name, and cleanup is limited to that temp stage root in `finally`.
+- 2026-09-21: Completed LV-031 release version alignment by setting `package.json` to `1.0.0` and documenting the concrete `portable-win/The-Player-1.0.0-windows.zip` and `The-Player-1.0.0-windows/` portable release layout.
 
 ## Verification Evidence
 - `node --check server.js` — passed in worker and parent verification.
@@ -355,6 +370,14 @@ A simple local web app solves the immediate workflow without requiring FFmpeg, t
 - PowerShell parser check — not available in this Linux/WSL environment; neither `pwsh` nor `powershell.exe` was found on `PATH`.
 - `PORT=3171 npm run web` with `curl -fsS http://127.0.0.1:3171/` readiness check — passed after one transient pre-readiness curl failure; response returned the app HTML.
 - Static readback/diff of `scripts/build-portable-win.ps1`, `README.md`, `.gitignore`, `package.json`, and `odd/tasks/local-video-player.md` — passed for LV-029 plausibility; confirmed explicit asset copy list, bundled `runtime/node.exe`, rendered `start.cmd`, Node >=18 check, existing ZIP refusal, `portable-win/` ignore, and no-`npm install` README instructions.
+- `node --check server.js` — passed after LV-030 packaging alignment.
+- `node --check public/app.js` — passed after LV-030 packaging alignment.
+- PowerShell parser check — not available in this Linux/WSL environment; neither `pwsh` nor `powershell.exe` was found on `PATH`.
+- Static readback/diff of `scripts/build-portable-win.ps1`, `README.md`, and `odd/tasks/local-video-player.md` — passed for LV-030 plausibility; confirmed release name `The-Player-<version>-windows`, ZIP path under `portable-win/`, release-named ZIP root, `%TEMP%` version/PID staging, scoped `finally` cleanup, explicit asset copy list, bundled `runtime/node.exe`, and no-`node_modules`/no-end-user-`npm install` packaging docs.
+- `node --check server.js` — passed after LV-031 version alignment.
+- `node --check public/app.js` — passed after LV-031 version alignment.
+- PowerShell parser check — not available in this Linux/WSL environment; neither `pwsh` nor `powershell.exe` was found on `PATH`.
+- Static readback/diff of `package.json`, `scripts/build-portable-win.ps1`, `README.md`, and `odd/tasks/local-video-player.md` — passed for LV-031 plausibility; confirmed package version `1.0.0`, release name `The-Player-$($package.version)-windows`, ZIP path from `$releaseName`, `%TEMP%` stage root `the-player-$($package.version)-$PID`, scoped cleanup, concrete README `1.0.0` paths, and remaining Windows manual checks.
 
 ## Pending Manual Checks
 - Select a folder and confirm playlist ordering with nested relative paths.
@@ -385,9 +408,9 @@ A simple local web app solves the immediate workflow without requiring FFmpeg, t
 - Visually confirm LV-027 background/clear refinement in a browser: distant passive Canvas links are more visible but still second-plane/monochrome, and Clear/Vaciar visibly moves folder/file controls from header to centered empty state without a snap.
 - Visually confirm LV-028 Canvas distribution in a browser: particle coverage no longer leaves large empty zones, still feels organic/random, and does not reveal a regular grid at common viewport sizes.
 - Manually confirm LV-021/LV-027/LV-028 reduced-motion behavior: with `prefers-reduced-motion: reduce`, the canvas renders a static evenly distributed frame without constant particle movement and the Clear/Vaciar empty-state transition does not animate.
-- On Windows with Node >=18, run `npm run build:portable:win` and confirm it creates `portable-win/ThePlayer-portable-win.zip` with only `ThePlayer/start.cmd`, `ThePlayer/runtime/node.exe`, and the explicit `ThePlayer/app` files.
-- On Windows, confirm rerunning the build with the ZIP still present refuses to overwrite it.
-- On Windows, unzip the portable package, double-click `ThePlayer\start.cmd`, confirm it starts with bundled `runtime\node.exe`, creates `logs\server.log`, opens the browser, and serves the app without `npm install`.
+- On Windows with Node >=18, run `npm run build:portable:win` and confirm it creates `portable-win/The-Player-1.0.0-windows.zip` with only `The-Player-1.0.0-windows/start.cmd`, `The-Player-1.0.0-windows/runtime/node.exe`, and the explicit `The-Player-1.0.0-windows/app` files.
+- On Windows, confirm rerunning the build with `portable-win/The-Player-1.0.0-windows.zip` still present refuses to overwrite it.
+- On Windows, unzip the portable package, double-click `The-Player-1.0.0-windows\start.cmd`, confirm it starts with bundled `runtime\node.exe`, creates `logs\server.log`, opens the browser, and serves the app without `npm install`.
 
 ## Next Step
 Run the pending manual browser checks with representative local video files, prioritizing the LV-021 Canvas particle visual/reduced-motion review, LV-014 adaptive actions/Clear behavior, LV-010 subset progress restore, LV-009 no-auto-persist, and legacy-exact-vs-newer-recent restore scenarios.

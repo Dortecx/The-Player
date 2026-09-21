@@ -1,8 +1,7 @@
 #Requires -Version 5.1
 [CmdletBinding()]
 param(
-    [string]$OutputDirectory = "portable-win",
-    [string]$ArchiveName = "ThePlayer-portable-win.zip"
+    [string]$OutputDirectory = "portable-win"
 )
 
 Set-StrictMode -Version Latest
@@ -14,10 +13,14 @@ if (-not $isWindowsPlatform) {
 }
 
 $repoRoot = (Resolve-Path (Join-Path $PSScriptRoot "..")).Path
+$packageJsonPath = Join-Path $repoRoot "package.json"
+$package = Get-Content -LiteralPath $packageJsonPath -Raw | ConvertFrom-Json
+$releaseName = "The-Player-$($package.version)-windows"
 $outputRoot = Join-Path $repoRoot $OutputDirectory
-$archivePath = Join-Path $outputRoot $ArchiveName
-$stageRoot = Join-Path $outputRoot "stage"
-$packageRoot = Join-Path $stageRoot "ThePlayer"
+$archivePath = Join-Path $outputRoot "$releaseName.zip"
+$tempRoot = [System.IO.Path]::GetFullPath($env:TEMP)
+$stageRoot = Join-Path $tempRoot "the-player-$($package.version)-$PID"
+$packageRoot = Join-Path $stageRoot $releaseName
 $appRoot = Join-Path $packageRoot "app"
 $runtimeRoot = Join-Path $packageRoot "runtime"
 
@@ -37,23 +40,43 @@ if (Test-Path -LiteralPath $archivePath) {
 }
 
 New-Item -ItemType Directory -Force -Path $outputRoot | Out-Null
-if (Test-Path -LiteralPath $stageRoot) {
-    Remove-Item -LiteralPath $stageRoot -Recurse -Force
+
+$stageCreated = $false
+try {
+    if (Test-Path -LiteralPath $stageRoot) {
+        throw "Temporary staging directory already exists: $stageRoot"
+    }
+    New-Item -ItemType Directory -Path $stageRoot | Out-Null
+    $stageCreated = $true
+    New-Item -ItemType Directory -Force -Path $appRoot, $runtimeRoot | Out-Null
+
+    Copy-Item -LiteralPath $packageJsonPath -Destination $appRoot
+    Copy-Item -LiteralPath (Join-Path $repoRoot "server.js") -Destination $appRoot
+    Copy-Item -LiteralPath (Join-Path $repoRoot "README.md") -Destination $appRoot
+    Copy-Item -LiteralPath (Join-Path $repoRoot "public") -Destination $appRoot -Recurse
+    Copy-Item -LiteralPath $nodeCommand.Source -Destination (Join-Path $runtimeRoot "node.exe")
+
+    $startTemplate = Join-Path $PSScriptRoot "start.cmd.template"
+    $startDestination = Join-Path $packageRoot "start.cmd"
+    Get-Content -LiteralPath $startTemplate -Raw | Set-Content -LiteralPath $startDestination -Encoding ASCII -NoNewline
+
+    $forbiddenPathNames = @("node_modules", ".git", ".atl", "test", "tests", "backup", "backups", ".config", "log", "logs", "profile", "profiles", "token", "tokens", "credential", "credentials")
+    $forbiddenStagedPaths = Get-ChildItem -LiteralPath $packageRoot -Recurse -Force | Where-Object {
+        $relativePath = $_.FullName.Substring($packageRoot.Length).TrimStart('\\', '/')
+        ($relativePath -split '[\\/]') | Where-Object { $forbiddenPathNames -icontains $_ }
+    }
+    if ($forbiddenStagedPaths) {
+        $paths = $forbiddenStagedPaths | ForEach-Object { $_.FullName.Substring($packageRoot.Length).TrimStart('\\', '/') }
+        throw "Forbidden path(s) found in staged package: $($paths -join ', ')"
+    }
+
+    Compress-Archive -LiteralPath $packageRoot -DestinationPath $archivePath -CompressionLevel Optimal
 }
-New-Item -ItemType Directory -Force -Path $appRoot, $runtimeRoot | Out-Null
-
-Copy-Item -LiteralPath (Join-Path $repoRoot "package.json") -Destination $appRoot
-Copy-Item -LiteralPath (Join-Path $repoRoot "server.js") -Destination $appRoot
-Copy-Item -LiteralPath (Join-Path $repoRoot "README.md") -Destination $appRoot
-Copy-Item -LiteralPath (Join-Path $repoRoot "public") -Destination $appRoot -Recurse
-Copy-Item -LiteralPath $nodeCommand.Source -Destination (Join-Path $runtimeRoot "node.exe")
-
-$startTemplate = Join-Path $PSScriptRoot "start.cmd.template"
-$startDestination = Join-Path $packageRoot "start.cmd"
-Get-Content -LiteralPath $startTemplate -Raw | Set-Content -LiteralPath $startDestination -Encoding ASCII -NoNewline
-
-Compress-Archive -LiteralPath $packageRoot -DestinationPath $archivePath -CompressionLevel Optimal
-Remove-Item -LiteralPath $stageRoot -Recurse -Force
+finally {
+    if ($stageCreated -and (Test-Path -LiteralPath $stageRoot) -and ((Split-Path -Parent $stageRoot) -eq $tempRoot)) {
+        Remove-Item -LiteralPath $stageRoot -Recurse -Force
+    }
+}
 
 Write-Host "Portable Windows package created: $archivePath"
-Write-Host "Included app files under ThePlayer\app, Node runtime under ThePlayer\runtime, and double-click launcher ThePlayer\start.cmd."
+Write-Host "Included app files under $releaseName\app, Node runtime under $releaseName\runtime, and double-click launcher $releaseName\start.cmd."
