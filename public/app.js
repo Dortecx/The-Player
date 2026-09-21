@@ -136,19 +136,39 @@ function initParticleBackground() {
     return Math.max(170, Math.min(360, Math.round(area / 4600)));
   }
 
-  function createParticle() {
+  function createParticle(x, y) {
     const angle = Math.random() * Math.PI * 2;
     const speed = 2 + Math.random() * 7;
     const dormant = Math.random() < 0.38;
     return {
-      x: Math.random() * width,
-      y: Math.random() * height,
+      x,
+      y,
       vx: Math.cos(angle) * speed,
       vy: Math.sin(angle) * speed,
       radius: dormant ? 0.45 + Math.random() * 0.85 : 0.55 + Math.random() * 1.25,
       alpha: dormant ? 0.02 + Math.random() * 0.04 : 0.24 + Math.random() * 0.48,
       dormant
     };
+  }
+
+  function createParticles() {
+    const particleCount = getParticleCount();
+    const viewportRatio = width / Math.max(height, 1);
+    const rows = Math.max(1, Math.round(Math.sqrt(particleCount / Math.max(viewportRatio, 0.1))));
+    const columns = Math.max(1, Math.ceil(particleCount / rows));
+    const cellWidth = width / columns;
+    const cellHeight = height / rows;
+
+    return Array.from({ length: particleCount }, (_, index) => {
+      const row = Math.floor(index / columns);
+      const column = index % columns;
+      const jitterX = 0.16 + Math.random() * 0.68;
+      const jitterY = 0.16 + Math.random() * 0.68;
+      return createParticle(
+        Math.min(width, (column + jitterX) * cellWidth),
+        Math.min(height, (row + jitterY) * cellHeight)
+      );
+    });
   }
 
   function resizeCanvas() {
@@ -158,7 +178,7 @@ function initParticleBackground() {
     particleCanvas.width = Math.floor(width * devicePixelRatio);
     particleCanvas.height = Math.floor(height * devicePixelRatio);
     context.setTransform(devicePixelRatio, 0, 0, devicePixelRatio, 0, 0);
-    particles = Array.from({ length: getParticleCount() }, createParticle);
+    particles = createParticles();
     drawFrame(0);
   }
 
