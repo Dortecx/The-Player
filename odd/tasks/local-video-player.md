@@ -1,13 +1,13 @@
 # Local Video Player — ODD Tasks
 
 ## Objective
-Build a phase 1 portable-friendly local web video player that runs with Node during development via `npm run web`, lets the user select a folder or multiple video files, plays them sequentially, and persists playback progress/watched state in IndexedDB.
+Build a portable-friendly local web video player that runs with Node during development via `npm run web`, lets the user select a folder or multiple video files, plays them sequentially, and persists playback progress/watched state in IndexedDB.
 
 ## Problem
 The user currently opens each episode/video manually in the browser, then closes/switches tabs for the next file. The app should provide one local playlist session and automatically continue to the next video.
 
 ## Why
-A simple local web app solves the immediate workflow without requiring FFmpeg, transcodification, or a full media library. Portable packaging will come later only after `npm run web` works correctly.
+A simple local web app solves the immediate workflow without requiring FFmpeg, transcodification, or a full media library. Portable packaging now provides a Windows ZIP path while preserving the development runtime.
 
 ## Scope
 - Node local static server for development.
@@ -19,14 +19,14 @@ A simple local web app solves the immediate workflow without requiring FFmpeg, t
 - Initial formats: `.mp4`, `.mkv` best-effort, `.webm`, `.m4v`, `.mov`.
 
 ## Non-goals
-- Windows portable ZIP/build scripts in this first work unit.
+- Additional portable targets beyond the current Windows ZIP/build script.
 - FFmpeg, remuxing, transcoding, or embedded MKV subtitle extraction.
 - User accounts, remote streaming, or media-library indexing outside the selected local files.
 - Work-unit commits unless the user explicitly authorizes commits.
 
 ## Constraints
 - Conversation is Spanish; technical artifacts and UI copy default to English.
-- Final portable target should not require the end user to run `npm install`; however, this task only validates development runtime.
+- The Windows portable target should not require the end user to run `npm install`; development validation still uses the local Node runtime.
 - `npm run web` must be the primary local verification command.
 - No native review/commit/push unless explicitly requested by the user.
 
@@ -218,6 +218,13 @@ A simple local web app solves the immediate workflow without requiring FFmpeg, t
   - Avoid a visible regular grid by jittering each particle within its cell instead of centering it.
   - Evidence: `createParticles()` now derives rows/columns from viewport aspect ratio and particle count, places one particle per occupied cell with 16%–84% random jitter, and passes those positions into the existing particle factory while preserving velocity/alpha/radius/dormant randomness. `node --check server.js` passed. `node --check public/app.js` passed. `PORT=3169 npm run web` readiness check passed after one transient pre-readiness curl failure. Static diff/readback confirmed Canvas initialization now uses jittered cell distribution instead of `Math.random() * width/height`. Manual visual check remains pending.
 
+- [x] LV-029 — Add Windows portable packaging
+  - Add a Windows PowerShell build that stages a portable ZIP under `portable-win/`.
+  - Package only `package.json`, `server.js`, `public/`, `README.md`, a Windows `runtime/node.exe`, and rendered `start.cmd` from `scripts/start.cmd.template`.
+  - Refuse to overwrite an existing ZIP and require Node >=18 on the build machine.
+  - Add `npm run build:portable:win`, ignore generated `portable-win/`, and document portable build/use without `npm install`.
+  - Evidence: added `scripts/build-portable-win.ps1`, package script, README portable section, and `.gitignore` entry. `node --check server.js` passed. `node --check public/app.js` passed. `PORT=3171 npm run web` readiness check passed after one transient pre-readiness curl failure. PowerShell parser check was not available in this Linux/WSL environment because neither `pwsh` nor `powershell.exe` was found. Static readback/diff confirmed the script copies only explicit app/runtime assets, refuses an existing ZIP, requires Node >=18, and leaves Windows build execution/manual launcher checks pending.
+
 ## Acceptance Criteria
 - Running `npm run web` starts a local server without requiring a framework dev server.
 - The browser app can select a folder or multiple files.
@@ -226,7 +233,7 @@ A simple local web app solves the immediate workflow without requiring FFmpeg, t
 - Ended playback advances to the next item.
 - Progress and watched state persist in IndexedDB across reload/reselect.
 - Unsupported playback errors are visible and do not crash the app.
-- Portable packaging remains deferred.
+- Windows portable packaging exists and still needs Windows manual validation.
 
 ## Progress
 - 2026-09-18: Feature document created before source implementation.
@@ -254,6 +261,7 @@ A simple local web app solves the immediate workflow without requiring FFmpeg, t
 - 2026-09-20: Completed LV-026 transport action morphs and passive link visibility refinement: Previous, Skip next, and Mark watched & next now share the playlist compact-icon-to-expanded-text interaction without root `data-i18n`, and passive Canvas links are slightly more visible while remaining subtle.
 - 2026-09-20: Completed LV-027 passive Canvas/clear-transition refinement: distant passive links are moderately more visible, and Clear/Vaciar now applies a short deterministic empty-state transition instead of snapping header controls directly to center.
 - 2026-09-21: Completed LV-028 jittered cell placement for Canvas particles so initial distribution covers the viewport more evenly while retaining randomized movement, dormant nodes, cursor activation, passive links, and reduced-motion behavior.
+- 2026-09-21: Completed LV-029 Windows portable packaging script/docs so a Windows build machine can create a no-`npm install` ZIP with bundled `node.exe`, explicit app assets, and a double-click `start.cmd` launcher while generated artifacts stay ignored.
 
 ## Verification Evidence
 - `node --check server.js` — passed in worker and parent verification.
@@ -342,6 +350,11 @@ A simple local web app solves the immediate workflow without requiring FFmpeg, t
 - `node --check public/app.js` — passed after LV-028 changes.
 - `PORT=3169 npm run web` with `curl -fsS http://127.0.0.1:3169/` readiness check — passed after one transient pre-readiness curl failure; response included `id="particleCanvas"`.
 - Static diff/readback of `public/app.js` and `odd/tasks/local-video-player.md` — passed for LV-028 plausibility; confirmed particle initialization now computes viewport-ratio rows/columns, derives cell width/height, applies randomized 16%–84% per-cell jitter, and calls `createParticle(x, y)` instead of assigning fully random `x`/`y` inside the particle factory.
+- `node --check server.js` — passed after LV-029 portable packaging changes.
+- `node --check public/app.js` — passed after LV-029 portable packaging changes.
+- PowerShell parser check — not available in this Linux/WSL environment; neither `pwsh` nor `powershell.exe` was found on `PATH`.
+- `PORT=3171 npm run web` with `curl -fsS http://127.0.0.1:3171/` readiness check — passed after one transient pre-readiness curl failure; response returned the app HTML.
+- Static readback/diff of `scripts/build-portable-win.ps1`, `README.md`, `.gitignore`, `package.json`, and `odd/tasks/local-video-player.md` — passed for LV-029 plausibility; confirmed explicit asset copy list, bundled `runtime/node.exe`, rendered `start.cmd`, Node >=18 check, existing ZIP refusal, `portable-win/` ignore, and no-`npm install` README instructions.
 
 ## Pending Manual Checks
 - Select a folder and confirm playlist ordering with nested relative paths.
@@ -372,6 +385,9 @@ A simple local web app solves the immediate workflow without requiring FFmpeg, t
 - Visually confirm LV-027 background/clear refinement in a browser: distant passive Canvas links are more visible but still second-plane/monochrome, and Clear/Vaciar visibly moves folder/file controls from header to centered empty state without a snap.
 - Visually confirm LV-028 Canvas distribution in a browser: particle coverage no longer leaves large empty zones, still feels organic/random, and does not reveal a regular grid at common viewport sizes.
 - Manually confirm LV-021/LV-027/LV-028 reduced-motion behavior: with `prefers-reduced-motion: reduce`, the canvas renders a static evenly distributed frame without constant particle movement and the Clear/Vaciar empty-state transition does not animate.
+- On Windows with Node >=18, run `npm run build:portable:win` and confirm it creates `portable-win/ThePlayer-portable-win.zip` with only `ThePlayer/start.cmd`, `ThePlayer/runtime/node.exe`, and the explicit `ThePlayer/app` files.
+- On Windows, confirm rerunning the build with the ZIP still present refuses to overwrite it.
+- On Windows, unzip the portable package, double-click `ThePlayer\start.cmd`, confirm it starts with bundled `runtime\node.exe`, creates `logs\server.log`, opens the browser, and serves the app without `npm install`.
 
 ## Next Step
 Run the pending manual browser checks with representative local video files, prioritizing the LV-021 Canvas particle visual/reduced-motion review, LV-014 adaptive actions/Clear behavior, LV-010 subset progress restore, LV-009 no-auto-persist, and legacy-exact-vs-newer-recent restore scenarios.

@@ -1,2 +1,5 @@
 # Local Pi runtime state
 .atl/
+
+# Generated portable release artifacts
+portable-win/

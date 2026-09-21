@@ -1,0 +1,45 @@
+@echo off
+setlocal EnableExtensions
+set "ROOT=%~dp0"
+set "APP_DIR=%ROOT%app"
+set "LOG_DIR=%ROOT%logs"
+set "NODE_EXE=%ROOT%runtime\node.exe"
+set "PORT=3000"
+set "HOST=127.0.0.1"
+
+if not exist "%LOG_DIR%" mkdir "%LOG_DIR%" || goto :mkdir_failed
+
+if not exist "%NODE_EXE%" (
+  echo [ERROR] Missing packaged Node runtime: "%NODE_EXE%"
+  echo Rebuild the portable ZIP; do not copy only start.cmd.
+  exit /b 1
+)
+
+if not exist "%APP_DIR%\server.js" (
+  echo [ERROR] Missing app server: "%APP_DIR%\server.js"
+  echo Rebuild the portable ZIP; do not copy only start.cmd.
+  exit /b 1
+)
+
+netstat -ano -p tcp | findstr /r /c:":%PORT% .*LISTENING" >nul
+if not errorlevel 1 (
+  echo [ERROR] Port %PORT% is already in use. Close the other local process, then run start.cmd again.
+  exit /b 1
+)
+
+echo Starting The Player at http://%HOST%:%PORT%
+echo Logs: "%LOG_DIR%\server.log"
+start "" /b "%ComSpec%" /d /c ""%NODE_EXE%" "%APP_DIR%\server.js" >> "%LOG_DIR%\server.log" 2>&1"
+
+powershell -NoProfile -Command "$deadline = (Get-Date).AddSeconds(30); while ((Get-Date) -lt $deadline) { try { Invoke-WebRequest -UseBasicParsing -Uri 'http://127.0.0.1:%PORT%/' -TimeoutSec 2 | Out-Null; exit 0 } catch { Start-Sleep -Milliseconds 500 } }; exit 1"
+if errorlevel 1 (
+  echo [ERROR] Server did not become ready within 30 seconds. See "%LOG_DIR%\server.log".
+  exit /b 1
+)
+
+if not "%THE_PLAYER_NO_OPEN%"=="1" start "" "http://%HOST%:%PORT%/"
+exit /b 0
+
+:mkdir_failed
+echo [ERROR] Could not create portable log directory beside start.cmd.
+exit /b 1
