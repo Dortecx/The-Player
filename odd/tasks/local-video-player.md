@@ -251,6 +251,18 @@ A simple local web app solves the immediate workflow without requiring FFmpeg, t
   - Document the MIT license and shortcuts in English and Spanish READMEs.
   - Evidence: added `LICENSE`, `public/favicon.svg`, favicon link in `public/index.html`, shortcut handler/fullscreen helpers in `public/app.js`, and bilingual README updates. `node --check server.js` passed. `node --check public/app.js` passed. `PORT=3175 npm run web` readiness check passed after one transient pre-readiness curl failure. Static readback/diff confirmed favicon link, shortcut code, and README MIT/license text. Manual browser shortcut testing remains pending.
 
+- [x] LV-034 — Prepare release version 1.1.0
+  - Set `package.json` version to `1.1.0` so generated release names derive as `The-Player-1.1.0-windows`.
+  - Update current English and Spanish README release references to the v1.1.0 tag, ZIP, ZIP root folder, build output path, and Windows platform support text.
+  - Preserve historical ODD evidence for the prior v1.0.0 preparation without rewriting old evidence.
+  - Evidence: updated `package.json`, `README.md`, `README.es.md`, and this task log. `node --check server.js` passed. `node --check public/app.js` passed. Static grep/readback confirmed current docs and package metadata reference v1.1.0/`The-Player-1.1.0-windows` and no current README/package v1.0.0 release references remain.
+
+
+- [x] LV-034 — Prepare v1.1.0 release
+  - Bump package version to `1.1.0` for the release containing MIT license, favicon, and keyboard shortcuts.
+  - Update current README download/build references from `v1.0.0` / `The-Player-1.0.0-windows.zip` to `v1.1.0` / `The-Player-1.1.0-windows.zip`.
+  - Evidence: `node --check server.js` passed. `node --check public/app.js` passed. Static readback confirmed current README release URLs and portable ZIP/root examples point at `v1.1.0`.
+
 ## Acceptance Criteria
 - Running `npm run web` starts a local server without requiring a framework dev server.
 - The browser app can select a folder or multiple files.
@@ -292,8 +304,13 @@ A simple local web app solves the immediate workflow without requiring FFmpeg, t
 - 2026-09-21: Completed LV-031 release version alignment by setting `package.json` to `1.0.0` and documenting the concrete `portable-win/The-Player-1.0.0-windows.zip` and `The-Player-1.0.0-windows/` portable release layout.
 - 2026-09-21: Completed LV-032 README style alignment with the El Exportador structure and added `README.es.md` with reciprocal language links, release download/build/source setup paths, Mermaid flow, usage, platform support, and license-not-declared wording.
 - 2026-09-21: Completed LV-033 MIT license, monochrome favicon, keyboard shortcuts, and bilingual documentation updates.
+- 2026-09-21: Completed LV-034 release 1.1.0 preparation by bumping `package.json` to `1.1.0`, updating current bilingual README release/ZIP/root references to v1.1.0, and preserving historical v1.0.0 ODD evidence intact.
+- 2026-09-21: Prepared v1.1.0 release metadata/docs for the MIT license, favicon, and keyboard shortcut release.
 
 ## Verification Evidence
+- `node --check server.js` — passed after LV-034 release preparation.
+- `node --check public/app.js` — passed after LV-034 release preparation.
+- Static grep/readback of `package.json`, `README.md`, and `README.es.md` — passed after LV-034; confirmed version `1.1.0`, current release tag/download links use v1.1.0, ZIP/root examples use `The-Player-1.1.0-windows`, build output uses `portable-win\\The-Player-1.1.0-windows.zip`, and current README/package files have no v1.0.0 release references.
 - `node --check server.js` — passed after LV-033 changes.
 - `node --check public/app.js` — passed after LV-033 changes.
 - `PORT=3175 npm run web` with `curl -fsS http://127.0.0.1:3175/` readiness check — passed after one transient pre-readiness curl failure.
