@@ -268,6 +268,12 @@ A simple local web app solves the immediate workflow without requiring FFmpeg, t
   - Add a compact localized Playlist search field that filters only the rendered list without changing saved state, active index, order, or previous/next behavior.
   - Evidence: added localized `#playlistSearch` UI and empty-state copy, render-only relative-path filtering, search reset on new load/clear, and Screen Wake Lock acquire/release handling in `public/app.js`. `node --check server.js` passed. `node --check public/app.js` passed. `PORT=3179 npm run web` readiness check passed after one transient pre-readiness curl failure. Static grep/readback confirmed search input/copy/styles, wake lock functions/listeners, and README updates. Manual browser checks remain pending.
 
+
+- [x] LV-036 — Prepare v1.2.0 release
+  - Bump `package.json` and `package-lock.json` to `1.2.0` and align package lock license metadata with MIT.
+  - Update current README download/build references from `v1.1.0` / `The-Player-1.1.0-windows.zip` to `v1.2.0` / `The-Player-1.2.0-windows.zip`.
+  - Evidence: `node --check server.js` passed. `node --check public/app.js` passed. Static readback confirmed package and README release references point at `v1.2.0`.
+
 ## Acceptance Criteria
 - Running `npm run web` starts a local server without requiring a framework dev server.
 - The browser app can select a folder or multiple files.
@@ -312,6 +318,7 @@ A simple local web app solves the immediate workflow without requiring FFmpeg, t
 - 2026-09-21: Completed LV-033 MIT license, monochrome favicon, keyboard shortcuts, and bilingual documentation updates.
 - 2026-09-21: Completed LV-034 release 1.1.0 preparation by bumping `package.json` to `1.1.0`, updating current bilingual README release/ZIP/root references to v1.1.0, and preserving historical v1.0.0 ODD evidence intact.
 - 2026-09-21: Prepared v1.1.0 release metadata/docs for the MIT license, favicon, and keyboard shortcut release.
+- 2026-09-21: Prepared v1.2.0 release metadata/docs for Wake Lock and playlist search, including package-lock version/license alignment.
 
 ## Verification Evidence
 - `node --check server.js` — passed after LV-034 release preparation.
