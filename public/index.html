@@ -76,6 +76,11 @@
             </div>
             <span id="playlistCount" class="count sr-only">0 videos</span>
           </div>
+          <div id="playlistSearchWrap" class="playlist-search-wrap" hidden>
+            <label class="sr-only" for="playlistSearch" data-i18n="playlistSearchLabel">Search playlist</label>
+            <input id="playlistSearch" class="playlist-search" type="search" autocomplete="off" data-i18n-placeholder="playlistSearchLabel" placeholder="Search playlist">
+          </div>
+          <p id="playlistEmptyState" class="playlist-empty-state" data-i18n="playlistSearchEmpty" hidden>No playlist items match the search.</p>
           <ol id="playlist" class="playlist" aria-live="polite"></ol>
         </section>
       </section>

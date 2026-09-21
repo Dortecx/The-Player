@@ -9,6 +9,8 @@ The Player is a portable-friendly local video player that runs in your browser, 
 - Download the Windows portable release ZIP, unzip it, and run `start.cmd` with no `npm install`.
 - Select a folder or multiple video files and play them in a deterministic playlist.
 - Continue through videos with Previous, Skip next, Mark watched & next controls, and keyboard shortcuts.
+- Search the visible playlist without changing playback order, saved progress, or the active video.
+- Keep the screen awake during playback when the browser supports Screen Wake Lock.
 - Remember progress, watched state, last active video, and recent activity in the browser's IndexedDB.
 - Use English by default and Spanish automatically when the browser/system language is `es` or `es-*`.
 - Keep video files local in the browser; selected files are not uploaded to the Node server.
@@ -121,7 +123,10 @@ The Node server only serves the static app over localhost. Selected video bytes 
 5. Watch videos with the native browser controls or keyboard shortcuts.
 6. Use `Skip next` to save current progress and move on without marking the item watched.
 7. Use `Mark watched & next` to complete the current item and advance.
-8. Use `Clear` to empty the current playlist without deleting saved progress.
+8. Use `Search playlist` to visually filter the list; playback and Previous/Skip next still use the full playlist order.
+9. Use `Clear` to empty the current playlist without deleting saved progress.
+
+During playback, supported browsers may keep the screen awake. The wake lock is released on pause, ended playback, clearing the list, or when the page is hidden/closed.
 
 Keyboard shortcuts:
 
@@ -142,7 +147,7 @@ Supported file extensions:
 - `.mov`
 - `.mkv` best-effort
 
-Actual playback depends on the browser's built-in codec support. MKV support is limited in many browsers. The Player does not remux, transcode, or extract subtitles yet.
+Actual playback and Screen Wake Lock support depend on browser capabilities. MKV support is limited in many browsers. The Player does not remux, transcode, or extract subtitles yet.
 
 ## Platform support
 

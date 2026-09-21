@@ -263,6 +263,11 @@ A simple local web app solves the immediate workflow without requiring FFmpeg, t
   - Update current README download/build references from `v1.0.0` / `The-Player-1.0.0-windows.zip` to `v1.1.0` / `The-Player-1.1.0-windows.zip`.
   - Evidence: `node --check server.js` passed. `node --check public/app.js` passed. Static readback confirmed current README release URLs and portable ZIP/root examples point at `v1.1.0`.
 
+- [x] LV-035 — Add Wake Lock and playlist search filter
+  - Keep supported screens awake during active video playback and release the lock on pause/end/clear/page hide/unload.
+  - Add a compact localized Playlist search field that filters only the rendered list without changing saved state, active index, order, or previous/next behavior.
+  - Evidence: added localized `#playlistSearch` UI and empty-state copy, render-only relative-path filtering, search reset on new load/clear, and Screen Wake Lock acquire/release handling in `public/app.js`. `node --check server.js` passed. `node --check public/app.js` passed. `PORT=3179 npm run web` readiness check passed after one transient pre-readiness curl failure. Static grep/readback confirmed search input/copy/styles, wake lock functions/listeners, and README updates. Manual browser checks remain pending.
+
 ## Acceptance Criteria
 - Running `npm run web` starts a local server without requiring a framework dev server.
 - The browser app can select a folder or multiple files.
@@ -298,6 +303,7 @@ A simple local web app solves the immediate workflow without requiring FFmpeg, t
 - 2026-09-20: Completed LV-025 passive particle/activity evidence and playlist action button morphs: parent `public/app.js` changes keep passive node-to-node network connects subtle, intensify the active cursor area, and wake dormant nodes near the cursor; CSS now makes playlist action buttons compact icon-only by default and text-only while expanded on hover/focus.
 - 2026-09-20: Completed LV-026 transport action morphs and passive link visibility refinement: Previous, Skip next, and Mark watched & next now share the playlist compact-icon-to-expanded-text interaction without root `data-i18n`, and passive Canvas links are slightly more visible while remaining subtle.
 - 2026-09-20: Completed LV-027 passive Canvas/clear-transition refinement: distant passive links are moderately more visible, and Clear/Vaciar now applies a short deterministic empty-state transition instead of snapping header controls directly to center.
+- 2026-09-21: Completed LV-035 Wake Lock and playlist search: playback now requests Screen Wake Lock when supported and releases it on pause/end/clear/page hide/unload; Playlist now has a localized render-only search filter that resets on new selection/clear.
 - 2026-09-21: Completed LV-028 jittered cell placement for Canvas particles so initial distribution covers the viewport more evenly while retaining randomized movement, dormant nodes, cursor activation, passive links, and reduced-motion behavior.
 - 2026-09-21: Completed LV-029 Windows portable packaging script/docs so a Windows build machine can create a no-`npm install` ZIP with bundled `node.exe`, explicit app assets, and a double-click `start.cmd` launcher while generated artifacts stay ignored.
 - 2026-09-21: Completed LV-030 Windows portable packaging alignment with the prior versioned release style: release name and ZIP derive from `package.json`, staging uses `%TEMP%` plus version/PID, the ZIP root matches the release name, and cleanup is limited to that temp stage root in `finally`.

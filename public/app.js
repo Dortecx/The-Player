@@ -32,6 +32,8 @@ const COPY = {
     skipNextButton: 'Skip next',
     markWatchedButton: 'Mark watched & next',
     playlistHeading: 'Playlist',
+    playlistSearchLabel: 'Search playlist',
+    playlistSearchEmpty: 'No playlist items match the search.',
     playlistCount: ({ count }) => `${count} ${count === 1 ? 'video' : 'videos'}`,
     savedAt: ({ time }) => `saved ${time}`,
     watchedLabel: 'watched',
@@ -66,6 +68,8 @@ const COPY = {
     skipNextButton: 'Saltar al siguiente',
     markWatchedButton: 'Marcar visto y seguir',
     playlistHeading: 'Playlist',
+    playlistSearchLabel: 'Buscar playlist',
+    playlistSearchEmpty: 'No hay elementos que coincidan con la búsqueda.',
     playlistCount: ({ count }) => `${count} ${count === 1 ? 'video' : 'videos'}`,
     savedAt: ({ time }) => `guardado ${time}`,
     watchedLabel: 'visto',
@@ -96,7 +100,9 @@ const state = {
   selectionId: null,
   dbPromise: null,
   lastSaveAt: 0,
-  clearTransitionTimer: null
+  clearTransitionTimer: null,
+  playlistSearchQuery: '',
+  wakeLockSentinel: null
 };
 
 const elements = {
@@ -105,6 +111,9 @@ const elements = {
   status: document.querySelector('#status'),
   playlistPanel: document.querySelector('#playlistPanel'),
   playlist: document.querySelector('#playlist'),
+  playlistSearchWrap: document.querySelector('#playlistSearchWrap'),
+  playlistSearch: document.querySelector('#playlistSearch'),
+  playlistEmptyState: document.querySelector('#playlistEmptyState'),
   playlistCount: document.querySelector('#playlistCount'),
   nowPlaying: document.querySelector('#nowPlaying'),
   video: document.querySelector('#videoPlayer'),
@@ -362,6 +371,9 @@ function applyStaticCopy() {
   document.querySelectorAll('[data-i18n-aria-label]').forEach((node) => {
     node.setAttribute('aria-label', t(node.dataset.i18nAriaLabel));
   });
+  document.querySelectorAll('[data-i18n-placeholder]').forEach((node) => {
+    node.setAttribute('placeholder', t(node.dataset.i18nPlaceholder));
+  });
 }
 
 function getRelativePath(file) {
@@ -596,6 +608,8 @@ function updateControls() {
   elements.markWatchedButton.disabled = !hasActiveItem;
   elements.clearPlaylistButton.hidden = !hasItems;
   elements.clearPlaylistButton.disabled = !hasItems;
+  elements.playlistSearchWrap.hidden = !hasItems;
+  elements.playlistSearch.disabled = !hasItems;
   elements.playlistPanel.classList.toggle('is-empty', !hasItems);
   elements.playlistPanel.classList.toggle('has-items', hasItems);
   elements.playlistCount.textContent = t('playlistCount', { count: state.items.length });
@@ -616,10 +630,27 @@ function stagePlaylistClearTransition() {
   }, 280);
 }
 
+function normalizePlaylistSearchValue(value) {
+  return value
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLocaleLowerCase(locale);
+}
+
+function itemMatchesPlaylistSearch(item) {
+  const query = normalizePlaylistSearchValue(state.playlistSearchQuery.trim());
+  if (!query) return true;
+  return normalizePlaylistSearchValue(item.relativePath).includes(query);
+}
+
 function renderPlaylist() {
   elements.playlist.innerHTML = '';
 
-  state.items.forEach((item, index) => {
+  const visibleItems = state.items
+    .map((item, index) => ({ item, index }))
+    .filter(({ item }) => itemMatchesPlaylistSearch(item));
+
+  visibleItems.forEach(({ item, index }) => {
     const listItem = document.createElement('li');
     listItem.className = 'playlist-item';
     if (index === state.activeIndex) listItem.classList.add('active');
@@ -659,6 +690,7 @@ function renderPlaylist() {
     elements.playlist.append(listItem);
   });
 
+  elements.playlistEmptyState.hidden = state.items.length === 0 || visibleItems.length > 0;
   updateControls();
 }
 
@@ -685,8 +717,14 @@ function getInitialIndex(items, restoreItemId = null) {
   return firstUnwatched >= 0 ? firstUnwatched : 0;
 }
 
+function resetPlaylistSearch() {
+  state.playlistSearchQuery = '';
+  elements.playlistSearch.value = '';
+}
+
 async function handleFiles(fileList) {
   clearError();
+  resetPlaylistSearch();
   await saveActiveProgress();
   revokeCurrentObjectUrl();
 
@@ -843,12 +881,57 @@ async function markCurrentWatchedAndNext() {
 }
 
 async function handleEnded() {
+  await releaseWakeLock();
   await saveActiveProgress({ watched: true });
   if (state.activeIndex < state.items.length - 1) {
     await playIndex(state.activeIndex + 1, { saveCurrent: false, source: 'ended-auto-next' });
   } else {
     updateStatus(t('statusPlaylistFinished'));
   }
+}
+
+function supportsWakeLock() {
+  return 'wakeLock' in navigator && typeof navigator.wakeLock?.request === 'function';
+}
+
+function shouldHoldWakeLock() {
+  return document.visibilityState === 'visible'
+    && Boolean(elements.video.src)
+    && !elements.video.paused
+    && !elements.video.ended;
+}
+
+async function requestWakeLock() {
+  if (!supportsWakeLock() || state.wakeLockSentinel || !shouldHoldWakeLock()) return;
+
+  try {
+    state.wakeLockSentinel = await navigator.wakeLock.request('screen');
+    state.wakeLockSentinel.addEventListener('release', () => {
+      state.wakeLockSentinel = null;
+    }, { once: true });
+  } catch (error) {
+    console.warn('Could not acquire screen wake lock', error);
+  }
+}
+
+async function releaseWakeLock() {
+  const sentinel = state.wakeLockSentinel;
+  if (!sentinel) return;
+
+  state.wakeLockSentinel = null;
+  try {
+    await sentinel.release();
+  } catch (error) {
+    console.warn('Could not release screen wake lock', error);
+  }
+}
+
+function handleVisibilityChange() {
+  if (document.visibilityState === 'hidden') {
+    void releaseWakeLock();
+    return;
+  }
+  void requestWakeLock();
 }
 
 
@@ -952,11 +1035,13 @@ function handleKeyboardShortcuts(event) {
 
 async function clearPlaylist() {
   await saveActiveProgress();
+  await releaseWakeLock();
   revokeCurrentObjectUrl();
   state.items = [];
   state.activeIndex = -1;
   state.selectionId = null;
   state.lastSaveAt = 0;
+  resetPlaylistSearch();
   elements.folderInput.value = '';
   elements.fileInput.value = '';
   elements.video.removeAttribute('src');
@@ -974,8 +1059,19 @@ elements.prevButton.addEventListener('click', () => playRelative(-1, { source: '
 elements.nextButton.addEventListener('click', skipToNext);
 elements.markWatchedButton.addEventListener('click', markCurrentWatchedAndNext);
 elements.clearPlaylistButton.addEventListener('click', clearPlaylist);
+elements.playlistSearch.addEventListener('input', (event) => {
+  state.playlistSearchQuery = event.target.value;
+  renderPlaylist();
+});
 window.addEventListener('keydown', handleKeyboardShortcuts);
-elements.video.addEventListener('pause', () => saveActiveProgress());
+document.addEventListener('visibilitychange', handleVisibilityChange);
+elements.video.addEventListener('play', () => {
+  void requestWakeLock();
+});
+elements.video.addEventListener('pause', () => {
+  void saveActiveProgress();
+  void releaseWakeLock();
+});
 elements.video.addEventListener('ended', handleEnded);
 elements.video.addEventListener('error', () => {
   const item = state.items[state.activeIndex];
@@ -989,8 +1085,12 @@ elements.video.addEventListener('timeupdate', () => {
     saveActiveProgress();
   }
 });
+window.addEventListener('pagehide', () => {
+  void releaseWakeLock();
+});
 window.addEventListener('beforeunload', () => {
   saveActiveProgress();
+  void releaseWakeLock();
   revokeCurrentObjectUrl();
 });
 

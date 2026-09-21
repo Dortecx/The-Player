@@ -9,6 +9,8 @@ The Player es un reproductor local de video, amigable para uso portátil, que co
 - Descargá el ZIP portátil de Windows, descomprimilo y ejecutá `start.cmd` sin `npm install`.
 - Seleccioná una carpeta o varios archivos de video y reproducilos en una lista determinística.
 - Avanzá por los videos con controles de Anterior, Saltar siguiente, Marcar visto y seguir, y atajos de teclado.
+- Buscá dentro de la playlist visible sin cambiar el orden de reproducción, el progreso guardado ni el video activo.
+- Mantené la pantalla despierta durante la reproducción cuando el navegador soporte Screen Wake Lock.
 - Recordá progreso, estado visto, último video activo y actividad reciente en IndexedDB del navegador.
 - Usá inglés por defecto y español automáticamente cuando el idioma del navegador/sistema sea `es` o `es-*`.
 - Mantené los videos locales en el navegador; los archivos seleccionados no se suben al servidor Node.
@@ -121,7 +123,10 @@ El servidor Node solo sirve la app estática por localhost. Los bytes de los vid
 5. Mirá videos con los controles nativos del navegador o con atajos de teclado.
 6. Usá `Saltar siguiente` para guardar el progreso actual y avanzar sin marcar el elemento como visto.
 7. Usá `Marcar visto y seguir` para completar el elemento actual y avanzar.
-8. Usá `Vaciar` para limpiar la playlist actual sin borrar el progreso guardado.
+8. Usá `Buscar playlist` para filtrar visualmente la lista; la reproducción y Anterior/Saltar siguiente siguen usando el orden completo de la playlist.
+9. Usá `Vaciar` para limpiar la playlist actual sin borrar el progreso guardado.
+
+Durante la reproducción, los navegadores compatibles pueden mantener la pantalla despierta. El wake lock se libera al pausar, terminar el video, vaciar la lista o esconder/cerrar la página.
 
 Atajos de teclado:
 
@@ -142,7 +147,7 @@ Extensiones de archivo soportadas:
 - `.mov`
 - `.mkv` best-effort
 
-La reproducción real depende del soporte de codecs integrado en el navegador. El soporte de MKV es limitado en muchos navegadores. The Player todavía no remuxa, transcodifica ni extrae subtítulos.
+La reproducción real y Screen Wake Lock dependen del soporte del navegador. El soporte de MKV es limitado en muchos navegadores. The Player todavía no remuxa, transcodifica ni extrae subtítulos.
 
 ## Compatibilidad de plataforma
 
