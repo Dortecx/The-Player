@@ -62,11 +62,11 @@ try {
 
     $forbiddenPathNames = @("node_modules", ".git", ".atl", "test", "tests", "backup", "backups", ".config", "log", "logs", "profile", "profiles", "token", "tokens", "credential", "credentials")
     $forbiddenStagedPaths = Get-ChildItem -LiteralPath $packageRoot -Recurse -Force | Where-Object {
-        $relativePath = $_.FullName.Substring($packageRoot.Length).TrimStart('\\', '/')
+        $relativePath = $_.FullName.Substring($packageRoot.Length).TrimStart([char[]]@('\', '/'))
         ($relativePath -split '[\\/]') | Where-Object { $forbiddenPathNames -icontains $_ }
     }
     if ($forbiddenStagedPaths) {
-        $paths = $forbiddenStagedPaths | ForEach-Object { $_.FullName.Substring($packageRoot.Length).TrimStart('\\', '/') }
+        $paths = $forbiddenStagedPaths | ForEach-Object { $_.FullName.Substring($packageRoot.Length).TrimStart([char[]]@('\', '/')) }
         throw "Forbidden path(s) found in staged package: $($paths -join ', ')"
     }
 
