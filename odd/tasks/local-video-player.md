@@ -307,6 +307,11 @@ A simple local web app solves the immediate workflow without requiring FFmpeg, t
   - Add moderate extra side margin while retaining a fluid large-monitor layout.
   - Evidence: `node --check server.js` passed. `node --check public/app.js` passed. `git diff --check` passed. `PORT=3181 npm run web` readiness check passed with `curl -fsS http://127.0.0.1:3181/`. Static CSS readback confirmed 16:9 player geometry, viewport cap, and `87vw` maximum shell width.
 
+- [ ] LV-043 — Prepare and publish v1.3.0 portable release
+  - Bump package metadata and current bilingual README download/build references to v1.3.0.
+  - Build and verify the Windows portable ZIP, then create the tag and public GitHub Release with evidence-based release notes.
+  - Evidence: pending.
+
 ## Acceptance Criteria
 - Running `npm run web` starts a local server without requiring a framework dev server.
 - The browser app can select a folder or multiple files.
