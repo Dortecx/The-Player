@@ -274,6 +274,39 @@ A simple local web app solves the immediate workflow without requiring FFmpeg, t
   - Update current README download/build references from `v1.1.0` / `The-Player-1.1.0-windows.zip` to `v1.2.0` / `The-Player-1.2.0-windows.zip`.
   - Evidence: `node --check server.js` passed. `node --check public/app.js` passed. Static readback confirmed package and README release references point at `v1.2.0`.
 
+- [x] LV-037 — Bound playlist, video-only fullscreen, and custom controls
+  - Keep loaded playlists inside a bounded panel with internal scrolling while preserving the empty centered picker state and search-only filtering.
+  - Replace native video controls with custom dark controls for play/pause, time, seeking, mute/volume, and fullscreen.
+  - Target fullscreen at the dedicated video frame so page headings, transport controls, and playlist are excluded; keep video `object-fit: contain`.
+  - Evidence: `node --check server.js` passed. `node --check public/app.js` passed. `PORT=3181 npm run web` readiness check passed after one transient pre-readiness curl failure. Static grep/readback confirmed no native `<video controls>` dependency, `#videoFrame` fullscreen target, custom control IDs/classes, and playlist internal scroll CSS. Manual browser controls/fullscreen/large-playlist checks remain pending.
+
+- [x] LV-038 — Fit empty player layout to real 1080p viewport
+  - Keep the 2K width improvement while capping the video/player height against the actual browser viewport instead of theoretical screen height.
+  - Restore empty Playlist panel alignment so its heading and picker actions center vertically/horizontally and the panel stretches with the player.
+  - Refine custom video controls into a slimmer monochrome bottom bar and keep fullscreen disabled until a video is loaded.
+  - Evidence: `node --check server.js` passed. `node --check public/app.js` passed. `git diff --check` passed. `PORT=3181 npm run web` readiness check passed with `curl -fsS http://127.0.0.1:3181/`. Static readback confirmed viewport-capped video frame, stretched empty Playlist panel, slim custom control bar, and fullscreen disabled until a video exists.
+
+- [x] LV-039 — Use single-screen player layout and auto-hide playback controls
+  - Treat the app as a useful viewport-height layout so the page itself does not need vertical scrolling in normal 1080p browser windows.
+  - Keep empty Playlist content centered and loaded Playlist cards compact with internal list scrolling.
+  - Move video controls into an overlay bottom bar that hides during playback and reappears on pointer movement or control focus, not on keyboard shortcuts alone.
+  - Evidence: `node --check server.js` passed. `node --check public/app.js` passed. `git diff --check` passed. `PORT=3181 npm run web` readiness check passed with `curl -fsS http://127.0.0.1:3181/`. Static readback confirmed `100svh` app/layout sizing, compact playlist list alignment, overlay video controls, and pointer-driven controls visibility.
+
+- [x] LV-040 — Center playlist rows and expanded action labels
+  - Vertically center loaded playlist row content inside compact cards.
+  - Remove the apparent left offset from expanding icon-to-label action buttons by letting expanded label text occupy the center after the icon collapses.
+  - Evidence: `node --check server.js` passed. `node --check public/app.js` passed. `git diff --check` passed. `PORT=3181 npm run web` readiness check passed with `curl -fsS http://127.0.0.1:3181/`. Static CSS readback confirmed centered playlist card alignment and expanded action labels centered after icon collapse.
+
+- [x] LV-041 — Show fullscreen volume feedback
+  - Display a temporary, readable numeric volume indicator in the upper-right video corner whenever volume changes during fullscreen playback.
+  - Keep playback controls hidden; the indicator expires independently and does not change control visibility.
+  - Evidence: `node --check server.js` passed. `node --check public/app.js` passed. `git diff --check` passed. `PORT=3181 npm run web` readiness check passed with `curl -fsS http://127.0.0.1:3181/`. Static readback confirmed fullscreen-gated temporary output with a 1400ms timeout and no controls-visibility mutation.
+
+- [x] LV-042 — Preserve a cinematic video frame on 2K displays
+  - Limit the player frame to a 16:9 cinematic proportion so surplus viewport height cannot turn the player into a visually square container.
+  - Add moderate extra side margin while retaining a fluid large-monitor layout.
+  - Evidence: `node --check server.js` passed. `node --check public/app.js` passed. `git diff --check` passed. `PORT=3181 npm run web` readiness check passed with `curl -fsS http://127.0.0.1:3181/`. Static CSS readback confirmed 16:9 player geometry, viewport cap, and `87vw` maximum shell width.
+
 ## Acceptance Criteria
 - Running `npm run web` starts a local server without requiring a framework dev server.
 - The browser app can select a folder or multiple files.
@@ -319,6 +352,13 @@ A simple local web app solves the immediate workflow without requiring FFmpeg, t
 - 2026-09-21: Completed LV-034 release 1.1.0 preparation by bumping `package.json` to `1.1.0`, updating current bilingual README release/ZIP/root references to v1.1.0, and preserving historical v1.0.0 ODD evidence intact.
 - 2026-09-21: Prepared v1.1.0 release metadata/docs for the MIT license, favicon, and keyboard shortcut release.
 - 2026-09-21: Prepared v1.2.0 release metadata/docs for Wake Lock and playlist search, including package-lock version/license alignment.
+
+- 2026-09-22: Completed LV-037 playlist bounds, video-frame fullscreen, and custom dark video controls; native `<video controls>` is no longer used for the main UI while `controlsList="nodownload"` remains.
+- 2026-09-22: Completed LV-038 real-viewport layout correction so the empty player view fits better on 1080p browser windows, the empty Playlist panel stretches/centers with the player panel, custom controls are slimmer, and fullscreen is disabled until a video exists.
+- 2026-09-22: Completed LV-039 single-screen layout correction: app shell/layout now use useful viewport height, Playlist empty/content states are centered/compact, video controls are overlayed and auto-hide during playback unless the pointer moves or controls receive focus.
+- 2026-09-22: Completed LV-040 visual alignment polish for loaded Playlist rows and expanding action labels.
+- 2026-09-22: Completed LV-041 fullscreen numeric volume feedback indicator.
+- 2026-09-22: Completed LV-042 2K cinematic frame sizing and increased side margin.
 
 ## Verification Evidence
 - `node --check server.js` — passed after LV-034 release preparation.
@@ -431,6 +471,11 @@ A simple local web app solves the immediate workflow without requiring FFmpeg, t
 - `node --check public/app.js` — passed after LV-032 README changes.
 - Static readback/diff of `README.md`, `README.es.md`, and `odd/tasks/local-video-player.md` — passed for LV-032 plausibility; confirmed El Exportador-style section order, reciprocal language links, downloadable v1.0.0 release ZIP path, build-from-source portable path, bundled `runtime\\node.exe` note, source checkout paths, File API/object URL/IndexedDB Mermaid flow, supported formats with MKV/browser codec limitation, platform support, and license-not-declared wording because no LICENSE file exists.
 
+- `node --check server.js` — passed after LV-037 changes.
+- `node --check public/app.js` — passed after LV-037 changes.
+- `PORT=3181 npm run web` with `curl -fsS http://127.0.0.1:3181/` readiness check — passed after one transient pre-readiness curl failure; response included `id="videoFrame"` and `class="video-controls"`.
+- Static grep/readback — passed for LV-037; confirmed no native `<video controls>` attribute, fullscreen requests `elements.videoFrame`, custom control IDs/classes exist, and `.playlist-panel.has-items` plus `.playlist { overflow: auto; }` bound playlist scrolling.
+
 ## Pending Manual Checks
 - Select a folder and confirm playlist ordering with nested relative paths.
 - Select multiple files and confirm filtering of supported/unsupported extensions.
@@ -463,6 +508,10 @@ A simple local web app solves the immediate workflow without requiring FFmpeg, t
 - Completed from WSL through Windows PowerShell: `scripts/build-portable-win.ps1` created `portable-win/The-Player-1.0.0-windows.zip` with only `The-Player-1.0.0-windows/start.cmd`, `The-Player-1.0.0-windows/runtime/node.exe`, and the explicit `The-Player-1.0.0-windows/app` files.
 - Completed from WSL through Windows PowerShell: rerunning the build with `portable-win/The-Player-1.0.0-windows.zip` still present refused to overwrite it.
 - Completed from WSL through Windows PowerShell/cmd: extracted ZIP launcher started with bundled `runtime\node.exe`, created `logs\server.log`, listened on port 3000, and returned HTTP 200 from `http://127.0.0.1:3000/` without `npm install`. The WSL wrapper needed manual process cleanup because the Windows background process kept inherited handles open; double-click launcher behavior remains the intended user path.
+
+- Manually confirm LV-037 custom controls in a browser: play/pause, seek, time display, mute/volume, fullscreen button, and global keyboard shortcuts all work without native controls.
+- Manually confirm LV-037 fullscreen in a browser: only the video frame and custom controls enter fullscreen, with no heading/now-playing/transport/playlist panel, and video is contained without cropping.
+- Manually confirm LV-037 large playlists in a browser: the loaded Playlist panel stays bounded, search remains visible, and the list scrolls internally while the empty centered folder/file state is preserved after Clear/Vaciar.
 
 ## Next Step
 Run the pending manual browser checks with representative local video files, prioritizing the LV-021 Canvas particle visual/reduced-motion review, LV-014 adaptive actions/Clear behavior, LV-010 subset progress restore, LV-009 no-auto-persist, and legacy-exact-vs-newer-recent restore scenarios.

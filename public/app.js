@@ -102,7 +102,9 @@ const state = {
   lastSaveAt: 0,
   clearTransitionTimer: null,
   playlistSearchQuery: '',
-  wakeLockSentinel: null
+  wakeLockSentinel: null,
+  videoControlsTimer: null,
+  volumeIndicatorTimer: null
 };
 
 const elements = {
@@ -116,7 +118,15 @@ const elements = {
   playlistEmptyState: document.querySelector('#playlistEmptyState'),
   playlistCount: document.querySelector('#playlistCount'),
   nowPlaying: document.querySelector('#nowPlaying'),
+  videoFrame: document.querySelector('#videoFrame'),
+  volumeIndicator: document.querySelector('#volumeIndicator'),
   video: document.querySelector('#videoPlayer'),
+  videoPlayPauseButton: document.querySelector('#videoPlayPauseButton'),
+  videoTimeDisplay: document.querySelector('#videoTimeDisplay'),
+  videoSeekRange: document.querySelector('#videoSeekRange'),
+  videoMuteButton: document.querySelector('#videoMuteButton'),
+  videoVolumeRange: document.querySelector('#videoVolumeRange'),
+  videoFullscreenButton: document.querySelector('#videoFullscreenButton'),
   error: document.querySelector('#errorMessage'),
   playerPanel: document.querySelector('.player-panel'),
   prevButton: document.querySelector('#prevButton'),
@@ -613,6 +623,7 @@ function updateControls() {
   elements.playlistPanel.classList.toggle('is-empty', !hasItems);
   elements.playlistPanel.classList.toggle('has-items', hasItems);
   elements.playlistCount.textContent = t('playlistCount', { count: state.items.length });
+  updateVideoControls();
 }
 
 function stagePlaylistClearTransition() {
@@ -703,6 +714,106 @@ function formatTime(totalSeconds) {
     return `${hours}:${String(minutes).padStart(2, '0')}:${String(remainder).padStart(2, '0')}`;
   }
   return `${minutes}:${String(remainder).padStart(2, '0')}`;
+}
+
+function getVideoDuration() {
+  return Number.isFinite(elements.video.duration) ? elements.video.duration : 0;
+}
+
+function showVideoControls({ temporary = false } = {}) {
+  if (!elements.videoFrame) return;
+  elements.videoFrame.classList.add('controls-visible');
+  if (state.videoControlsTimer) {
+    window.clearTimeout(state.videoControlsTimer);
+    state.videoControlsTimer = null;
+  }
+  if (temporary && elements.video.src && !elements.video.paused && !elements.video.ended) {
+    state.videoControlsTimer = window.setTimeout(hideVideoControlsIfPlaying, 1700);
+  }
+}
+
+function hideVideoControlsIfPlaying() {
+  if (!elements.videoFrame) return;
+  if (!elements.video.src || elements.video.paused || elements.video.ended) return;
+  if (elements.videoFrame.contains(document.activeElement)) return;
+  elements.videoFrame.classList.remove('controls-visible');
+}
+
+function updateVideoControls() {
+  const hasVideo = Boolean(elements.video.src);
+  elements.videoFrame?.classList.toggle('has-video', hasVideo);
+  elements.videoFrame?.classList.toggle('is-playing', hasVideo && !elements.video.paused && !elements.video.ended);
+  const duration = getVideoDuration();
+  const currentTime = Number.isFinite(elements.video.currentTime) ? elements.video.currentTime : 0;
+  const seekMax = duration > 0 ? duration : 100;
+  const seekValue = duration > 0 ? clamp(currentTime, 0, duration) : 0;
+  const paused = elements.video.paused || elements.video.ended;
+  const muted = elements.video.muted || elements.video.volume === 0;
+
+  elements.videoPlayPauseButton.disabled = !hasVideo;
+  elements.videoPlayPauseButton.setAttribute('aria-label', paused ? 'Play' : 'Pause');
+  elements.videoPlayPauseButton.querySelector('.control-icon').textContent = paused ? '▶' : 'Ⅱ';
+
+  elements.videoSeekRange.disabled = !hasVideo || duration <= 0;
+  elements.videoSeekRange.max = String(seekMax);
+  elements.videoSeekRange.value = String(seekValue);
+  elements.videoSeekRange.setAttribute('aria-valuetext', `${formatTime(seekValue)} of ${formatTime(duration)}`);
+
+  elements.videoTimeDisplay.textContent = `${formatTime(currentTime)} / ${formatTime(duration)}`;
+
+  elements.videoMuteButton.disabled = !hasVideo;
+  elements.videoMuteButton.setAttribute('aria-label', muted ? 'Unmute' : 'Mute');
+  elements.videoMuteButton.querySelector('.control-icon').textContent = muted ? 'MUTE' : 'VOL';
+
+  elements.videoVolumeRange.disabled = !hasVideo;
+  elements.videoVolumeRange.value = String(elements.video.muted ? 0 : elements.video.volume);
+
+  elements.videoFullscreenButton.disabled = !hasVideo || !elements.videoFrame;
+
+  if (!hasVideo || elements.video.paused || elements.video.ended) {
+    showVideoControls();
+  }
+}
+
+function handleSeekInput(event) {
+  if (!elements.video.src) return;
+  const nextTime = Number.parseFloat(event.target.value);
+  if (!Number.isFinite(nextTime)) return;
+  elements.video.currentTime = clamp(nextTime, 0, getVideoDuration() || nextTime);
+  updateVideoControls();
+}
+
+function showVolumeIndicator() {
+  if (!elements.volumeIndicator || !getFullscreenElement()) return;
+  const volume = elements.video.muted ? 0 : Math.round(elements.video.volume * 100);
+  elements.volumeIndicator.value = String(volume);
+  elements.volumeIndicator.textContent = String(volume);
+  elements.volumeIndicator.hidden = false;
+  if (state.volumeIndicatorTimer) window.clearTimeout(state.volumeIndicatorTimer);
+  state.volumeIndicatorTimer = window.setTimeout(() => {
+    elements.volumeIndicator.hidden = true;
+    state.volumeIndicatorTimer = null;
+  }, 1400);
+}
+
+function handleVolumeInput(event) {
+  const nextVolume = Number.parseFloat(event.target.value);
+  if (!Number.isFinite(nextVolume)) return;
+  elements.video.volume = clamp(nextVolume, 0, 1);
+  elements.video.muted = elements.video.volume === 0;
+  updateVideoControls();
+  showVolumeIndicator();
+}
+
+function toggleMute() {
+  if (!elements.video.src) return;
+  if (elements.video.muted || elements.video.volume === 0) {
+    elements.video.muted = false;
+    if (elements.video.volume === 0) elements.video.volume = 0.5;
+  } else {
+    elements.video.muted = true;
+  }
+  updateVideoControls();
 }
 
 function findItemIndexById(items, itemId) {
@@ -970,7 +1081,11 @@ function seekBy(seconds) {
 }
 
 function changeVolumeBy(delta) {
+  if (!elements.video.src) return;
+  elements.video.muted = false;
   elements.video.volume = clamp(elements.video.volume + delta, 0, 1);
+  updateVideoControls();
+  showVolumeIndicator();
 }
 
 function getFullscreenElement() {
@@ -998,12 +1113,14 @@ function exitFullscreen() {
 }
 
 async function toggleFullscreen() {
+  if (!elements.video.src) return;
+
   try {
     if (getFullscreenElement()) {
       await exitFullscreen();
       return;
     }
-    await requestFullscreen(elements.playerPanel || elements.video);
+    await requestFullscreen(elements.videoFrame || elements.video);
   } catch (error) {
     console.warn('Could not toggle fullscreen', error);
   }
@@ -1059,6 +1176,15 @@ elements.prevButton.addEventListener('click', () => playRelative(-1, { source: '
 elements.nextButton.addEventListener('click', skipToNext);
 elements.markWatchedButton.addEventListener('click', markCurrentWatchedAndNext);
 elements.clearPlaylistButton.addEventListener('click', clearPlaylist);
+elements.videoPlayPauseButton.addEventListener('click', togglePlayback);
+elements.videoSeekRange.addEventListener('input', handleSeekInput);
+elements.videoMuteButton.addEventListener('click', toggleMute);
+elements.videoVolumeRange.addEventListener('input', handleVolumeInput);
+elements.videoFullscreenButton.addEventListener('click', toggleFullscreen);
+elements.videoFrame.addEventListener('pointermove', () => showVideoControls({ temporary: true }));
+elements.videoFrame.addEventListener('pointerleave', hideVideoControlsIfPlaying);
+elements.videoFrame.addEventListener('focusin', () => showVideoControls());
+elements.videoFrame.addEventListener('focusout', () => showVideoControls({ temporary: true }));
 elements.playlistSearch.addEventListener('input', (event) => {
   state.playlistSearchQuery = event.target.value;
   renderPlaylist();
@@ -1066,9 +1192,12 @@ elements.playlistSearch.addEventListener('input', (event) => {
 window.addEventListener('keydown', handleKeyboardShortcuts);
 document.addEventListener('visibilitychange', handleVisibilityChange);
 elements.video.addEventListener('play', () => {
+  updateVideoControls();
+  window.requestAnimationFrame(hideVideoControlsIfPlaying);
   void requestWakeLock();
 });
 elements.video.addEventListener('pause', () => {
+  updateVideoControls();
   void saveActiveProgress();
   void releaseWakeLock();
 });
@@ -1078,7 +1207,12 @@ elements.video.addEventListener('error', () => {
   const name = item?.relativePath || t('thisFile');
   showError(`${name}: ${getVideoErrorMessage(elements.video.error)}`);
 });
+elements.video.addEventListener('loadedmetadata', updateVideoControls);
+elements.video.addEventListener('durationchange', updateVideoControls);
+elements.video.addEventListener('volumechange', updateVideoControls);
+document.addEventListener('fullscreenchange', updateVideoControls);
 elements.video.addEventListener('timeupdate', () => {
+  updateVideoControls();
   const now = Date.now();
   if (now - state.lastSaveAt >= SAVE_INTERVAL_MS) {
     state.lastSaveAt = now;
