@@ -307,10 +307,10 @@ A simple local web app solves the immediate workflow without requiring FFmpeg, t
   - Add moderate extra side margin while retaining a fluid large-monitor layout.
   - Evidence: `node --check server.js` passed. `node --check public/app.js` passed. `git diff --check` passed. `PORT=3181 npm run web` readiness check passed with `curl -fsS http://127.0.0.1:3181/`. Static CSS readback confirmed 16:9 player geometry, viewport cap, and `87vw` maximum shell width.
 
-- [ ] LV-043 — Prepare and publish v1.3.0 portable release
+- [x] LV-043 — Prepare and publish v1.3.0 portable release
   - Bump package metadata and current bilingual README download/build references to v1.3.0.
   - Build and verify the Windows portable ZIP, then create the tag and public GitHub Release with evidence-based release notes.
-  - Evidence: pending.
+  - Evidence: `node --check server.js` passed. `node --check public/app.js` passed. `git diff --check` passed. Windows PowerShell created `portable-win/The-Player-1.3.0-windows.zip`; archive contents include `start.cmd`, `app/package.json`, `app/server.js`, `app/README.md`, `app/public/*`, and `runtime/node.exe`, with no `node_modules` or repository metadata. A repeat build refused overwrite. Extracted `start.cmd` launched the bundled runtime and returned HTTP 200 at `127.0.0.1:3000`; temporary smoke staging was cleaned. SHA-256: `79A333F3171DA89B0A1CA426A6F5F96AA1B1A2F1DBF4E12C69262619EA906465`.
 
 ## Acceptance Criteria
 - Running `npm run web` starts a local server without requiring a framework dev server.
@@ -364,6 +364,7 @@ A simple local web app solves the immediate workflow without requiring FFmpeg, t
 - 2026-09-22: Completed LV-040 visual alignment polish for loaded Playlist rows and expanding action labels.
 - 2026-09-22: Completed LV-041 fullscreen numeric volume feedback indicator.
 - 2026-09-22: Completed LV-042 2K cinematic frame sizing and increased side margin.
+- 2026-09-22: Prepared v1.3.0 portable ZIP with verified bundled Windows runtime, launcher readiness, archive allowlist, overwrite refusal, and SHA-256 digest.
 
 ## Verification Evidence
 - `node --check server.js` — passed after LV-034 release preparation.
