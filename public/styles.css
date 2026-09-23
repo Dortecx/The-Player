@@ -448,7 +448,7 @@ button:focus-visible,
 .volume-indicator-plate {
   fill: #4a4a4e;
   filter: drop-shadow(0 0 0.08rem rgba(255, 255, 255, 0.32));
-  height: calc(100% + 1.5rem);
+  height: var(--plate-height);
   left: 50%;
   opacity: 0;
   pointer-events: none;
@@ -456,8 +456,17 @@ button:focus-visible,
   top: 50%;
   transform: translate(-50%, -50%) scale(0.98);
   transition: opacity 180ms ease, transform 180ms ease;
-  width: calc(100% + 2rem);
+  width: var(--plate-width);
   z-index: 1;
+}
+
+.volume-indicator-plate path,
+.volume-indicator-plate rect {
+  stroke: none;
+}
+
+.volume-indicator-plate-texture {
+  pointer-events: none;
 }
 
 .volume-indicator-blocks {
@@ -485,6 +494,12 @@ button:focus-visible,
   transform: translate(calc(-50% + var(--final-x) + var(--scatter-x)), calc(-50% + var(--final-y) + var(--scatter-y))) scale(var(--start-scale));
 }
 
+.volume-indicator.phase-blocks-assembling .volume-indicator-block {
+  opacity: 0.9;
+  transform: translate(calc(-50% + var(--final-x)), calc(-50% + var(--final-y))) scale(1);
+}
+
+.volume-indicator.phase-plate-handoff .volume-indicator-block,
 .volume-indicator.phase-frame-assembled .volume-indicator-block,
 .volume-indicator.phase-value-visible .volume-indicator-block,
 .volume-indicator.phase-value-hidden .volume-indicator-block {
@@ -492,6 +507,11 @@ button:focus-visible,
   transform: translate(calc(-50% + var(--final-x)), calc(-50% + var(--final-y))) scale(1);
 }
 
+.volume-indicator.phase-plate-handoff .volume-indicator-block {
+  transition-delay: 0ms;
+}
+
+.volume-indicator.phase-plate-handoff .volume-indicator-plate,
 .volume-indicator.phase-frame-assembled .volume-indicator-plate,
 .volume-indicator.phase-value-visible .volume-indicator-plate,
 .volume-indicator.phase-value-hidden .volume-indicator-plate {

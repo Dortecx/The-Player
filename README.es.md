@@ -28,7 +28,7 @@ Elegí el camino según lo que quieras hacer. La mayoría de los usuarios de Win
 
 Repositorio: <https://github.com/Dortecx/The-Player>
 
-Release v1.4.0: <https://github.com/Dortecx/The-Player/releases/tag/v1.4.0>
+Release v1.4.1: <https://github.com/Dortecx/The-Player/releases/tag/v1.4.1>
 
 ### Descargar y ejecutar el portátil de Windows
 
@@ -36,10 +36,10 @@ Usá este camino si querés el paquete de Windows listo para ejecutar. No necesi
 
 1. Descargá el ZIP:
 
-   <https://github.com/Dortecx/The-Player/releases/download/v1.4.0/The-Player-1.4.0-windows.zip>
+   <https://github.com/Dortecx/The-Player/releases/download/v1.4.1/The-Player-1.4.1-windows.zip>
 
 2. Descomprimilo.
-3. Abrí la carpeta extraída `The-Player-1.4.0-windows`.
+3. Abrí la carpeta extraída `The-Player-1.4.1-windows`.
 4. Hacé doble clic en `start.cmd`.
 5. Usá la ventana del navegador que se abre en <http://127.0.0.1:3000/>.
 
@@ -58,10 +58,10 @@ npm run build:portable:win
 Crealo en Windows con Node.js 18 o posterior disponible en el `PATH`. El build genera:
 
 ```text
-portable-win\The-Player-1.4.0-windows.zip
+portable-win\The-Player-1.4.1-windows.zip
 ```
 
-Descomprimí ese archivo y ejecutá `The-Player-1.4.0-windows\start.cmd`. El ZIP portátil generado incluye `runtime\node.exe`, así que los usuarios finales del ZIP no necesitan Node.js ni npm.
+Descomprimí ese archivo y ejecutá `The-Player-1.4.1-windows\start.cmd`. El ZIP portátil generado incluye `runtime\node.exe`, así que los usuarios finales del ZIP no necesitan Node.js ni npm.
 
 ### Código fuente en Windows
 
@@ -151,7 +151,7 @@ La reproducción real y Screen Wake Lock dependen del soporte del navegador. El 
 
 ## Compatibilidad de plataforma
 
-El portátil de Windows está soportado mediante el release ZIP v1.4.0 y el script de build portátil para Windows. El uso desde código fuente funciona donde haya Node.js 18 o posterior, npm y un navegador compatible. La reproducción siempre depende de los codecs soportados por el navegador que abre la app local.
+El portátil de Windows está soportado mediante el release ZIP v1.4.1 y el script de build portátil para Windows. El uso desde código fuente funciona donde haya Node.js 18 o posterior, npm y un navegador compatible. La reproducción siempre depende de los codecs soportados por el navegador que abre la app local.
 
 ## Licencia
 

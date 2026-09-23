@@ -404,6 +404,30 @@ A simple local web app solves the immediate workflow without requiring FFmpeg, t
   - Update package metadata and current bilingual release/tag/download/archive documentation to v1.4.0.
   - Evidence: `node --check server.js` passed. `node --check public/app.js` passed. `git diff --check` passed. Windows PowerShell built `portable-win/The-Player-1.4.0-windows.zip`; archive allowlist contains only `start.cmd`, `app/package.json`, `app/server.js`, `app/README.md`, `app/public/*`, and `runtime/node.exe`. A second build refused overwrite. An extracted `start.cmd` launch with `THE_PLAYER_NO_OPEN=1` returned HTTP 200 from `127.0.0.1:3000`. SHA-256: `faf484ff563a12ecdfd396ab01d4afaa679309e721ad380fd7681e812d8d6542`. Product commit `2c00b5861863c199f42a24a7312f53a0621965f2` was tagged with annotated `v1.4.0`, pushed on `release/v1.4.0`, and published at `https://github.com/Dortecx/The-Player/releases/tag/v1.4.0` with the verified ZIP asset.
 
+- [x] LV-064 — Make volume block assembly visibly progressive
+  - Separate scattered-block reveal, independent block travel/assembly, and final silhouette handoff into distinct painted phases.
+  - Prevent the final plate cross-fade from obscuring the block movement.
+  - Evidence: added `phase-blocks-assembling` and double `requestAnimationFrame` separation so scattered blocks paint before independent travel/growth begins. Blocks stay visible for a 1020ms assembly window, exceeding the longest configured delay-plus-duration, before the SVG plate cross-fades in; the numeric value remains delayed until after handoff. Reduced motion goes directly to the plate/value fallback, while visible number-only updates, exit/dispersal, and the fullscreen guard remain unchanged. `node --check public/app.js` passed. `git diff --check` passed. `PORT=3181 npm run web` started and `curl -fsS http://127.0.0.1:3181/` readiness passed.
+
+- [x] LV-065 — Match seamless volume plate to assembled module silhouette
+  - Derive the final seamless silhouette from the actual final module geometry rather than a separate rigid approximation.
+  - Cross-fade before seams dominate so the organic assembled shape transitions without a visible jump.
+  - Evidence: centralized the final module rectangles in `VOLUME_BLOCK_BLUEPRINTS`; the same data now creates each animated block and traces its exposed union edges into one opaque SVG path, sized to the exact 10.86rem × 8.18rem module bounds with no internal seams. Added a `phase-plate-handoff` at 560ms, while modules are still moving, so the matching plate completes its 460ms cross-fade at the 1020ms assembled state; numeric reveal remains 180ms later. Reduced motion still goes straight to the plate/value and the existing exit/dispersal/fullscreen behavior remains intact. `node --check public/app.js` passed. `git diff --check` passed. `PORT=3181 npm run web` started and `curl -fsS http://127.0.0.1:3181/` readiness passed after one initial connection-refused probe. Manual fullscreen visual acceptance remains pending.
+
+- [x] LV-066 — Prevent empty final plate before volume value
+  - Keep the final SVG plate invisible until the module assembly visibly covers its shape.
+  - Retain a short seamless handoff that avoids both blank-plate flashes and exposed module seams.
+  - Evidence: delayed `phase-plate-handoff` from 560ms to 840ms, after the slowest 982ms module motion is visibly near its final position, and shortened the matching plate/block cross-fade to 180ms so it completes at the 1020ms assembled state. The shared geometry, reduced-motion direct plate/value fallback, visible numeric updates, and exit/dispersal behavior remain unchanged. `node --check public/app.js` passed. `git diff --check` passed. `PORT=3181 npm run web` started and `curl -fsS http://127.0.0.1:3181/` readiness passed after one initial connection-refused probe. Manual fullscreen visual acceptance remains pending.
+
+- [x] LV-067 — Carry organic modular material through the full volume plate
+  - Tessellate the core as varied modules, not one uniform rectangle, while preserving complete text coverage.
+  - Render the final seamless SVG with matching subtle module variation across its full body, without interior seams or stroke lines.
+  - Evidence: replaced the single 6.8rem × 4.76rem core with ten edge-aligned, varied modules that fully cover the numeric field while retaining the existing organic exterior modules. The final SVG now traces the same shared module union once, then clips low-opacity monochrome rectangle fills from that exact blueprint inside the seamless base path; the texture has no strokes or separate outline. Progressive scatter/assembly, late handoff, numeric reveal, reduced-motion plate/value fallback, exit/dispersal, and fullscreen guard remain unchanged. `node --check public/app.js` passed. `git diff --check` passed. `PORT=3181 npm run web` started and `curl -fsS http://127.0.0.1:3181/` readiness passed after one initial connection-refused probe. Manual fullscreen visual acceptance remains pending.
+
+- [x] LV-068 — Prepare v1.4.1 release metadata
+  - Bump package metadata and current bilingual release/tag/download/archive documentation from v1.4.0 to v1.4.1.
+  - Evidence: `node --check server.js` passed. `node --check public/app.js` passed. `git diff --check` passed. Windows PowerShell built `portable-win/The-Player-1.4.1-windows.zip`; archive allowlist contains only `start.cmd`, `app/package.json`, `app/server.js`, `app/README.md`, `app/public/*`, and `runtime/node.exe`. An extracted `start.cmd` launch with `THE_PLAYER_NO_OPEN=1` returned HTTP 200 from `127.0.0.1:3000`. A second build refused overwrite. SHA-256: `6d919e3c279b9006201b1d2a32da8fab48d15dd8728945753d1031558cccb5af`. Commit, tag, push, and publication remain pending.
+
 ## Acceptance Criteria
 - Running `npm run web` starts a local server without requiring a framework dev server.
 - The browser app can select a folder or multiple files.

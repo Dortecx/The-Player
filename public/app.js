@@ -105,6 +105,7 @@ const state = {
   wakeLockSentinel: null,
   videoControlsTimer: null,
   volumeIndicatorTimer: null,
+  volumeIndicatorHandoffTimer: null,
   volumeIndicatorConcealTimer: null,
   playbackTogglePending: false,
   userMuted: false,
@@ -800,32 +801,161 @@ function handleSeekInput(event) {
   updateVideoControls();
 }
 
+// These modules tessellate the full numeric field; the surrounding modules retain the irregular silhouette.
+const VOLUME_BLOCK_BLUEPRINTS = [
+  { x: -2.6, y: -1.78, width: 1.6, height: 1.2 },
+  { x: -0.75, y: -1.78, width: 2.1, height: 1.2 },
+  { x: 1.85, y: -1.78, width: 3.1, height: 1.2 },
+  { x: -2.425, y: -0.43, width: 1.95, height: 1.5 },
+  { x: -0.35, y: -0.43, width: 2.2, height: 1.5 },
+  { x: 2.075, y: -0.43, width: 2.65, height: 1.5 },
+  { x: -2.7, y: 1.35, width: 1.4, height: 2.06 },
+  { x: -0.9, y: 1.35, width: 2.2, height: 2.06 },
+  { x: 1.05, y: 1.35, width: 1.7, height: 2.06 },
+  { x: 2.65, y: 1.35, width: 1.5, height: 2.06 },
+  { x: 0, y: -2.58, width: 7, height: 0.6 },
+  { x: 0, y: 2.58, width: 7, height: 0.6 },
+  { x: -3.58, y: 0, width: 0.6, height: 4.96 },
+  { x: 3.58, y: 0, width: 0.6, height: 4.96 },
+  { x: -2.35, y: -3.4, width: 2.3, height: 1.2 },
+  { x: 0, y: -3.38, width: 2.4, height: 1.2 },
+  { x: 2.6, y: -3.31, width: 1.8, height: 1.2 },
+  { x: -2.8, y: 3.28, width: 1.4, height: 1.4 },
+  { x: -0.7, y: 3.23, width: 2.8, height: 1.3 },
+  { x: 2.35, y: 3.38, width: 2, height: 1.6 },
+  { x: -4.43, y: -1.45, width: 1.5, height: 1.9 },
+  { x: -4.23, y: 0.65, width: 1.1, height: 2.3 },
+  { x: -4.58, y: 2, width: 1.8, height: 0.8 },
+  { x: 4.43, y: -1.5, width: 1.5, height: 1.8 },
+  { x: 4.28, y: 0.45, width: 1.2, height: 2.1 },
+  { x: 4.53, y: 2.1, width: 1.7, height: 0.6 }
+];
+
+function createVolumeIndicatorPlate() {
+  if (!elements.volumeIndicatorPlate) return;
+
+  const bounds = VOLUME_BLOCK_BLUEPRINTS.reduce((result, { x, y, width, height }) => ({
+    left: Math.min(result.left, x - width / 2),
+    right: Math.max(result.right, x + width / 2),
+    top: Math.min(result.top, y - height / 2),
+    bottom: Math.max(result.bottom, y + height / 2)
+  }), { left: Infinity, right: -Infinity, top: Infinity, bottom: -Infinity });
+  const scale = 100;
+  const width = (bounds.right - bounds.left) * scale;
+  const height = (bounds.bottom - bounds.top) * scale;
+  const xEdges = [...new Set(VOLUME_BLOCK_BLUEPRINTS.flatMap(({ x, width: blockWidth }) => [x - blockWidth / 2, x + blockWidth / 2]))].sort((a, b) => a - b);
+  const yEdges = [...new Set(VOLUME_BLOCK_BLUEPRINTS.flatMap(({ y, height: blockHeight }) => [y - blockHeight / 2, y + blockHeight / 2]))].sort((a, b) => a - b);
+  const filled = new Set();
+  const cellKey = (column, row) => `${column}:${row}`;
+  const isFilled = (column, row) => filled.has(cellKey(column, row));
+
+  for (let row = 0; row < yEdges.length - 1; row += 1) {
+    for (let column = 0; column < xEdges.length - 1; column += 1) {
+      const centerX = (xEdges[column] + xEdges[column + 1]) / 2;
+      const centerY = (yEdges[row] + yEdges[row + 1]) / 2;
+      if (VOLUME_BLOCK_BLUEPRINTS.some(({ x, y, width: blockWidth, height: blockHeight }) => (
+        centerX >= x - blockWidth / 2 && centerX <= x + blockWidth / 2
+        && centerY >= y - blockHeight / 2 && centerY <= y + blockHeight / 2
+      ))) {
+        filled.add(cellKey(column, row));
+      }
+    }
+  }
+
+  const edges = [];
+  const pointKey = (x, y) => `${x}:${y}`;
+  const addEdge = (fromX, fromY, toX, toY) => edges.push({
+    fromX,
+    fromY,
+    toX,
+    toY,
+    used: false
+  });
+  for (let row = 0; row < yEdges.length - 1; row += 1) {
+    for (let column = 0; column < xEdges.length - 1; column += 1) {
+      if (!isFilled(column, row)) continue;
+      const left = xEdges[column];
+      const right = xEdges[column + 1];
+      const top = yEdges[row];
+      const bottom = yEdges[row + 1];
+      if (!isFilled(column, row - 1)) addEdge(left, top, right, top);
+      if (!isFilled(column + 1, row)) addEdge(right, top, right, bottom);
+      if (!isFilled(column, row + 1)) addEdge(right, bottom, left, bottom);
+      if (!isFilled(column - 1, row)) addEdge(left, bottom, left, top);
+    }
+  }
+
+  const edgesByStart = new Map();
+  edges.forEach((edge) => {
+    const key = pointKey(edge.fromX, edge.fromY);
+    const list = edgesByStart.get(key) || [];
+    list.push(edge);
+    edgesByStart.set(key, list);
+  });
+  const toSvgPoint = (x, y) => `${(x - bounds.left) * scale} ${(y - bounds.top) * scale}`;
+  const paths = [];
+  edges.forEach((firstEdge) => {
+    if (firstEdge.used) return;
+    const commands = [`M${toSvgPoint(firstEdge.fromX, firstEdge.fromY)}`];
+    let edge = firstEdge;
+    while (edge && !edge.used) {
+      edge.used = true;
+      commands.push(`L${toSvgPoint(edge.toX, edge.toY)}`);
+      edge = (edgesByStart.get(pointKey(edge.toX, edge.toY)) || []).find((candidate) => !candidate.used);
+    }
+    paths.push(`${commands.join('')}Z`);
+  });
+
+  // Trace the union's exposed edges into one path, then tint its source modules without adding seams or a second silhouette.
+  const platePath = paths.join('');
+  const svgNamespace = 'http://www.w3.org/2000/svg';
+  const plate = elements.volumeIndicatorPlate;
+  let defs = plate.querySelector('defs');
+  if (!defs) {
+    defs = document.createElementNS(svgNamespace, 'defs');
+    plate.prepend(defs);
+  }
+  let clipPath = defs.querySelector('#volume-indicator-plate-clip');
+  if (!clipPath) {
+    clipPath = document.createElementNS(svgNamespace, 'clipPath');
+    clipPath.id = 'volume-indicator-plate-clip';
+    defs.append(clipPath);
+  }
+  let clipOutline = clipPath.querySelector('path');
+  if (!clipOutline) {
+    clipOutline = document.createElementNS(svgNamespace, 'path');
+    clipPath.append(clipOutline);
+  }
+  let texture = plate.querySelector('.volume-indicator-plate-texture');
+  if (!texture) {
+    texture = document.createElementNS(svgNamespace, 'g');
+    texture.classList.add('volume-indicator-plate-texture');
+    texture.setAttribute('clip-path', 'url(#volume-indicator-plate-clip)');
+    plate.append(texture);
+  }
+
+  plate.setAttribute('viewBox', `0 0 ${width} ${height}`);
+  plate.style.setProperty('--plate-width', `${(bounds.right - bounds.left).toFixed(2)}rem`);
+  plate.style.setProperty('--plate-height', `${(bounds.bottom - bounds.top).toFixed(2)}rem`);
+  plate.querySelector(':scope > path').setAttribute('d', platePath);
+  clipOutline.setAttribute('d', platePath);
+  texture.replaceChildren(...VOLUME_BLOCK_BLUEPRINTS.map(({ x, y, width: blockWidth, height: blockHeight }, index) => {
+    const patch = document.createElementNS(svgNamespace, 'rect');
+    patch.setAttribute('x', `${(x - blockWidth / 2 - bounds.left) * scale}`);
+    patch.setAttribute('y', `${(y - blockHeight / 2 - bounds.top) * scale}`);
+    patch.setAttribute('width', `${blockWidth * scale}`);
+    patch.setAttribute('height', `${blockHeight * scale}`);
+    patch.setAttribute('fill', index % 3 === 0 ? '#67676b' : index % 3 === 1 ? '#252529' : '#b0b0b4');
+    patch.setAttribute('fill-opacity', index % 3 === 2 ? '0.055' : '0.045');
+    return patch;
+  }));
+}
+
 function createVolumeIndicatorBlocks() {
   if (!elements.volumeIndicatorBlocks || elements.volumeIndicatorBlocks.childElementCount > 0) return;
 
-  const coreWidth = 6.8;
-  const coreHeight = 4.76;
-  const blockBlueprints = [
-    { x: 0, y: 0, width: coreWidth, height: coreHeight, core: true },
-    // This continuous attachment layer overlaps each core edge before the varied outer modules extend the silhouette.
-    { x: 0, y: -2.58, width: 7, height: 0.6 },
-    { x: 0, y: 2.58, width: 7, height: 0.6 },
-    { x: -3.58, y: 0, width: 0.6, height: 4.96 },
-    { x: 3.58, y: 0, width: 0.6, height: 4.96 },
-    { x: -2.35, y: -3.4, width: 2.3, height: 1.2 },
-    { x: 0, y: -3.38, width: 2.4, height: 1.2 },
-    { x: 2.6, y: -3.31, width: 1.8, height: 1.2 },
-    { x: -2.8, y: 3.28, width: 1.4, height: 1.4 },
-    { x: -0.7, y: 3.23, width: 2.8, height: 1.3 },
-    { x: 2.35, y: 3.38, width: 2, height: 1.6 },
-    { x: -4.43, y: -1.45, width: 1.5, height: 1.9 },
-    { x: -4.23, y: 0.65, width: 1.1, height: 2.3 },
-    { x: -4.58, y: 2, width: 1.8, height: 0.8 },
-    { x: 4.43, y: -1.5, width: 1.5, height: 1.8 },
-    { x: 4.28, y: 0.45, width: 1.2, height: 2.1 },
-    { x: 4.53, y: 2.1, width: 1.7, height: 0.6 }
-  ];
-  blockBlueprints.forEach(({ x, y, width, height, core }, index) => {
+  createVolumeIndicatorPlate();
+  VOLUME_BLOCK_BLUEPRINTS.forEach(({ x, y, width, height, core }, index) => {
     const scatterX = (((index * 37) % 53) - 26) / 10;
     const scatterY = (((index * 29) % 47) - 23) / 10;
     const startScale = 0.22 + ((index * 17) % 43) / 100;
@@ -848,8 +978,13 @@ function createVolumeIndicatorBlocks() {
   });
 }
 
+const VOLUME_BLOCK_ASSEMBLY_MS = 1020;
+// The slowest module settles at 982ms; begin the brief seam-covering handoff only once its motion is nearly complete.
+const VOLUME_PLATE_HANDOFF_MS = 840;
 const VOLUME_INDICATOR_PHASES = [
   'phase-blocks-in',
+  'phase-blocks-assembling',
+  'phase-plate-handoff',
   'phase-frame-assembled',
   'phase-value-visible',
   'phase-value-hidden',
@@ -864,8 +999,10 @@ function setVolumeIndicatorPhase(phase) {
 
 function clearVolumeIndicatorTimers() {
   if (state.volumeIndicatorTimer) window.clearTimeout(state.volumeIndicatorTimer);
+  if (state.volumeIndicatorHandoffTimer) window.clearTimeout(state.volumeIndicatorHandoffTimer);
   if (state.volumeIndicatorConcealTimer) window.clearTimeout(state.volumeIndicatorConcealTimer);
   state.volumeIndicatorTimer = null;
+  state.volumeIndicatorHandoffTimer = null;
   state.volumeIndicatorConcealTimer = null;
 }
 
@@ -910,18 +1047,32 @@ function showVolumeIndicator() {
 
   hideVolumeIndicator();
   elements.volumeIndicator.hidden = false;
+
+  if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+    setVolumeIndicatorPhase('phase-value-visible');
+    scheduleVolumeIndicatorExit();
+    return;
+  }
+
   void elements.volumeIndicator.offsetWidth;
   window.requestAnimationFrame(() => {
     if (elements.volumeIndicator.hidden) return;
     setVolumeIndicatorPhase('phase-blocks-in');
-    const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-    state.volumeIndicatorTimer = window.setTimeout(() => {
-      setVolumeIndicatorPhase('phase-frame-assembled');
-      state.volumeIndicatorConcealTimer = window.setTimeout(() => {
-        setVolumeIndicatorPhase('phase-value-visible');
-        scheduleVolumeIndicatorExit();
-      }, reducedMotion ? 0 : 180);
-    }, reducedMotion ? 0 : 1040);
+    window.requestAnimationFrame(() => {
+      if (elements.volumeIndicator.hidden) return;
+      setVolumeIndicatorPhase('phase-blocks-assembling');
+      state.volumeIndicatorHandoffTimer = window.setTimeout(() => {
+        setVolumeIndicatorPhase('phase-plate-handoff');
+        state.volumeIndicatorHandoffTimer = null;
+      }, VOLUME_PLATE_HANDOFF_MS);
+      state.volumeIndicatorTimer = window.setTimeout(() => {
+        setVolumeIndicatorPhase('phase-frame-assembled');
+        state.volumeIndicatorConcealTimer = window.setTimeout(() => {
+          setVolumeIndicatorPhase('phase-value-visible');
+          scheduleVolumeIndicatorExit();
+        }, 180);
+      }, VOLUME_BLOCK_ASSEMBLY_MS);
+    });
   });
 }
 
