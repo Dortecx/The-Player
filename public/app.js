@@ -104,7 +104,11 @@ const state = {
   playlistSearchQuery: '',
   wakeLockSentinel: null,
   videoControlsTimer: null,
-  volumeIndicatorTimer: null
+  volumeIndicatorTimer: null,
+  volumeIndicatorConcealTimer: null,
+  playbackTogglePending: false,
+  userMuted: false,
+  userVolume: 1
 };
 
 const elements = {
@@ -120,6 +124,9 @@ const elements = {
   nowPlaying: document.querySelector('#nowPlaying'),
   videoFrame: document.querySelector('#videoFrame'),
   volumeIndicator: document.querySelector('#volumeIndicator'),
+  volumeIndicatorValue: document.querySelector('#volumeIndicator .volume-indicator-value'),
+  volumeIndicatorPlate: document.querySelector('#volumeIndicator .volume-indicator-plate'),
+  volumeIndicatorBlocks: document.querySelector('#volumeIndicator .volume-indicator-blocks'),
   video: document.querySelector('#videoPlayer'),
   videoPlayPauseButton: document.querySelector('#videoPlayPauseButton'),
   videoTimeDisplay: document.querySelector('#videoTimeDisplay'),
@@ -739,34 +746,44 @@ function hideVideoControlsIfPlaying() {
   elements.videoFrame.classList.remove('controls-visible');
 }
 
+function updateVideoProgress() {
+  const duration = getVideoDuration();
+  const currentTime = Number.isFinite(elements.video.currentTime) ? elements.video.currentTime : 0;
+  const seekMax = duration > 0 ? duration : 100;
+  const seekValue = duration > 0 ? clamp(currentTime, 0, duration) : 0;
+
+  const seekProgress = duration > 0 ? (seekValue / duration) * 100 : 0;
+
+  elements.videoSeekRange.max = String(seekMax);
+  elements.videoSeekRange.value = String(seekValue);
+  elements.videoSeekRange.style.setProperty('--seek-progress', `${seekProgress}%`);
+  elements.videoSeekRange.setAttribute('aria-valuetext', `${formatTime(seekValue)} of ${formatTime(duration)}`);
+  elements.videoTimeDisplay.textContent = `${formatTime(currentTime)} / ${formatTime(duration)}`;
+}
+
 function updateVideoControls() {
   const hasVideo = Boolean(elements.video.src);
   elements.videoFrame?.classList.toggle('has-video', hasVideo);
   elements.videoFrame?.classList.toggle('is-playing', hasVideo && !elements.video.paused && !elements.video.ended);
   const duration = getVideoDuration();
-  const currentTime = Number.isFinite(elements.video.currentTime) ? elements.video.currentTime : 0;
-  const seekMax = duration > 0 ? duration : 100;
-  const seekValue = duration > 0 ? clamp(currentTime, 0, duration) : 0;
   const paused = elements.video.paused || elements.video.ended;
   const muted = elements.video.muted || elements.video.volume === 0;
 
   elements.videoPlayPauseButton.disabled = !hasVideo;
   elements.videoPlayPauseButton.setAttribute('aria-label', paused ? 'Play' : 'Pause');
-  elements.videoPlayPauseButton.querySelector('.control-icon').textContent = paused ? '▶' : 'Ⅱ';
+  elements.videoPlayPauseButton.classList.toggle('is-playing', hasVideo && !paused);
 
   elements.videoSeekRange.disabled = !hasVideo || duration <= 0;
-  elements.videoSeekRange.max = String(seekMax);
-  elements.videoSeekRange.value = String(seekValue);
-  elements.videoSeekRange.setAttribute('aria-valuetext', `${formatTime(seekValue)} of ${formatTime(duration)}`);
-
-  elements.videoTimeDisplay.textContent = `${formatTime(currentTime)} / ${formatTime(duration)}`;
+  updateVideoProgress();
 
   elements.videoMuteButton.disabled = !hasVideo;
   elements.videoMuteButton.setAttribute('aria-label', muted ? 'Unmute' : 'Mute');
-  elements.videoMuteButton.querySelector('.control-icon').textContent = muted ? 'MUTE' : 'VOL';
+  elements.videoMuteButton.classList.toggle('is-muted', muted);
 
+  const volumeValue = elements.video.muted ? 0 : elements.video.volume;
   elements.videoVolumeRange.disabled = !hasVideo;
-  elements.videoVolumeRange.value = String(elements.video.muted ? 0 : elements.video.volume);
+  elements.videoVolumeRange.value = String(volumeValue);
+  elements.videoVolumeRange.style.setProperty('--volume-progress', `${volumeValue * 100}%`);
 
   elements.videoFullscreenButton.disabled = !hasVideo || !elements.videoFrame;
 
@@ -783,37 +800,154 @@ function handleSeekInput(event) {
   updateVideoControls();
 }
 
+function createVolumeIndicatorBlocks() {
+  if (!elements.volumeIndicatorBlocks || elements.volumeIndicatorBlocks.childElementCount > 0) return;
+
+  const coreWidth = 6.8;
+  const coreHeight = 4.76;
+  const blockBlueprints = [
+    { x: 0, y: 0, width: coreWidth, height: coreHeight, core: true },
+    // This continuous attachment layer overlaps each core edge before the varied outer modules extend the silhouette.
+    { x: 0, y: -2.58, width: 7, height: 0.6 },
+    { x: 0, y: 2.58, width: 7, height: 0.6 },
+    { x: -3.58, y: 0, width: 0.6, height: 4.96 },
+    { x: 3.58, y: 0, width: 0.6, height: 4.96 },
+    { x: -2.35, y: -3.4, width: 2.3, height: 1.2 },
+    { x: 0, y: -3.38, width: 2.4, height: 1.2 },
+    { x: 2.6, y: -3.31, width: 1.8, height: 1.2 },
+    { x: -2.8, y: 3.28, width: 1.4, height: 1.4 },
+    { x: -0.7, y: 3.23, width: 2.8, height: 1.3 },
+    { x: 2.35, y: 3.38, width: 2, height: 1.6 },
+    { x: -4.43, y: -1.45, width: 1.5, height: 1.9 },
+    { x: -4.23, y: 0.65, width: 1.1, height: 2.3 },
+    { x: -4.58, y: 2, width: 1.8, height: 0.8 },
+    { x: 4.43, y: -1.5, width: 1.5, height: 1.8 },
+    { x: 4.28, y: 0.45, width: 1.2, height: 2.1 },
+    { x: 4.53, y: 2.1, width: 1.7, height: 0.6 }
+  ];
+  blockBlueprints.forEach(({ x, y, width, height, core }, index) => {
+    const scatterX = (((index * 37) % 53) - 26) / 10;
+    const scatterY = (((index * 29) % 47) - 23) / 10;
+    const startScale = 0.22 + ((index * 17) % 43) / 100;
+    const delay = (index * 47) % 173;
+    const duration = 520 + (index * 83) % 311;
+    const block = document.createElement('span');
+    block.className = `volume-indicator-block${core ? ' volume-indicator-core' : ''}`;
+    block.style.left = '50%';
+    block.style.top = '50%';
+    block.style.width = `${width}rem`;
+    block.style.height = `${height}rem`;
+    block.style.setProperty('--final-x', `${x}rem`);
+    block.style.setProperty('--final-y', `${y}rem`);
+    block.style.setProperty('--scatter-x', `${scatterX}rem`);
+    block.style.setProperty('--scatter-y', `${scatterY}rem`);
+    block.style.setProperty('--start-scale', startScale);
+    block.style.setProperty('--block-delay', `${delay}ms`);
+    block.style.setProperty('--block-duration', `${duration}ms`);
+    elements.volumeIndicatorBlocks.append(block);
+  });
+}
+
+const VOLUME_INDICATOR_PHASES = [
+  'phase-blocks-in',
+  'phase-frame-assembled',
+  'phase-value-visible',
+  'phase-value-hidden',
+  'phase-blocks-collapsing',
+  'phase-blocks-dispersing'
+];
+
+function setVolumeIndicatorPhase(phase) {
+  elements.volumeIndicator.classList.remove(...VOLUME_INDICATOR_PHASES);
+  if (phase) elements.volumeIndicator.classList.add(phase);
+}
+
+function clearVolumeIndicatorTimers() {
+  if (state.volumeIndicatorTimer) window.clearTimeout(state.volumeIndicatorTimer);
+  if (state.volumeIndicatorConcealTimer) window.clearTimeout(state.volumeIndicatorConcealTimer);
+  state.volumeIndicatorTimer = null;
+  state.volumeIndicatorConcealTimer = null;
+}
+
+function hideVolumeIndicator() {
+  if (!elements.volumeIndicator) return;
+  clearVolumeIndicatorTimers();
+  setVolumeIndicatorPhase();
+  elements.volumeIndicator.hidden = true;
+}
+
+function beginVolumeIndicatorExit() {
+  state.volumeIndicatorTimer = null;
+  setVolumeIndicatorPhase('phase-value-hidden');
+  state.volumeIndicatorConcealTimer = window.setTimeout(() => {
+    setVolumeIndicatorPhase('phase-blocks-collapsing');
+    state.volumeIndicatorTimer = window.setTimeout(() => {
+      setVolumeIndicatorPhase('phase-blocks-dispersing');
+      state.volumeIndicatorConcealTimer = window.setTimeout(hideVolumeIndicator, 330);
+    }, 230);
+  }, 260);
+}
+
+function scheduleVolumeIndicatorExit() {
+  if (state.volumeIndicatorTimer) window.clearTimeout(state.volumeIndicatorTimer);
+  if (state.volumeIndicatorConcealTimer) window.clearTimeout(state.volumeIndicatorConcealTimer);
+  state.volumeIndicatorConcealTimer = null;
+  state.volumeIndicatorTimer = window.setTimeout(beginVolumeIndicatorExit, 1150);
+}
+
 function showVolumeIndicator() {
   if (!elements.volumeIndicator || !getFullscreenElement()) return;
+  createVolumeIndicatorBlocks();
+
   const volume = elements.video.muted ? 0 : Math.round(elements.video.volume * 100);
   elements.volumeIndicator.value = String(volume);
-  elements.volumeIndicator.textContent = String(volume);
+  elements.volumeIndicatorValue.textContent = String(volume);
+
+  if (!elements.volumeIndicator.hidden && elements.volumeIndicator.classList.contains('phase-value-visible')) {
+    scheduleVolumeIndicatorExit();
+    return;
+  }
+
+  hideVolumeIndicator();
   elements.volumeIndicator.hidden = false;
-  if (state.volumeIndicatorTimer) window.clearTimeout(state.volumeIndicatorTimer);
-  state.volumeIndicatorTimer = window.setTimeout(() => {
-    elements.volumeIndicator.hidden = true;
-    state.volumeIndicatorTimer = null;
-  }, 1400);
+  void elements.volumeIndicator.offsetWidth;
+  window.requestAnimationFrame(() => {
+    if (elements.volumeIndicator.hidden) return;
+    setVolumeIndicatorPhase('phase-blocks-in');
+    const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    state.volumeIndicatorTimer = window.setTimeout(() => {
+      setVolumeIndicatorPhase('phase-frame-assembled');
+      state.volumeIndicatorConcealTimer = window.setTimeout(() => {
+        setVolumeIndicatorPhase('phase-value-visible');
+        scheduleVolumeIndicatorExit();
+      }, reducedMotion ? 0 : 180);
+    }, reducedMotion ? 0 : 1040);
+  });
 }
 
 function handleVolumeInput(event) {
   const nextVolume = Number.parseFloat(event.target.value);
   if (!Number.isFinite(nextVolume)) return;
-  elements.video.volume = clamp(nextVolume, 0, 1);
-  elements.video.muted = elements.video.volume === 0;
+  state.userMuted = false;
+  state.userVolume = clamp(nextVolume, 0, 1);
+  elements.video.volume = state.userVolume;
+  elements.video.muted = false;
   updateVideoControls();
   showVolumeIndicator();
 }
 
 function toggleMute() {
   if (!elements.video.src) return;
-  if (elements.video.muted || elements.video.volume === 0) {
-    elements.video.muted = false;
-    if (elements.video.volume === 0) elements.video.volume = 0.5;
+  if (state.userMuted || state.userVolume === 0) {
+    state.userMuted = false;
+    if (state.userVolume === 0) state.userVolume = 0.5;
   } else {
-    elements.video.muted = true;
+    state.userMuted = true;
   }
+  elements.video.volume = state.userVolume;
+  elements.video.muted = state.userMuted;
   updateVideoControls();
+  showVolumeIndicator();
 }
 
 function findItemIndexById(items, itemId) {
@@ -924,6 +1058,8 @@ async function playIndex(index, options = {}) {
       updateStatus(t('statusRestored', { name: item.relativePath, time: formatTime(savedTime) }));
     }
   };
+  elements.video.volume = state.userVolume;
+  elements.video.muted = state.userMuted;
   elements.video.src = state.currentObjectUrl;
   elements.video.load();
   elements.nowPlaying.textContent = item.relativePath;
@@ -1060,17 +1196,22 @@ function clamp(value, min, max) {
 }
 
 async function togglePlayback() {
-  if (!elements.video.src) return;
-  if (elements.video.paused || elements.video.ended) {
-    try {
-      await elements.video.play();
-      clearError();
-    } catch (error) {
-      showError(t('autoplayBlocked', { message: error.message || '' }));
-    }
+  if (!elements.video.src || state.playbackTogglePending) return;
+
+  if (!elements.video.paused && !elements.video.ended) {
+    elements.video.pause();
     return;
   }
-  elements.video.pause();
+
+  state.playbackTogglePending = true;
+  try {
+    await elements.video.play();
+    clearError();
+  } catch (error) {
+    showError(t('autoplayBlocked', { message: error.message || '' }));
+  } finally {
+    state.playbackTogglePending = false;
+  }
 }
 
 function seekBy(seconds) {
@@ -1082,8 +1223,10 @@ function seekBy(seconds) {
 
 function changeVolumeBy(delta) {
   if (!elements.video.src) return;
+  state.userMuted = false;
+  state.userVolume = clamp(state.userVolume + delta, 0, 1);
+  elements.video.volume = state.userVolume;
   elements.video.muted = false;
-  elements.video.volume = clamp(elements.video.volume + delta, 0, 1);
   updateVideoControls();
   showVolumeIndicator();
 }
@@ -1210,9 +1353,12 @@ elements.video.addEventListener('error', () => {
 elements.video.addEventListener('loadedmetadata', updateVideoControls);
 elements.video.addEventListener('durationchange', updateVideoControls);
 elements.video.addEventListener('volumechange', updateVideoControls);
-document.addEventListener('fullscreenchange', updateVideoControls);
-elements.video.addEventListener('timeupdate', () => {
+document.addEventListener('fullscreenchange', () => {
   updateVideoControls();
+  if (!getFullscreenElement()) hideVolumeIndicator();
+});
+elements.video.addEventListener('timeupdate', () => {
+  updateVideoProgress();
   const now = Date.now();
   if (now - state.lastSaveAt >= SAVE_INTERVAL_MS) {
     state.lastSaveAt = now;
@@ -1229,5 +1375,6 @@ window.addEventListener('beforeunload', () => {
 });
 
 applyStaticCopy();
+createVolumeIndicatorBlocks();
 updateControls();
 initParticleBackground();

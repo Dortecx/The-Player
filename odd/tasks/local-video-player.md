@@ -312,6 +312,98 @@ A simple local web app solves the immediate workflow without requiring FFmpeg, t
   - Build and verify the Windows portable ZIP, then create the tag and public GitHub Release with evidence-based release notes.
   - Evidence: `node --check server.js` passed. `node --check public/app.js` passed. `git diff --check` passed. Windows PowerShell created `portable-win/The-Player-1.3.0-windows.zip`; archive contents include `start.cmd`, `app/package.json`, `app/server.js`, `app/README.md`, `app/public/*`, and `runtime/node.exe`, with no `node_modules` or repository metadata. A repeat build refused overwrite. Extracted `start.cmd` launched the bundled runtime and returned HTTP 200 at `127.0.0.1:3000`; temporary smoke staging was cleaned. SHA-256: `79A333F3171DA89B0A1CA426A6F5F96AA1B1A2F1DBF4E12C69262619EA906465`.
 
+- [x] LV-044 — Experiment with cinematic volume feedback and integrated controls
+  - Refine the custom control bar to match the monochrome particle-network environment without sacrificing contrast or keyboard/focus usability.
+  - Replace abrupt fullscreen volume percentage visibility with an isolated local 3D block reveal/conceal animation; honor reduced-motion preferences.
+  - Evidence: `node --check server.js` passed. `node --check public/app.js` passed. `git diff --check` passed. `PORT=3181 npm run web` readiness check passed with `curl -fsS http://127.0.0.1:3181/`. Static readback confirmed generated local volume blocks, separate reveal/conceal timers, 3D CSS transforms, and a reduced-motion fallback without blocks. Manual browser acceptance remains pending.
+
+- [x] LV-045 — Slow and foreground the volume block transition
+  - Remove the static indicator-card reading so blocks, not a permanent rectangle, are the dominant fullscreen feedback form.
+  - Increase block count/scale/depth and delay numeric reveal until the block tunnel disperses; extend reveal/conceal timings for perceptibility.
+  - Evidence: `node --check server.js` passed. `node --check public/app.js` passed. `git diff --check` passed. `PORT=3181 npm run web` readiness check passed with `curl -fsS http://127.0.0.1:3181/`. Static readback confirmed 12 large/deep blocks, 1080ms reveal, delayed numeric reveal, 720ms conceal, a 1850ms hold, and reduced-motion opacity fallback. Manual browser acceptance remains pending.
+
+- [x] LV-046 — Assemble/disperse volume blocks and float controls
+  - Model the volume feedback as explicit scatter-in, assemble, value-visible, value-hidden, collapse, scatter-out, and hidden phases matching the user diagram.
+  - Make the custom video control bar a slim floating dock over the video rather than a full-width bottom strip.
+  - Evidence: `node --check server.js` passed. `node --check public/app.js` passed. `git diff --check` passed. `PORT=3181 npm run web` readiness check passed with `curl -fsS http://127.0.0.1:3181/`. Static readback confirmed explicit phase timers and class transitions for scatter/assemble/value/collapse/disperse plus a floating `28rem` maximum-width control dock. Manual browser acceptance remains pending.
+
+- [x] LV-047 — Prevent playback toggle races and progress repaint churn
+  - Serialize play/pause toggles so a second action cannot interrupt an unresolved `video.play()` request.
+  - Replace full control-state updates on every `timeupdate` with a lightweight seek/time display update.
+  - Evidence: `node --check server.js` passed. `node --check public/app.js` passed. `git diff --check` passed. `PORT=3181 npm run web` readiness check passed with `curl -fsS http://127.0.0.1:3181/`. Static readback confirmed pending-toggle gating around `video.play()` and `timeupdate` calling only `updateVideoProgress()`. Manual browser playback acceptance remains pending.
+
+- [x] LV-048 — Remove fullscreen compositing pressure and make volume phases visible
+  - Avoid costly blurred/composited control styling while the video frame is fullscreen.
+  - Use a normal indicator container and visibly stage initial volume blocks so the phase flow can render reliably.
+  - Evidence: `node --check server.js` passed. `node --check public/app.js` passed. `git diff --check` passed. `PORT=3181 npm run web` readiness check passed with `curl -fsS http://127.0.0.1:3181/`. Static readback confirmed fullscreen dock blur removal, normal status container markup, visible scatter transform, and a request-animation-frame phase start. Manual fullscreen playback and indicator acceptance remain pending.
+
+- [x] LV-049 — Refine volume frame and update visible values in place
+  - Arrange smaller blocks as a readable irregular frame around, not over, the numeric value.
+  - When the value is already visible, update it and extend visibility without replaying block phases.
+  - Evidence: `node --check server.js` passed. `node --check public/app.js` passed. `git diff --check` passed. `PORT=3181 npm run web` readiness check passed with `curl -fsS http://127.0.0.1:3181/`. Static readback confirmed compact perimeter block blueprints, value-above-block layering, and visible-phase updates extending only the exit timer. Manual fullscreen indicator acceptance remains pending.
+
+- [x] LV-050 — Converge volume blocks into a continuous modular contour
+  - Let block growth/arrival vary independently while mapping every final block to an exact shared-cell position in an irregular continuous frame.
+  - Prevent final overlap and disconnected floating pieces around the numeric value.
+  - Evidence: `node --check server.js` passed. `node --check public/app.js` passed. `git diff --check` passed. `PORT=3181 npm run web` readiness check passed with `curl -fsS http://127.0.0.1:3181/`. Static readback confirmed shared-cell final coordinates, non-overlapping unit modules, independent delays/scales/durations, and a common continuous contour target. Manual fullscreen visual acceptance remains pending.
+
+- [x] LV-051 — Fill the volume indicator with a modular background
+  - Animate independently growing square modules into a filled, irregular background behind the volume value, rather than a perimeter-only frame.
+  - Preserve in-place number updates while the indicator remains visible.
+  - Evidence: replaced the perimeter blueprint with 43 contiguous square modules across six uneven rows, forming one filled irregular silhouette behind the value; each module receives deterministic independent scatter, scale, delay, and duration values. The existing visible-phase path still updates only the number and reschedules exit. `node --check public/app.js` passed. `git diff --check` passed. `PORT=3181 npm run web` started successfully and `curl -fsS http://127.0.0.1:3181/` passed on the first attempt. Manual fullscreen visual acceptance remains pending.
+
+- [x] LV-052 — Build a seamless variable-module volume plate
+  - Cover the complete volume value background with varied module sizes rather than a uniform grid.
+  - Hide internal seams so only the outer silhouette reads as a contour.
+  - Evidence: replaced the uniform square grid with 17 independently timed rectangular modules that tile a 10×7 plate behind the value; modules have no internal borders, while a single subtle outer contour defines the silhouette. The visible-phase path remains unchanged, so the number updates in place while active. `node --check public/app.js` passed. `git diff --check` passed. `PORT=3181 npm run web` readiness check passed with `curl -fsS http://127.0.0.1:3181/`.
+
+- [x] LV-053 — Add an organic modular silhouette around the volume plate
+  - Preserve a fully filled rectangular core behind the number.
+  - Add varied exterior modules around its edges so the final outer contour remains irregular without internal gaps.
+  - Evidence: replaced the tiled plate with one solid 6.8rem × 4.76rem rectangular core behind the value and 12 varied rectangular exterior modules, each joined only to a core edge. The modules retain deterministic independent scatter, start-scale, delay, and duration values; the former inner rectangular outline is replaced with a subtle composite-only outer drop shadow, leaving no internal seams or borders. The visible-phase update path and fullscreen guard remain unchanged. `node --check public/app.js` passed. `git diff --check` passed. `PORT=3181 npm run web` readiness check passed with `curl -fsS http://127.0.0.1:3181/`.
+
+- [x] LV-054 — Remove interior seams from the organic volume plate
+  - Overlap exterior modules with the filled core enough to avoid fractional-pixel seams at their joins.
+  - Retain only the external silhouette definition.
+  - Evidence: shifted the three top and three bottom exterior-module final coordinates 0.12rem inward, creating a deliberate ~0.1rem overlap with the unchanged 6.8rem × 4.76rem core on every attached edge; existing left/right modules retain their 0.1rem overlap. The composite-only outer drop shadow remains the sole visible definition. `node --check public/app.js` passed. `git diff --check` passed. `PORT=3181 npm run web` readiness check passed with `curl -fsS http://127.0.0.1:3181/` after one initial connection-refused probe.
+
+- [x] LV-055 — Fully cover core edges with attached exterior modules
+  - Cover every core edge continuously with exterior modules that overlap the core, eliminating real gaps and rasterization seams.
+  - Keep irregular protrusions outside that continuous attachment layer.
+  - Evidence: added four continuous attachment modules around the unchanged 6.8rem × 4.76rem core; each overlaps the corresponding edge by about 0.1rem and together covers every edge and corner. Repositioned the varied exterior modules beyond that layer, retaining the jagged silhouette. `node --check public/app.js` passed. `git diff --check` passed. `PORT=3181 npm run web` started successfully and `curl -fsS http://127.0.0.1:3181/` returned the page.
+
+- [x] LV-056 — Refine the floating playback dock and seek affordance
+  - Replace the text-only volume affordance with a speaker SVG and improve vertical rhythm in the floating controls.
+  - Render played seek progress and a clear scrubber thumb inside a thicker, visually integrated track.
+  - Evidence: replaced the `VOL` text with an inline monochrome speaker SVG while retaining the JS mute/unmute aria-label updates; rebuilt the floating dock as a padded two-tier control surface with an integrated seek row and action row. `updateVideoProgress()` now writes `--seek-progress`, which styles elapsed/remaining track states and a circular thumb in WebKit and Firefox while retaining the native range element. `node --check public/app.js` passed. `git diff --check` passed. `PORT=3181 npm run web` readiness check passed with `curl -fsS http://127.0.0.1:3181/` after one initial connection-refused probe.
+
+- [x] LV-057 — Compact volume control and use SVG playback icons
+  - Keep volume compact until its speaker control is hovered or focused, then reveal the range with a button-like transition.
+  - Replace typographic play/pause glyphs with semantic inline SVG icons.
+  - Evidence: wrapped the existing speaker button and volume range in a focusable-within volume control that keeps only the speaker visible by default, then smoothly expands the range on hover or keyboard focus while retaining pointer interactivity. Replaced the typographic play/pause update with inline monochrome SVG paths; `updateVideoControls()` now synchronizes the `is-playing` icon state and the Play/Pause accessible label. The small-screen expansion remains bounded. `node --check public/app.js` passed. `git diff --check` passed. `PORT=3181 npm run web` readiness check passed with `curl -fsS http://127.0.0.1:3181/` after one initial connection-refused probe.
+
+- [x] LV-058 — Render revealed volume range and preserve intentional audio state
+  - Style the expanded volume range's track and thumb so it is visibly interactive.
+  - Carry only explicit user mute intent across source changes; prevent stale media-element mute state from silently suppressing audio.
+  - Evidence: added dark monochrome WebKit and Firefox tracks, visible progress treatment, compact thumbs, and range focus styling. `userMuted` and `userVolume` now record only intentional mute/volume actions; each `playIndex()` synchronizes the source to that intent, preserving positive volume by default, intentional mute, and intentional zero volume. `node --check public/app.js` passed. `git diff --check` passed. `PORT=3181 npm run web` readiness check passed with `curl -fsS http://127.0.0.1:3181/` after one initial connection-refused probe. Manual browser audio/visual checks remain pending.
+
+- [x] LV-059 — Optically center the expanded volume slider
+  - Normalize native range box metrics so its track/thumb center aligns with the speaker icon.
+  - Evidence: normalized the range as a centered block with zero margin/padding, a capsule-height box, and middle vertical alignment; shifted the native slider optical center up 1px and corrected the WebKit thumb offset while preserving the existing width/opacity transition, track, focus styling, and Firefox rendering. `git diff --check` passed. `PORT=3181 npm run web` readiness check passed with `curl -fsS http://127.0.0.1:3181/` after one initial connection-refused probe.
+
+- [x] LV-061 — Balance expanded volume control edge padding
+  - Give the revealed range/thumb the same breathing room from the right capsule edge as the speaker has from the left edge.
+  - Evidence: reserved a `0.7rem` right edge inset for the revealed range and reduced its animated width by that same amount, preserving the combined capsule width, existing expansion behavior, vertical alignment, and visible track/thumb. `git diff --check` passed. `PORT=3181 npm run web` started successfully and `curl -fsS http://127.0.0.1:3181/` passed after one initial connection-refused readiness probe.
+
+- [x] LV-062 — Replace final volume modules with one seamless silhouette
+  - Use individual modules only during assembly, then transition to one opaque final plate with the organic outer contour.
+  - Eliminate every interior seam while preserving the outer silhouette definition and numeric foreground.
+  - Evidence: added a single opaque inline SVG silhouette plate with the existing core-and-jagged-edge contour. Blocks now scatter and assemble for up to 1040ms, then cross-fade beneath the plate before the numeric value appears; exit keeps the plate through number concealment, then restores blocks only for collapse/dispersal. Reduced motion skips directly to the plate/value without rendering blocks. `node --check public/app.js` passed. `git diff --check` passed. `PORT=3181 npm run web` readiness check passed with `curl -fsS http://127.0.0.1:3181/` after one initial connection-refused probe. Manual fullscreen visual acceptance remains pending.
+
+- [x] LV-063 — Prepare v1.4.0 release source metadata and portable artifact
+  - Update package metadata and current bilingual release/tag/download/archive documentation to v1.4.0.
+  - Evidence: `node --check server.js` passed. `node --check public/app.js` passed. `git diff --check` passed. Windows PowerShell built `portable-win/The-Player-1.4.0-windows.zip`; archive allowlist contains only `start.cmd`, `app/package.json`, `app/server.js`, `app/README.md`, `app/public/*`, and `runtime/node.exe`. A second build refused overwrite. An extracted `start.cmd` launch with `THE_PLAYER_NO_OPEN=1` returned HTTP 200 from `127.0.0.1:3000`. SHA-256: `faf484ff563a12ecdfd396ab01d4afaa679309e721ad380fd7681e812d8d6542`. Commit, tag, push, and GitHub Release publication remain pending.
+
 ## Acceptance Criteria
 - Running `npm run web` starts a local server without requiring a framework dev server.
 - The browser app can select a folder or multiple files.
@@ -365,6 +457,17 @@ A simple local web app solves the immediate workflow without requiring FFmpeg, t
 - 2026-09-22: Completed LV-041 fullscreen numeric volume feedback indicator.
 - 2026-09-22: Completed LV-042 2K cinematic frame sizing and increased side margin.
 - 2026-09-22: Prepared v1.3.0 portable ZIP with verified bundled Windows runtime, launcher readiness, archive allowlist, overwrite refusal, and SHA-256 digest.
+- 2026-09-22: Completed LV-044 experimental cinematic volume indicator blocks and integrated custom control-bar treatment; manual visual acceptance remains pending.
+- 2026-09-22: Completed LV-045 stronger, slower volume block transition with delayed numeric reveal and no fixed indicator card; manual visual acceptance remains pending.
+- 2026-09-22: Completed LV-046 explicit volume block phase sequence and slim floating control dock; manual visual acceptance remains pending.
+- 2026-09-22: Completed LV-047 playback race guard and lightweight timeupdate progress rendering.
+- 2026-09-22: Completed LV-048 fullscreen compositing simplification and volume phase paint staging; manual fullscreen playback acceptance remains pending.
+- 2026-09-22: Completed LV-049 compact irregular volume frame and in-place visible value updates; manual visual acceptance remains pending.
+- 2026-09-22: Completed LV-050 shared-cell modular volume contour with independent growth/arrival timing; manual visual acceptance remains pending.
+- 2026-09-22: Completed LV-052 seamless variable-module volume plate: independently timed rectangular modules now tile the complete value background without internal borders, with one subtle outer contour; manual fullscreen visual acceptance remains pending.
+- 2026-09-22: Completed LV-053 organic volume silhouette: one solid rectangular core fully covers the value, while varied exterior-only modules make the monochrome outer contour jagged without internal seams; manual fullscreen visual acceptance remains pending.
+- 2026-09-22: Completed LV-058 visible volume range styling and explicit audio intent synchronization across source loads; manual browser audio/visual acceptance remains pending.
+- 2026-09-22: Completed LV-059 optical volume-slider alignment by normalizing native range metrics and correcting the visible slider center against the speaker icon; manual browser visual acceptance remains pending.
 
 ## Verification Evidence
 - `node --check server.js` — passed after LV-034 release preparation.
