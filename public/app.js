@@ -136,6 +136,7 @@ const elements = {
   videoVolumeRange: document.querySelector('#videoVolumeRange'),
   videoFullscreenButton: document.querySelector('#videoFullscreenButton'),
   error: document.querySelector('#errorMessage'),
+  layout: document.querySelector('.layout'),
   playerPanel: document.querySelector('.player-panel'),
   prevButton: document.querySelector('#prevButton'),
   nextButton: document.querySelector('#nextButton'),
@@ -144,6 +145,44 @@ const elements = {
 };
 
 const particleCanvas = document.querySelector('#particleCanvas');
+
+function initDesktopPlaylistHeightSync() {
+  if (!elements.layout || !elements.playerPanel) return;
+
+  const desktopQuery = window.matchMedia('(min-width: 861px)');
+  let animationFrameId = null;
+
+  function syncHeight() {
+    animationFrameId = null;
+    if (!desktopQuery.matches) {
+      elements.layout.style.removeProperty('--player-panel-height');
+      return;
+    }
+
+    const height = elements.playerPanel.getBoundingClientRect().height;
+    if (height > 0) {
+      elements.layout.style.setProperty('--player-panel-height', `${height}px`);
+    }
+  }
+
+  function scheduleSync() {
+    if (animationFrameId !== null) return;
+    animationFrameId = window.requestAnimationFrame(syncHeight);
+  }
+
+  if ('ResizeObserver' in window) {
+    const resizeObserver = new ResizeObserver(scheduleSync);
+    resizeObserver.observe(elements.playerPanel);
+    resizeObserver.observe(elements.layout);
+  }
+  window.addEventListener('resize', scheduleSync);
+  if (typeof desktopQuery.addEventListener === 'function') {
+    desktopQuery.addEventListener('change', scheduleSync);
+  } else {
+    desktopQuery.addListener(scheduleSync);
+  }
+  scheduleSync();
+}
 
 function initParticleBackground() {
   if (!particleCanvas) return;
@@ -985,7 +1024,6 @@ const VOLUME_INDICATOR_PHASES = [
   'phase-blocks-in',
   'phase-blocks-assembling',
   'phase-plate-handoff',
-  'phase-frame-assembled',
   'phase-value-visible',
   'phase-value-hidden',
   'phase-blocks-collapsing',
@@ -1066,11 +1104,8 @@ function showVolumeIndicator() {
         state.volumeIndicatorHandoffTimer = null;
       }, VOLUME_PLATE_HANDOFF_MS);
       state.volumeIndicatorTimer = window.setTimeout(() => {
-        setVolumeIndicatorPhase('phase-frame-assembled');
-        state.volumeIndicatorConcealTimer = window.setTimeout(() => {
-          setVolumeIndicatorPhase('phase-value-visible');
-          scheduleVolumeIndicatorExit();
-        }, 180);
+        setVolumeIndicatorPhase('phase-value-visible');
+        scheduleVolumeIndicatorExit();
       }, VOLUME_BLOCK_ASSEMBLY_MS);
     });
   });
@@ -1528,4 +1563,5 @@ window.addEventListener('beforeunload', () => {
 applyStaticCopy();
 createVolumeIndicatorBlocks();
 updateControls();
+initDesktopPlaylistHeightSync();
 initParticleBackground();

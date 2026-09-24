@@ -495,12 +495,13 @@ button:focus-visible,
 }
 
 .volume-indicator.phase-blocks-assembling .volume-indicator-block {
-  opacity: 0.9;
+  background: #4a4a4e;
+  box-shadow: none;
+  opacity: 1;
   transform: translate(calc(-50% + var(--final-x)), calc(-50% + var(--final-y))) scale(1);
 }
 
 .volume-indicator.phase-plate-handoff .volume-indicator-block,
-.volume-indicator.phase-frame-assembled .volume-indicator-block,
 .volume-indicator.phase-value-visible .volume-indicator-block,
 .volume-indicator.phase-value-hidden .volume-indicator-block {
   opacity: 0;
@@ -512,13 +513,13 @@ button:focus-visible,
 }
 
 .volume-indicator.phase-plate-handoff .volume-indicator-plate,
-.volume-indicator.phase-frame-assembled .volume-indicator-plate,
 .volume-indicator.phase-value-visible .volume-indicator-plate,
 .volume-indicator.phase-value-hidden .volume-indicator-plate {
   opacity: 1;
   transform: translate(-50%, -50%) scale(1);
 }
 
+.volume-indicator.phase-plate-handoff .volume-indicator-value,
 .volume-indicator.phase-value-visible .volume-indicator-value {
   opacity: 1;
   transform: scale(1);
@@ -881,6 +882,7 @@ button:focus-visible,
 }
 
 .playlist-panel.is-empty .playlist {
+  flex: 0 0 0;
   max-height: 0;
   opacity: 0;
   pointer-events: none;
@@ -998,7 +1000,6 @@ button:focus-visible,
     display: none;
   }
 
-  .volume-indicator.phase-frame-assembled .volume-indicator-plate,
   .volume-indicator.phase-value-visible .volume-indicator-plate,
   .volume-indicator.phase-value-hidden .volume-indicator-plate {
     opacity: 1;
@@ -1012,6 +1013,17 @@ button:focus-visible,
 
   .playlist-panel.is-clearing.is-empty .playlist-header {
     animation: none;
+  }
+}
+
+@media (min-width: 861px) {
+  .layout {
+    align-items: start;
+  }
+
+  .playlist-panel {
+    height: var(--player-panel-height);
+    min-height: 0;
   }
 }
 

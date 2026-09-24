@@ -428,6 +428,40 @@ A simple local web app solves the immediate workflow without requiring FFmpeg, t
   - Bump package metadata and current bilingual release/tag/download/archive documentation from v1.4.0 to v1.4.1.
   - Evidence: `node --check server.js` passed. `node --check public/app.js` passed. `git diff --check` passed. Windows PowerShell built `portable-win/The-Player-1.4.1-windows.zip`; archive allowlist contains only `start.cmd`, `app/package.json`, `app/server.js`, `app/README.md`, `app/public/*`, and `runtime/node.exe`. An extracted `start.cmd` launch with `THE_PLAYER_NO_OPEN=1` returned HTTP 200 from `127.0.0.1:3000`. A second build refused overwrite. SHA-256: `6d919e3c279b9006201b1d2a32da8fab48d15dd8728945753d1031558cccb5af`. Product commit `f8a3d9ce6ad254fe10c895ed8228405487df14e1` was tagged with annotated `v1.4.1`, pushed on `main`, and published at `https://github.com/Dortecx/The-Player/releases/tag/v1.4.1` with the verified ZIP asset.
 
+- [x] LV-069 — Bound large playlists and remove assembly overlap seams
+  - Constrain only the desktop two-column layout to the viewport: the app shell, layout grid, player panel, and Playlist panel can shrink within the available row, while the Playlist panel fills it and only `.playlist` scrolls. Narrow stacked layouts retain normal document scrolling.
+  - Make assembling modules use the opaque shared plate material and a minimal unblurred shared-color spread, removing fractional intersection/gap seams without exposing the final SVG plate early or changing its texture.
+  - Evidence: `git diff --check` passed. `node --check public/app.js` passed. `PORT=3181 npm run web` started successfully and `curl -fsS http://127.0.0.1:3181/` readiness passed after one initial connection-refused probe. Manual desktop large-playlist and fullscreen volume-animation visual checks remain pending.
+
+- [x] LV-070 — Keep playlist natural-sized and assembly modules fully opaque
+  - Bound the desktop playlist with a maximum height without forcing an empty panel to player height.
+  - Remove residual assembly opacity that reveals module joins.
+  - Evidence: desktop `.playlist-panel` now top-aligns at natural height with `max-height: 100%` inside the viewport-bounded grid row, while the existing flexed `.playlist { overflow: auto; }` remains the scroll owner for overflow. Assembly blocks now use opacity `1` and no seam-covering shadow; motion, late plate handoff, and final texture remain unchanged. `git diff --check` passed. `node --check public/app.js` passed. `PORT=3181 npm run web` started successfully and `curl -fsS http://127.0.0.1:3181/` readiness passed after one initial connection-refused probe. Manual desktop short/large-playlist and fullscreen volume-animation visual checks remain pending.
+
+- [x] LV-071 — Align playlist panel height and reveal value at plate handoff
+  - Match the desktop playlist panel height to the player-determined layout row while retaining internal scrolling for large lists.
+  - Remove the blank final-plate frame by beginning numeric value reveal with the plate handoff.
+  - Evidence: restored desktop `.playlist-panel` stretch/`height: 100%` alignment within the existing finite grid row; `.playlist` remains the only scrolling element for large lists and mobile rules are unchanged. The numeric value now begins its existing opacity/scale transition in `phase-plate-handoff` with the final plate while `phase-value-visible`, reduced motion, exit, and in-place updates retain their prior behavior. `git diff --check` passed. `node --check public/app.js` passed. `PORT=3181 npm run web` started successfully and `curl -fsS http://127.0.0.1:3181/` readiness passed after one initial connection-refused probe. Manual desktop and fullscreen volume-animation visual checks remain pending.
+
+- [x] LV-072 — Center empty playlist composition and make volume value monotonic
+  - Keep the empty playlist panel aligned to player height while centering its useful heading/actions in the available space.
+  - Remove the handoff state that hides an already-revealed volume value before final visibility.
+  - Evidence: the empty `.playlist` no longer flexes into the panel's free space, allowing the existing auto-margined empty header/actions to remain centered while the desktop panel retains its full player-row height; populated-list scroll behavior is unchanged. Removed `phase-frame-assembled`; the value remains visible from `phase-plate-handoff` through `phase-value-visible` and exits through the existing conceal/collapse/disperse sequence. `node --check public/app.js` passed. `git diff --check` passed. `PORT=3181 npm run web` started successfully and `curl -fsS http://127.0.0.1:3181/` readiness passed on attempt 2 after one initial connection-refused probe. Manual desktop empty-state and fullscreen volume-animation checks remain pending.
+
+- [x] LV-073 — Anchor player transport to the shared panel baseline
+  - Use the player panel's flexible vertical space above transport so its controls sit at the same bottom inset as the corresponding playlist panel.
+  - Preserve video frame geometry and internal playlist scrolling.
+  - Evidence: desktop `.player-panel .transport` now uses `margin-top: auto`, consuming only the flexible space above the existing row so the controls retain the panel's normal bottom padding. The video frame, overlay controls, paired desktop panel heights, playlist scrolling, and mobile flow remain unchanged. `git diff --check` passed. `node --check public/app.js` passed. `PORT=3181 npm run web` started successfully and `curl -fsS http://127.0.0.1:3181/` readiness passed after one initial connection-refused probe. Manual desktop visual verification remains pending.
+
+- [x] LV-074 — Sync desktop playlist height to the natural player panel
+  - Remove artificial viewport-row height that creates dead space inside the player panel.
+  - Measure and share the natural player panel height with playlist so columns align and large lists retain internal scroll.
+  - Evidence: desktop layout now top-aligns natural-height panels without a viewport-sized grid row or transport bottom anchor. A `ResizeObserver` schedules player/layout measurements and shares `--player-panel-height` only at `min-width: 861px`; the property is cleared below that breakpoint. The populated playlist remains a fixed-height flex panel with `.playlist { overflow: auto; }`, while mobile keeps normal stacked flow. `node --check public/app.js` passed. `git diff --check` passed. `PORT=3181 npm run web` started successfully and `curl -fsS http://127.0.0.1:3181/` readiness passed after one initial connection-refused probe. Manual desktop paired-height/overflow and mobile stacked-flow verification remain pending.
+
+- [x] LV-075 — Prepare v1.4.2 release metadata
+  - Bump package metadata and current bilingual release/tag/download/archive/support documentation from v1.4.1 to v1.4.2.
+  - Evidence: `node --check server.js` passed. `node --check public/app.js` passed. `git diff --check` passed. Windows PowerShell built `portable-win/The-Player-1.4.2-windows.zip`; archive allowlist contains only `start.cmd`, `app/package.json`, `app/server.js`, `app/README.md`, `app/public/*`, and `runtime/node.exe`. An extracted `start.cmd` launch with `THE_PLAYER_NO_OPEN=1` returned HTTP 200 from `127.0.0.1:3000`. A second build refused overwrite. SHA-256: `0a4cc07dbcdf046ad21ba4488889b8203d77e2b5246cd1fae04d6238a4ba6620`. Commit, tag, push, and publication remain pending.
+
 ## Acceptance Criteria
 - Running `npm run web` starts a local server without requiring a framework dev server.
 - The browser app can select a folder or multiple files.
