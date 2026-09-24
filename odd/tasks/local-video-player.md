@@ -460,7 +460,7 @@ A simple local web app solves the immediate workflow without requiring FFmpeg, t
 
 - [x] LV-075 — Prepare v1.4.2 release metadata
   - Bump package metadata and current bilingual release/tag/download/archive/support documentation from v1.4.1 to v1.4.2.
-  - Evidence: `node --check server.js` passed. `node --check public/app.js` passed. `git diff --check` passed. Windows PowerShell built `portable-win/The-Player-1.4.2-windows.zip`; archive allowlist contains only `start.cmd`, `app/package.json`, `app/server.js`, `app/README.md`, `app/public/*`, and `runtime/node.exe`. An extracted `start.cmd` launch with `THE_PLAYER_NO_OPEN=1` returned HTTP 200 from `127.0.0.1:3000`. A second build refused overwrite. SHA-256: `0a4cc07dbcdf046ad21ba4488889b8203d77e2b5246cd1fae04d6238a4ba6620`. Commit, tag, push, and publication remain pending.
+  - Evidence: `node --check server.js` passed. `node --check public/app.js` passed. `git diff --check` passed. Windows PowerShell built `portable-win/The-Player-1.4.2-windows.zip`; archive allowlist contains only `start.cmd`, `app/package.json`, `app/server.js`, `app/README.md`, `app/public/*`, and `runtime/node.exe`. An extracted `start.cmd` launch with `THE_PLAYER_NO_OPEN=1` returned HTTP 200 from `127.0.0.1:3000`. A second build refused overwrite. SHA-256: `0a4cc07dbcdf046ad21ba4488889b8203d77e2b5246cd1fae04d6238a4ba6620`. Product commit `42dd16c237b492075858501636a8f37e4ed75cbe` was tagged with annotated `v1.4.2`, pushed on `main`, and published at `https://github.com/Dortecx/The-Player/releases/tag/v1.4.2` with the verified ZIP asset.
 
 ## Acceptance Criteria
 - Running `npm run web` starts a local server without requiring a framework dev server.
