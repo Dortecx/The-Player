@@ -28,7 +28,7 @@ Pick the path that matches what you want to do. Most Windows users should start 
 
 Repository: <https://github.com/Dortecx/The-Player>
 
-Release v1.4.2: <https://github.com/Dortecx/The-Player/releases/tag/v1.4.2>
+Release v1.4.3: <https://github.com/Dortecx/The-Player/releases/tag/v1.4.3>
 
 ### Windows portable download/run
 
@@ -36,10 +36,10 @@ Use this when you want the ready-to-run Windows package. You do not need Node.js
 
 1. Download the ZIP:
 
-   <https://github.com/Dortecx/The-Player/releases/download/v1.4.2/The-Player-1.4.2-windows.zip>
+   <https://github.com/Dortecx/The-Player/releases/download/v1.4.3/The-Player-1.4.3-windows.zip>
 
 2. Unzip it.
-3. Open the extracted `The-Player-1.4.2-windows` folder.
+3. Open the extracted `The-Player-1.4.3-windows` folder.
 4. Double-click `start.cmd`.
 5. Use the browser window that opens at <http://127.0.0.1:3000/>.
 
@@ -58,10 +58,10 @@ npm run build:portable:win
 Build this on Windows with Node.js 18 or later available on `PATH`. The build creates:
 
 ```text
-portable-win\The-Player-1.4.2-windows.zip
+portable-win\The-Player-1.4.3-windows.zip
 ```
 
-Unzip that file and run `The-Player-1.4.2-windows\start.cmd`. The generated portable ZIP includes `runtime\node.exe`, so end users of the ZIP do not need Node.js or npm.
+Unzip that file and run `The-Player-1.4.3-windows\start.cmd`. The generated portable ZIP includes `runtime\node.exe`, so end users of the ZIP do not need Node.js or npm.
 
 ### Windows source checkout
 
@@ -151,7 +151,7 @@ Actual playback and Screen Wake Lock support depend on browser capabilities. MKV
 
 ## Platform support
 
-Windows portable is supported through the v1.4.2 ZIP release and the Windows portable build script. Source checkout usage works where Node.js 18 or later, npm, and a compatible browser are available. Playback always depends on the codecs supported by the browser that opens the local app.
+Windows portable is supported through the v1.4.3 ZIP release and the Windows portable build script. Source checkout usage works where Node.js 18 or later, npm, and a compatible browser are available. Playback always depends on the codecs supported by the browser that opens the local app.
 
 ## License
 

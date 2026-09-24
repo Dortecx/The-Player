@@ -1021,6 +1021,11 @@ button:focus-visible,
     align-items: start;
   }
 
+  .player-panel,
+  .playlist-panel {
+    padding-top: clamp(0.4rem, 0.5vw, 0.5rem);
+  }
+
   .playlist-panel {
     height: var(--player-panel-height);
     min-height: 0;

@@ -1,6 +1,6 @@
 {
   "name": "local-video-player",
-  "version": "1.4.2",
+  "version": "1.4.3",
   "private": true,
   "description": "Portable-friendly local web video player served by a minimal Node static server.",
   "scripts": {

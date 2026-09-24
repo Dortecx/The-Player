@@ -462,6 +462,22 @@ A simple local web app solves the immediate workflow without requiring FFmpeg, t
   - Bump package metadata and current bilingual release/tag/download/archive/support documentation from v1.4.1 to v1.4.2.
   - Evidence: `node --check server.js` passed. `node --check public/app.js` passed. `git diff --check` passed. Windows PowerShell built `portable-win/The-Player-1.4.2-windows.zip`; archive allowlist contains only `start.cmd`, `app/package.json`, `app/server.js`, `app/README.md`, `app/public/*`, and `runtime/node.exe`. An extracted `start.cmd` launch with `THE_PLAYER_NO_OPEN=1` returned HTTP 200 from `127.0.0.1:3000`. A second build refused overwrite. SHA-256: `0a4cc07dbcdf046ad21ba4488889b8203d77e2b5246cd1fae04d6238a4ba6620`. Product commit `42dd16c237b492075858501636a8f37e4ed75cbe` was tagged with annotated `v1.4.2`, pushed on `main`, and published at `https://github.com/Dortecx/The-Player/releases/tag/v1.4.2` with the verified ZIP asset.
 
+- [x] LV-076 — Balance desktop panel top inset
+  - Reduce the excess desktop top inset while retaining current bottom inset, panel height sync, video geometry, and playlist scroll.
+  - Evidence: desktop-only `.player-panel` and `.playlist-panel` now use a smaller `padding-top` override while retaining the shared panel bottom padding, player-height synchronization, video geometry, transport layout, playlist states, scrolling, and all mobile styling. `git diff --check` passed. `node --check public/app.js` passed. `PORT=3181 npm run web` readiness check passed with `curl -fsS http://127.0.0.1:3181/` after one initial connection-refused probe.
+
+- [x] LV-077 — Fine-tune desktop panel top inset
+  - Reduce the accepted desktop top inset by one additional small visual step without changing other layout behavior.
+  - Evidence: desktop-only `.player-panel` and `.playlist-panel` now use `padding-top: clamp(0.45rem, 0.55vw, 0.55rem)`, one small step below LV-076, while retaining the existing bottom inset, player-height synchronization, video geometry, playlist scrolling, and mobile styles. `git diff --check` passed. `node --check public/app.js` passed. `PORT=3181 npm run web` readiness check passed with `curl -fsS http://127.0.0.1:3181/` after one initial connection-refused probe.
+
+- [x] LV-078 — Reduce desktop panel top inset again
+  - Apply one further small desktop-only top-inset reduction while preserving all other layout behavior.
+  - Evidence: desktop-only `.player-panel` and `.playlist-panel` now use `padding-top: clamp(0.4rem, 0.5vw, 0.5rem)`, one small step below LV-077, while retaining the existing bottom inset, player-height synchronization, video geometry, playlist scrolling, and mobile styles. `git diff --check` passed. `node --check public/app.js` passed. `PORT=3181 npm run web` readiness check passed with `curl -fsS http://127.0.0.1:3181/` after one initial connection-refused probe.
+
+- [x] LV-079 — Prepare v1.4.3 release metadata
+  - Bump package metadata and current bilingual release/tag/download/archive/support documentation from v1.4.2 to v1.4.3.
+  - Evidence: `node --check server.js` passed. `node --check public/app.js` passed. `git diff --check` passed. Windows PowerShell built `portable-win/The-Player-1.4.3-windows.zip`; archive allowlist contains only `start.cmd`, `app/package.json`, `app/server.js`, `app/README.md`, `app/public/*`, and `runtime/node.exe`. An extracted `start.cmd` launch with `THE_PLAYER_NO_OPEN=1` returned HTTP 200 from `127.0.0.1:3000`. A second build refused overwrite. SHA-256: `e89897007aed91896f6bf80989ba05b5c9b6b1d9fdc5cacd37a7b19ce726791b`. Commit, tag, push, and publication remain pending.
+
 ## Acceptance Criteria
 - Running `npm run web` starts a local server without requiring a framework dev server.
 - The browser app can select a folder or multiple files.
