@@ -58,7 +58,6 @@ try {
 
     $launcherTemplates = @{
         "start.cmd" = "start.cmd.template"
-        "Local.cmd" = "Local.cmd.template"
         "LAN.cmd" = "LAN.cmd.template"
     }
     foreach ($launcher in $launcherTemplates.GetEnumerator()) {
@@ -86,4 +85,4 @@ finally {
 }
 
 Write-Host "Portable Windows package created: $archivePath"
-Write-Host "Included app files under $releaseName\app, Node runtime under $releaseName\runtime, and launchers $releaseName\Local.cmd, $releaseName\LAN.cmd, and $releaseName\start.cmd (backward-compatible local alias)."
+Write-Host "Included app files under $releaseName\app, Node runtime under $releaseName\runtime, and launchers $releaseName\start.cmd (local-only) and $releaseName\LAN.cmd (LAN shared mode)."

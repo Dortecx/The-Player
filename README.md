@@ -6,7 +6,7 @@ The Player is a portable-friendly local video player that runs in your browser, 
 
 ## Features
 
-- Download the Windows portable release ZIP, unzip it, and run `Local.cmd` (or backward-compatible `start.cmd`) with no `npm install`.
+- Download the Windows portable release ZIP, unzip it, and run `start.cmd` for local-only playback with no `npm install`.
 - Select a folder or multiple video files and play them in a deterministic playlist.
 - Continue through videos with Previous, Skip next, Mark watched & next controls, and keyboard shortcuts.
 - Search the visible playlist without changing playback order, saved progress, or the active video; large playlists stay bounded and scroll internally.
@@ -41,10 +41,10 @@ Use this when you want the ready-to-run Windows package. You do not need Node.js
 
 2. Unzip it.
 3. Open the extracted `The-Player-1.5.0-windows` folder.
-4. Double-click `Local.cmd` for local-only playback, or `LAN.cmd` to explicitly enable LAN sharing. `start.cmd` remains a backward-compatible alias for `Local.cmd`.
+4. Double-click `start.cmd` for local-only playback, or `LAN.cmd` to explicitly enable LAN sharing.
 5. For local-only playback, use the browser window that opens at <http://127.0.0.1:3000/>. In LAN mode, the launcher opens the host's tokenized loopback URL and prints a separate protected guest URL to share with LAN devices.
 
-The portable release includes `runtime\node.exe`, the app files, and all three launchers. It does not require `node_modules`, Git metadata, or a local development environment.
+The portable release includes `runtime\node.exe`, the app files, and the `start.cmd` (local-only) and `LAN.cmd` (shared-mode) launchers. It does not require `node_modules`, Git metadata, or a local development environment.
 
 ### Windows portable build/run
 
@@ -62,7 +62,7 @@ Build this on Windows with Node.js 18 or later available on `PATH`. The build cr
 portable-win\The-Player-1.5.0-windows.zip
 ```
 
-Unzip that file and run `The-Player-1.5.0-windows\Local.cmd` for local playback or `The-Player-1.5.0-windows\LAN.cmd` for sharing. `start.cmd` remains a local alias. The generated portable ZIP includes `runtime\node.exe`, so end users of the ZIP do not need Node.js or npm.
+Unzip that file and run `The-Player-1.5.0-windows\start.cmd` for local playback or `The-Player-1.5.0-windows\LAN.cmd` for sharing. The generated portable ZIP includes `runtime\node.exe`, so end users of the ZIP do not need Node.js or npm.
 
 ### Windows source checkout
 
@@ -159,7 +159,7 @@ Shared playback is direct browser playback only. There is no transcoding, remuxi
 
 ## Usage
 
-1. Start The Player with portable `Local.cmd` (or backward-compatible `start.cmd`), portable `LAN.cmd` for sharing, or `npm run web` from a source checkout.
+1. Start The Player with portable `start.cmd` for local-only playback, portable `LAN.cmd` for sharing, or `npm run web` from a source checkout.
 2. Open the local browser page if it does not open automatically.
 3. Choose `Folder` to load a folder, or `File` to select one or more video files.
 4. Select a playlist item, or let the app choose the most recent meaningful item from saved local state.

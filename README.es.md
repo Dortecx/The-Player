@@ -6,7 +6,7 @@ The Player es un reproductor local de video, amigable para uso portátil, que co
 
 ## Funciones
 
-- Descargá el ZIP portátil de Windows, descomprimilo y ejecutá `Local.cmd` (o el compatible `start.cmd`) sin `npm install`.
+- Descargá el ZIP portátil de Windows, descomprimilo y ejecutá `start.cmd` para reproducción local sin `npm install`.
 - Seleccioná una carpeta o varios archivos de video y reproducilos en una lista determinística.
 - Avanzá por los videos con controles de Anterior, Saltar siguiente, Marcar visto y seguir, y atajos de teclado.
 - Buscá dentro de la playlist visible sin cambiar el orden de reproducción, el progreso guardado ni el video activo; las playlists largas quedan acotadas y scrollean internamente.
@@ -41,10 +41,10 @@ Usá este camino si querés el paquete de Windows listo para ejecutar. No necesi
 
 2. Descomprimilo.
 3. Abrí la carpeta extraída `The-Player-1.5.0-windows`.
-4. Hacé doble clic en `Local.cmd` para reproducción local o en `LAN.cmd` para compartir por LAN. `start.cmd` sigue siendo un alias compatible de `Local.cmd`.
+4. Hacé doble clic en `start.cmd` para reproducción local o en `LAN.cmd` para compartir por LAN.
 5. Para reproducción local, usá la ventana del navegador que se abre en <http://127.0.0.1:3000/>. En modo LAN, el lanzador abre la URL localhost tokenizada del host e imprime una URL protegida independiente para compartir con invitados.
 
-El release portátil incluye `runtime\node.exe`, los archivos de la app y los tres lanzadores. No requiere `node_modules`, metadatos de Git ni un entorno local de desarrollo.
+El release portátil incluye `runtime\node.exe`, los archivos de la app y los lanzadores `start.cmd` (solo local) y `LAN.cmd` (modo compartido). No requiere `node_modules`, metadatos de Git ni un entorno local de desarrollo.
 
 ### Crear y ejecutar el portátil de Windows
 
@@ -62,7 +62,7 @@ Crealo en Windows con Node.js 18 o posterior disponible en el `PATH`. El build g
 portable-win\The-Player-1.5.0-windows.zip
 ```
 
-Descomprimí ese archivo y ejecutá `The-Player-1.5.0-windows\Local.cmd` para uso local o `The-Player-1.5.0-windows\LAN.cmd` para compartir. `start.cmd` sigue siendo un alias local. El ZIP portátil generado incluye `runtime\node.exe`, así que los usuarios finales del ZIP no necesitan Node.js ni npm.
+Descomprimí ese archivo y ejecutá `The-Player-1.5.0-windows\start.cmd` para uso local o `The-Player-1.5.0-windows\LAN.cmd` para compartir. El ZIP portátil generado incluye `runtime\node.exe`, así que los usuarios finales del ZIP no necesitan Node.js ni npm.
 
 ### Código fuente en Windows
 
@@ -136,7 +136,7 @@ No hay runner de navegador en este proyecto. En dos navegadores o dispositivos, 
 
 ## Uso
 
-1. Iniciá The Player con `Local.cmd` portátil (o el compatible `start.cmd`), `LAN.cmd` portátil para compartir, o con `npm run web` desde un checkout de código fuente.
+1. Iniciá The Player con `start.cmd` portátil para reproducción local, `LAN.cmd` portátil para compartir, o con `npm run web` desde un checkout de código fuente.
 2. Abrí la página local en el navegador si no se abre automáticamente.
 3. Elegí `Carpeta` para cargar una carpeta, o `Archivo` para seleccionar uno o más videos.
 4. Seleccioná un elemento de la playlist, o dejá que la app elija el elemento significativo más reciente desde el estado local guardado.
