@@ -21,6 +21,19 @@ const COPY = {
     supportedHint: 'Supported extensions: .mp4, .webm, .m4v, .mov, and .mkv where your browser can play it.',
     statusNoVideos: 'No videos selected.',
     statusNoSupported: 'No supported video files found in the selection.',
+    statusLocalOnly: 'Shared room unavailable; using local playback.',
+    statusUploading: ({ completed, total, name }) => `Uploading ${completed}/${total}: ${name}`,
+    uploadPreparing: ({ completed, total, name, totalBytes }) => `Preparing ${completed}/${total}: ${name} (${formatBytes(totalBytes)})`,
+    uploadUploading: ({ completed, total, name, transferred, totalBytes, percent }) => `Uploading ${completed}/${total}: ${name} — ${percent}% (${formatBytes(transferred)} / ${formatBytes(totalBytes)})`,
+    uploadReady: ({ completed, total, name, totalBytes }) => `Ready ${completed}/${total}: ${name} (${formatBytes(totalBytes)} copied to the temporary shared room)`,
+    uploadError: ({ completed, total, name, message }) => `Upload error ${completed}/${total}: ${name}${message ? ` — ${message}` : ''}`,
+    statusSharedConnected: 'Connected to the shared room.',
+    copyRoomUrl: 'Copy room link',
+    roomUrlCopied: 'Room link copied.',
+    roomUrlCopyFailed: 'Could not copy the room link.',
+    hostLibraryOnly: 'Only the host using the tokenized localhost link can modify the library.',
+    sharedRequestFailed: 'Shared room request failed; using local playback.',
+    sharedUploadFailed: ({ name, message }) => `Could not upload ${name}.${message ? ` ${message}` : ''}`,
     statusLoaded: ({ count, rejected }) => `Loaded ${count} ${count === 1 ? 'video' : 'videos'}${rejected ? `; ignored ${rejected} unsupported ${rejected === 1 ? 'file' : 'files'}` : ''}.`,
     statusRestored: ({ name, time }) => `Restored ${name} at ${time}.`,
     statusSelected: ({ name }) => `Selected ${name}.`,
@@ -37,7 +50,10 @@ const COPY = {
     playlistCount: ({ count }) => `${count} ${count === 1 ? 'video' : 'videos'}`,
     savedAt: ({ time }) => `saved ${time}`,
     watchedLabel: 'watched',
-    autoplayBlocked: ({ message }) => `Playback did not start automatically. Press play to continue.${message ? ` ${message}` : ''}`,
+    autoplayBlocked: 'Playback needs a tap to continue.',
+    remoteAudioPrompt: 'Tap anywhere to enable audio',
+    playbackFeedbackPlay: 'Playing',
+    playbackFeedbackPause: 'Paused',
     progressSaveFailed: 'Progress could not be saved in this browser session.',
     defaultPlaybackError: 'The browser could not play this file.',
     playbackAborted: 'Playback was aborted.',
@@ -57,6 +73,19 @@ const COPY = {
     supportedHint: 'Extensiones admitidas: .mp4, .webm, .m4v, .mov y .mkv cuando el navegador pueda reproducirlo.',
     statusNoVideos: 'No hay videos seleccionados.',
     statusNoSupported: 'No se encontraron videos compatibles en la selección.',
+    statusLocalOnly: 'La sala compartida no está disponible; se usa reproducción local.',
+    statusUploading: ({ completed, total, name }) => `Subiendo ${completed}/${total}: ${name}`,
+    uploadPreparing: ({ completed, total, name, totalBytes }) => `Preparando ${completed}/${total}: ${name} (${formatBytes(totalBytes)})`,
+    uploadUploading: ({ completed, total, name, transferred, totalBytes, percent }) => `Subiendo ${completed}/${total}: ${name} — ${percent}% (${formatBytes(transferred)} / ${formatBytes(totalBytes)})`,
+    uploadReady: ({ completed, total, name, totalBytes }) => `Listo ${completed}/${total}: ${name} (${formatBytes(totalBytes)} copiados a la sala temporal compartida)`,
+    uploadError: ({ completed, total, name, message }) => `Error al subir ${completed}/${total}: ${name}${message ? ` — ${message}` : ''}`,
+    statusSharedConnected: 'Conectado a la sala compartida.',
+    copyRoomUrl: 'Copiar enlace de la sala',
+    roomUrlCopied: 'Enlace de la sala copiado.',
+    roomUrlCopyFailed: 'No se pudo copiar el enlace de la sala.',
+    hostLibraryOnly: 'Solo el host que usa el enlace localhost con token puede modificar la biblioteca.',
+    sharedRequestFailed: 'Falló la solicitud a la sala compartida; se usa reproducción local.',
+    sharedUploadFailed: ({ name, message }) => `No se pudo subir ${name}.${message ? ` ${message}` : ''}`,
     statusLoaded: ({ count, rejected }) => `Se cargaron ${count} ${count === 1 ? 'video' : 'videos'}${rejected ? `; se ignoraron ${rejected} ${rejected === 1 ? 'archivo no compatible' : 'archivos no compatibles'}` : ''}.`,
     statusRestored: ({ name, time }) => `Se restauró ${name} en ${time}.`,
     statusSelected: ({ name }) => `Seleccionado: ${name}.`,
@@ -73,7 +102,10 @@ const COPY = {
     playlistCount: ({ count }) => `${count} ${count === 1 ? 'video' : 'videos'}`,
     savedAt: ({ time }) => `guardado ${time}`,
     watchedLabel: 'visto',
-    autoplayBlocked: ({ message }) => `La reproducción automática no empezó. Presioná reproducir para continuar.${message ? ` ${message}` : ''}`,
+    autoplayBlocked: 'La reproducción necesita un toque para continuar.',
+    remoteAudioPrompt: 'Tocá en cualquier parte para activar el audio',
+    playbackFeedbackPlay: 'Reproduciendo',
+    playbackFeedbackPause: 'En pausa',
     progressSaveFailed: 'No se pudo guardar el progreso en esta sesión del navegador.',
     defaultPlaybackError: 'El navegador no pudo reproducir este archivo.',
     playbackAborted: 'La reproducción fue cancelada.',
@@ -101,21 +133,74 @@ const state = {
   dbPromise: null,
   lastSaveAt: 0,
   clearTransitionTimer: null,
+  uploadProgressTimer: null,
+  uploadProgressCrossfadeTimer: null,
+  uploadProgressCrossfadeFrame: null,
+  uploadProgress: {
+    hasReadyMedia: false,
+    isCrossfading: false,
+    isFooterPrimed: false,
+    finishPending: false,
+    isLeaving: false,
+    completedBytes: 0,
+    totalBytes: 0
+  },
   playlistSearchQuery: '',
   wakeLockSentinel: null,
   videoControlsTimer: null,
+  videoControlsTouchFocusPending: false,
+  videoSeekInteractionActive: false,
+  copyToastTimer: null,
   volumeIndicatorTimer: null,
   volumeIndicatorHandoffTimer: null,
   volumeIndicatorConcealTimer: null,
   playbackTogglePending: false,
+  fullscreenTransitionInFlight: false,
+  appFullscreenFallback: false,
+  gestureFeedbackTimer: null,
+  seekFeedbackDirection: 0,
+  seekFeedbackAmount: 0,
+  mobileGesture: null,
+  mobileLastTap: null,
+  mobileSuppressClick: false,
   userMuted: false,
-  userVolume: 1
+  userVolume: 1,
+  shared: {
+    token: new URLSearchParams(window.location.search).get('token') || '',
+    active: false,
+    role: null,
+    initializing: /^[A-Za-z0-9_-]+$/.test(new URLSearchParams(window.location.search).get('token') || ''),
+    eventSource: null,
+    lastSequence: -1,
+    libraryRefreshPromise: null,
+    roomRecoveryTimer: null,
+    roomUrl: null,
+    libraryMutationPending: false,
+    applyingRemote: false,
+    roomApplyId: 0,
+    desiredPlaying: false,
+    playbackIntent: null,
+    playbackCommandInFlight: false,
+    playbackRetryTimer: null,
+    awaitingAudioActivation: false
+  }
 };
 
 const elements = {
   folderInput: document.querySelector('#folderInput'),
   fileInput: document.querySelector('#fileInput'),
+  folderSelectControl: document.querySelector('#folderSelectControl'),
+  fileSelectControl: document.querySelector('#fileSelectControl'),
   status: document.querySelector('#status'),
+  uploadProgress: document.querySelector('#uploadProgress'),
+  uploadProgressLabel: document.querySelector('#uploadProgressLabel'),
+  uploadProgressFill: document.querySelector('#uploadProgressFill'),
+  uploadProgressFooter: document.querySelector('#uploadProgressFooter'),
+  uploadProgressFooterLabel: document.querySelector('#uploadProgressFooterLabel'),
+  uploadProgressFooterFill: document.querySelector('#uploadProgressFooterFill'),
+  roomShare: document.querySelector('#roomShare'),
+  copyRoomUrlButton: document.querySelector('#copyRoomUrlButton'),
+  copyToast: document.querySelector('#copyToast'),
   playlistPanel: document.querySelector('#playlistPanel'),
   playlist: document.querySelector('#playlist'),
   playlistSearchWrap: document.querySelector('#playlistSearchWrap'),
@@ -129,12 +214,17 @@ const elements = {
   volumeIndicatorPlate: document.querySelector('#volumeIndicator .volume-indicator-plate'),
   volumeIndicatorBlocks: document.querySelector('#volumeIndicator .volume-indicator-blocks'),
   video: document.querySelector('#videoPlayer'),
+  videoControls: document.querySelector('.video-controls'),
   videoPlayPauseButton: document.querySelector('#videoPlayPauseButton'),
   videoTimeDisplay: document.querySelector('#videoTimeDisplay'),
   videoSeekRange: document.querySelector('#videoSeekRange'),
   videoMuteButton: document.querySelector('#videoMuteButton'),
   videoVolumeRange: document.querySelector('#videoVolumeRange'),
   videoFullscreenButton: document.querySelector('#videoFullscreenButton'),
+  gestureFeedback: document.querySelector('#gestureFeedback'),
+  gestureFeedbackText: document.querySelector('#gestureFeedback .gesture-feedback-text'),
+  gestureFeedbackLive: document.querySelector('#gestureFeedback .gesture-feedback-live'),
+  remoteAudioPrompt: document.querySelector('#remoteAudioPrompt'),
   error: document.querySelector('#errorMessage'),
   layout: document.querySelector('.layout'),
   playerPanel: document.querySelector('.player-panel'),
@@ -375,27 +465,39 @@ function initParticleBackground() {
     });
   }
 
-  function animate(timestamp) {
-    drawFrame(timestamp);
-    if (!reducedMotionQuery.matches) {
-      animationFrameId = window.requestAnimationFrame(animate);
-    }
+  function shouldAnimate() {
+    return !reducedMotionQuery.matches && !document.hidden && !isVideoFullscreen();
   }
 
-  function startAnimation() {
+  function stopAnimation() {
     if (animationFrameId !== null) {
       window.cancelAnimationFrame(animationFrameId);
       animationFrameId = null;
     }
     lastFrameTime = 0;
+  }
+
+  function animate(timestamp) {
+    if (!shouldAnimate()) {
+      stopAnimation();
+      return;
+    }
+    drawFrame(timestamp);
+    animationFrameId = window.requestAnimationFrame(animate);
+  }
+
+  function startAnimation() {
+    stopAnimation();
     if (reducedMotionQuery.matches) {
       drawFrame(0);
       return;
     }
-    animationFrameId = window.requestAnimationFrame(animate);
+    if (shouldAnimate()) animationFrameId = window.requestAnimationFrame(animate);
   }
 
   window.addEventListener('resize', resizeCanvas);
+  document.addEventListener('visibilitychange', startAnimation);
+  document.addEventListener('particleanimationchange', startAnimation);
   window.addEventListener('pointermove', (event) => {
     pointer.x = event.clientX;
     pointer.y = event.clientY;
@@ -647,6 +749,180 @@ function updateStatus(message) {
   elements.status.textContent = message;
 }
 
+function clearUploadProgressCrossfade() {
+  if (state.uploadProgressCrossfadeTimer) {
+    window.clearTimeout(state.uploadProgressCrossfadeTimer);
+    state.uploadProgressCrossfadeTimer = null;
+  }
+  if (state.uploadProgressCrossfadeFrame !== null) {
+    window.cancelAnimationFrame(state.uploadProgressCrossfadeFrame);
+    state.uploadProgressCrossfadeFrame = null;
+  }
+  state.uploadProgress.isCrossfading = false;
+  state.uploadProgress.isFooterPrimed = false;
+  elements.playlistPanel.classList.remove('is-upload-progress-footer-primed', 'is-upload-progress-crossfading');
+}
+
+function setUploadProgressFragments(progress, phase) {
+  if (!progress) return;
+  progress.classList.remove('is-pixel-entering', 'is-pixel-leaving');
+  let fragments = progress.querySelector('.upload-progress-fragments');
+  if (!fragments) {
+    fragments = document.createElement('span');
+    fragments.className = 'upload-progress-fragments';
+    fragments.setAttribute('aria-hidden', 'true');
+    progress.append(fragments);
+  }
+  fragments.replaceChildren(...Array.from({ length: 22 }, () => {
+    const fragment = document.createElement('span');
+    fragment.className = 'upload-progress-fragment';
+    fragment.style.setProperty('--fragment-x', `${8 + Math.random() * 84}%`);
+    fragment.style.setProperty('--fragment-y', `${12 + Math.random() * 70}%`);
+    fragment.style.setProperty('--fragment-size', `${0.14 + Math.random() * 0.32}rem`);
+    fragment.style.setProperty('--fragment-delay', `${Math.round(Math.random() * 650)}ms`);
+    fragment.style.setProperty('--fragment-drift-x', `${-1.25 + Math.random() * 2.5}rem`);
+    fragment.style.setProperty('--fragment-drift-y', `${-0.9 + Math.random() * 1.8}rem`);
+    return fragment;
+  }));
+  void progress.offsetWidth;
+  progress.classList.add(phase === 'leaving' ? 'is-pixel-leaving' : 'is-pixel-entering');
+}
+
+function clearUploadProgressFragments(progress) {
+  if (!progress) return;
+  progress.classList.remove('is-pixel-entering', 'is-pixel-leaving');
+  progress.querySelector('.upload-progress-fragments')?.replaceChildren();
+}
+
+function beginUploadProgress(files) {
+  if (state.uploadProgressTimer) {
+    window.clearTimeout(state.uploadProgressTimer);
+    state.uploadProgressTimer = null;
+  }
+  clearUploadProgressCrossfade();
+  clearUploadProgressFragments(elements.uploadProgress);
+  clearUploadProgressFragments(elements.uploadProgressFooter);
+  state.uploadProgress.hasReadyMedia = state.items.length > 0;
+  state.uploadProgress.finishPending = false;
+  state.uploadProgress.isLeaving = false;
+  state.uploadProgress.completedBytes = 0;
+  state.uploadProgress.totalBytes = files.reduce((total, file) => total + file.size, 0);
+  elements.uploadProgress.hidden = true;
+  elements.uploadProgressFooter.hidden = true;
+  elements.playlistPanel.classList.remove('has-upload-progress-entering', 'has-upload-progress-footer', 'has-upload-progress-footer-entering', 'is-upload-progress-footer-visible', 'is-upload-progress-leaving');
+}
+
+function crossfadeUploadProgressToFooter() {
+  clearUploadProgressFragments(elements.uploadProgress);
+  clearUploadProgressFragments(elements.uploadProgressFooter);
+  elements.playlistPanel.classList.remove('has-upload-progress-entering', 'has-upload-progress-footer-entering', 'is-upload-progress-footer-visible');
+  elements.playlistPanel.classList.add('has-upload-progress-footer', 'is-upload-progress-footer-primed');
+  state.uploadProgress.isFooterPrimed = true;
+  state.uploadProgress.isCrossfading = true;
+  elements.uploadProgressFooter.hidden = false;
+
+  // Keep the explicitly primed footer at opacity zero through two complete baseline frames.
+  state.uploadProgressCrossfadeFrame = window.requestAnimationFrame(() => {
+    state.uploadProgressCrossfadeFrame = window.requestAnimationFrame(() => {
+      state.uploadProgressCrossfadeFrame = null;
+      if (!state.uploadProgress.isCrossfading || !state.uploadProgress.isFooterPrimed) return;
+      state.uploadProgress.isFooterPrimed = false;
+      elements.playlistPanel.classList.replace('is-upload-progress-footer-primed', 'is-upload-progress-crossfading');
+      state.uploadProgressCrossfadeTimer = window.setTimeout(() => {
+        elements.uploadProgress.hidden = true;
+        clearUploadProgressCrossfade();
+        elements.playlistPanel.classList.add('is-upload-progress-footer-visible');
+        if (state.uploadProgress.finishPending) {
+          state.uploadProgress.finishPending = false;
+          finishUploadProgress();
+        }
+      }, 3000);
+    });
+  });
+}
+
+function updateUploadProgress(phase, details) {
+  if (!elements.uploadProgress) return;
+  const message = t(`upload${phase}`, details);
+  const normalizedPhase = phase.toLowerCase();
+  const transferred = Number.isFinite(details.transferred) ? details.transferred : 0;
+  const totalBytes = state.uploadProgress.totalBytes;
+  const completedBytes = state.uploadProgress.completedBytes;
+  const overallTransferred = Math.min(totalBytes, completedBytes + transferred);
+  const percent = totalBytes ? (overallTransferred / totalBytes) * 100 : 0;
+  const movesToFooter = normalizedPhase === 'ready' && details.completed < details.total && !state.uploadProgress.hasReadyMedia;
+  if (movesToFooter) state.uploadProgress.hasReadyMedia = true;
+
+  for (const representation of [
+    [elements.uploadProgress, elements.uploadProgressLabel, elements.uploadProgressFill],
+    [elements.uploadProgressFooter, elements.uploadProgressFooterLabel, elements.uploadProgressFooterFill]
+  ]) {
+    const [progress, label, fill] = representation;
+    progress.dataset.phase = normalizedPhase;
+    label.textContent = message;
+    fill.style.width = `${percent}%`;
+  }
+
+  const isNewProgress = elements.uploadProgress.hidden && elements.uploadProgressFooter.hidden;
+  elements.playlistPanel.classList.add('has-upload-progress');
+  if (movesToFooter) crossfadeUploadProgressToFooter();
+  else if (state.uploadProgress.hasReadyMedia) {
+    if (!state.uploadProgress.isCrossfading && !state.uploadProgress.isFooterPrimed) {
+      elements.uploadProgress.hidden = true;
+      elements.playlistPanel.classList.add('is-upload-progress-footer-visible');
+    }
+    elements.uploadProgressFooter.hidden = false;
+    elements.playlistPanel.classList.add('has-upload-progress-footer');
+    if (isNewProgress) {
+      elements.playlistPanel.classList.add('has-upload-progress-footer-entering');
+      setUploadProgressFragments(elements.uploadProgressFooter, 'entering');
+    }
+  } else {
+    elements.uploadProgress.hidden = false;
+    if (isNewProgress) {
+      elements.playlistPanel.classList.add('has-upload-progress-entering');
+      setUploadProgressFragments(elements.uploadProgress, 'entering');
+    }
+  }
+}
+
+function finishUploadProgress() {
+  if (!elements.uploadProgress || (elements.uploadProgress.hidden && elements.uploadProgressFooter.hidden) || state.uploadProgress.isLeaving) return;
+  if (state.uploadProgress.isCrossfading) {
+    state.uploadProgress.finishPending = true;
+    return;
+  }
+  clearUploadProgressCrossfade();
+  elements.uploadProgress.hidden = true;
+  state.uploadProgress.isLeaving = true;
+  elements.playlistPanel.classList.remove('has-upload-progress-footer-entering');
+  elements.playlistPanel.classList.add('is-upload-progress-leaving');
+  setUploadProgressFragments(elements.uploadProgressFooter, 'leaving');
+  state.uploadProgressTimer = window.setTimeout(() => {
+    elements.uploadProgressFooter.hidden = true;
+    clearUploadProgressFragments(elements.uploadProgressFooter);
+    elements.playlistPanel.classList.remove('has-upload-progress', 'has-upload-progress-footer', 'has-upload-progress-footer-entering', 'is-upload-progress-footer-visible', 'is-upload-progress-leaving');
+    state.uploadProgress.isLeaving = false;
+    state.uploadProgressTimer = null;
+  }, 2500);
+}
+
+function hideUploadProgress() {
+  if (!elements.uploadProgress) return;
+  if (state.uploadProgressTimer) {
+    window.clearTimeout(state.uploadProgressTimer);
+    state.uploadProgressTimer = null;
+  }
+  clearUploadProgressCrossfade();
+  clearUploadProgressFragments(elements.uploadProgress);
+  clearUploadProgressFragments(elements.uploadProgressFooter);
+  elements.uploadProgress.hidden = true;
+  elements.uploadProgressFooter.hidden = true;
+  state.uploadProgress.finishPending = false;
+  state.uploadProgress.isLeaving = false;
+  elements.playlistPanel.classList.remove('has-upload-progress', 'has-upload-progress-footer', 'has-upload-progress-footer-entering', 'is-upload-progress-footer-visible', 'is-upload-progress-leaving');
+}
+
 function showError(message) {
   elements.error.textContent = message;
   elements.error.hidden = false;
@@ -660,11 +936,21 @@ function clearError() {
 function updateControls() {
   const hasItems = state.items.length > 0;
   const hasActiveItem = state.activeIndex >= 0 && state.activeIndex < state.items.length;
-  elements.prevButton.disabled = !hasActiveItem || state.activeIndex <= 0;
-  elements.nextButton.disabled = !hasActiveItem || state.activeIndex >= state.items.length - 1;
-  elements.markWatchedButton.disabled = !hasActiveItem;
+  const libraryMutationPending = state.shared.active && state.shared.libraryMutationPending;
+  const sharedGuest = (isSharedMode() || state.shared.initializing) && state.shared.role !== 'host';
+  elements.prevButton.disabled = libraryMutationPending || !hasActiveItem || (!state.shared.active && state.activeIndex <= 0);
+  elements.nextButton.disabled = libraryMutationPending || !hasActiveItem || (!state.shared.active && state.activeIndex >= state.items.length - 1);
+  elements.markWatchedButton.disabled = libraryMutationPending || !hasActiveItem;
   elements.clearPlaylistButton.hidden = !hasItems;
-  elements.clearPlaylistButton.disabled = !hasItems;
+  elements.clearPlaylistButton.disabled = libraryMutationPending || !hasItems;
+  elements.folderInput.disabled = libraryMutationPending || sharedGuest;
+  elements.fileInput.disabled = libraryMutationPending || sharedGuest;
+  for (const control of [elements.folderSelectControl, elements.fileSelectControl]) {
+    control?.classList.toggle('is-library-restricted', sharedGuest);
+    control?.setAttribute('aria-disabled', String(sharedGuest));
+  }
+  elements.clearPlaylistButton.classList.toggle('is-library-restricted', sharedGuest);
+  elements.clearPlaylistButton.setAttribute('aria-disabled', String(sharedGuest));
   elements.playlistSearchWrap.hidden = !hasItems;
   elements.playlistSearch.disabled = !hasItems;
   elements.playlistPanel.classList.toggle('is-empty', !hasItems);
@@ -740,7 +1026,7 @@ function renderPlaylist() {
     const meta = document.createElement('span');
     meta.className = 'meta';
     const savedTime = item.progress?.currentTime ? ` · ${t('savedAt', { time: formatTime(item.progress.currentTime) })}` : '';
-    meta.textContent = `${formatBytes(item.file.size)}${savedTime}`;
+    meta.textContent = `${formatBytes(item.file?.size ?? item.size ?? 0)}${savedTime}`;
 
     content.append(title, meta);
     button.append(number, content);
@@ -767,6 +1053,26 @@ function getVideoDuration() {
   return Number.isFinite(elements.video.duration) ? elements.video.duration : 0;
 }
 
+function getDocumentFullscreenElement() {
+  return document.fullscreenElement
+    || document.webkitFullscreenElement
+    || document.mozFullScreenElement
+    || document.msFullscreenElement
+    || null;
+}
+
+function isRealVideoFullscreen() {
+  return getDocumentFullscreenElement() === elements.videoFrame;
+}
+
+function isNativeVideoFullscreen() {
+  return elements.video?.webkitDisplayingFullscreen === true;
+}
+
+function isVideoFullscreen() {
+  return isRealVideoFullscreen() || isNativeVideoFullscreen() || state.appFullscreenFallback;
+}
+
 function showVideoControls({ temporary = false } = {}) {
   if (!elements.videoFrame) return;
   elements.videoFrame.classList.add('controls-visible');
@@ -774,15 +1080,16 @@ function showVideoControls({ temporary = false } = {}) {
     window.clearTimeout(state.videoControlsTimer);
     state.videoControlsTimer = null;
   }
-  if (temporary && elements.video.src && !elements.video.paused && !elements.video.ended) {
-    state.videoControlsTimer = window.setTimeout(hideVideoControlsIfPlaying, 1700);
+  if (temporary && !state.videoSeekInteractionActive) {
+    state.videoControlsTimer = window.setTimeout(() => {
+      hideVideoControls({ ignoreFocus: true });
+    }, 3000);
   }
 }
 
-function hideVideoControlsIfPlaying() {
-  if (!elements.videoFrame) return;
-  if (!elements.video.src || elements.video.paused || elements.video.ended) return;
-  if (elements.videoFrame.contains(document.activeElement)) return;
+function hideVideoControls({ ignoreFocus = false } = {}) {
+  if (!elements.videoFrame || state.videoSeekInteractionActive || elements.video.paused || elements.video.ended) return;
+  if (!ignoreFocus && elements.videoFrame.contains(document.activeElement)) return;
   elements.videoFrame.classList.remove('controls-visible');
 }
 
@@ -797,8 +1104,8 @@ function updateVideoProgress() {
   elements.videoSeekRange.max = String(seekMax);
   elements.videoSeekRange.value = String(seekValue);
   elements.videoSeekRange.style.setProperty('--seek-progress', `${seekProgress}%`);
-  elements.videoSeekRange.setAttribute('aria-valuetext', `${formatTime(seekValue)} of ${formatTime(duration)}`);
-  elements.videoTimeDisplay.textContent = `${formatTime(currentTime)} / ${formatTime(duration)}`;
+  elements.videoSeekRange.setAttribute('aria-valuetext', formatTime(seekValue));
+  elements.videoTimeDisplay.textContent = formatTime(currentTime);
 }
 
 function updateVideoControls() {
@@ -811,7 +1118,10 @@ function updateVideoControls() {
 
   elements.videoPlayPauseButton.disabled = !hasVideo;
   elements.videoPlayPauseButton.setAttribute('aria-label', paused ? 'Play' : 'Pause');
+  elements.videoPlayPauseButton.setAttribute('aria-pressed', String(hasVideo && !paused));
+  elements.videoPlayPauseButton.setAttribute('aria-busy', String(state.playbackTogglePending));
   elements.videoPlayPauseButton.classList.toggle('is-playing', hasVideo && !paused);
+  elements.videoPlayPauseButton.classList.toggle('is-pending', state.playbackTogglePending);
 
   elements.videoSeekRange.disabled = !hasVideo || duration <= 0;
   updateVideoProgress();
@@ -826,17 +1136,47 @@ function updateVideoControls() {
   elements.videoVolumeRange.style.setProperty('--volume-progress', `${volumeValue * 100}%`);
 
   elements.videoFullscreenButton.disabled = !hasVideo || !elements.videoFrame;
+  syncFullscreenControl();
 
   if (!hasVideo || elements.video.paused || elements.video.ended) {
     showVideoControls();
   }
 }
 
+function beginSeekInteraction(event) {
+  state.videoSeekInteractionActive = true;
+  showVideoControls();
+  if (typeof event.pointerId === 'number' && typeof elements.videoSeekRange.setPointerCapture === 'function') {
+    try {
+      elements.videoSeekRange.setPointerCapture(event.pointerId);
+    } catch {
+      // Some browsers do not allow capture on native range controls.
+    }
+  }
+}
+
+function endSeekInteraction(event) {
+  state.videoSeekInteractionActive = false;
+  if (typeof event?.pointerId === 'number' && typeof elements.videoSeekRange.releasePointerCapture === 'function') {
+    try {
+      if (elements.videoSeekRange.hasPointerCapture?.(event.pointerId)) elements.videoSeekRange.releasePointerCapture(event.pointerId);
+    } catch {
+      // The browser may have already released pointer capture.
+    }
+  }
+  showVideoControls({ temporary: true });
+}
+
 function handleSeekInput(event) {
   if (!elements.video.src) return;
   const nextTime = Number.parseFloat(event.target.value);
   if (!Number.isFinite(nextTime)) return;
-  elements.video.currentTime = clamp(nextTime, 0, getVideoDuration() || nextTime);
+  const position = clamp(nextTime, 0, getVideoDuration() || nextTime);
+  if (isSharedMode()) {
+    void sendRoomCommand({ type: 'seek', position });
+    return;
+  }
+  elements.video.currentTime = position;
   updateVideoControls();
 }
 
@@ -1071,16 +1411,23 @@ function scheduleVolumeIndicatorExit() {
 }
 
 function showVolumeIndicator() {
-  if (!elements.volumeIndicator || !getFullscreenElement()) return;
+  if (!elements.volumeIndicator || !isVideoFullscreen()) return;
   createVolumeIndicatorBlocks();
 
   const volume = elements.video.muted ? 0 : Math.round(elements.video.volume * 100);
   elements.volumeIndicator.value = String(volume);
   elements.volumeIndicatorValue.textContent = String(volume);
 
-  if (!elements.volumeIndicator.hidden && elements.volumeIndicator.classList.contains('phase-value-visible')) {
-    scheduleVolumeIndicatorExit();
-    return;
+  if (!elements.volumeIndicator.hidden) {
+    if (elements.volumeIndicator.classList.contains('phase-value-visible')) {
+      scheduleVolumeIndicatorExit();
+    }
+    // Keep the first active swipe's entrance animation running instead of restarting it
+    // on every pointer move; the value above has already been updated in place.
+    if (elements.volumeIndicator.classList.contains('phase-blocks-in')
+      || elements.volumeIndicator.classList.contains('phase-blocks-assembling')
+      || elements.volumeIndicator.classList.contains('phase-plate-handoff')
+      || elements.volumeIndicator.classList.contains('phase-value-visible')) return;
   }
 
   hideVolumeIndicator();
@@ -1153,7 +1500,415 @@ function resetPlaylistSearch() {
   elements.playlistSearch.value = '';
 }
 
+function isSharedMode() {
+  return state.shared.active;
+}
+
+function isSharedHost() {
+  return isSharedMode() && state.shared.role === 'host';
+}
+
+function isSharedLibraryRestricted() {
+  return (isSharedMode() || state.shared.initializing) && !isSharedHost();
+}
+
+function showHostLibraryOnlyToast() {
+  showCopyToast(t('hostLibraryOnly'));
+}
+
+function roomUrl(path) {
+  const url = new URL(path, window.location.origin);
+  url.searchParams.set('token', state.shared.token);
+  return `${url.pathname}${url.search}`;
+}
+
+async function sharedRequest(path, options = {}) {
+  const { timeoutMs = 12_000, signal: externalSignal, ...requestOptions } = options;
+  const controller = new AbortController();
+  const abort = () => controller.abort();
+  const timeout = window.setTimeout(abort, timeoutMs);
+  if (externalSignal) {
+    if (externalSignal.aborted) abort();
+    else externalSignal.addEventListener('abort', abort, { once: true });
+  }
+  try {
+    const response = await fetch(roomUrl(path), {
+      ...requestOptions,
+      signal: controller.signal,
+      headers: { 'X-Room-Token': state.shared.token, ...(requestOptions.headers || {}) }
+    });
+    if (!response.ok) {
+      const body = await response.json().catch(() => ({}));
+      throw new Error(body.error || `Request failed (${response.status})`);
+    }
+    return await response.json();
+  } catch (error) {
+    if (controller.signal.aborted && !externalSignal?.aborted) throw new Error('Shared room request timed out');
+    throw error;
+  } finally {
+    window.clearTimeout(timeout);
+    externalSignal?.removeEventListener('abort', abort);
+  }
+}
+
+function currentRoomShareUrl() {
+  return state.shared.roomUrl;
+}
+
+function updateRoomShare() {
+  elements.roomShare.hidden = !isSharedMode();
+}
+
+function showCopyToast(message) {
+  if (!elements.copyToast) return;
+  if (state.copyToastTimer) window.clearTimeout(state.copyToastTimer);
+  elements.copyToast.textContent = message;
+  elements.copyToast.hidden = false;
+  state.copyToastTimer = window.setTimeout(() => {
+    elements.copyToast.hidden = true;
+    state.copyToastTimer = null;
+  }, 2600);
+}
+
+async function copyRoomUrl() {
+  if (!isSharedMode()) return;
+  const url = currentRoomShareUrl();
+  if (!url) {
+    showError(t('roomUrlCopyFailed'));
+    return;
+  }
+  try {
+    if (navigator.clipboard?.writeText) {
+      await navigator.clipboard.writeText(url);
+    } else {
+      const copyTarget = document.createElement('textarea');
+      copyTarget.value = url;
+      copyTarget.setAttribute('aria-hidden', 'true');
+      copyTarget.style.cssText = 'position:fixed;opacity:0;pointer-events:none;';
+      document.body.append(copyTarget);
+      copyTarget.select();
+      const copied = document.execCommand('copy');
+      copyTarget.remove();
+      if (!copied) throw new Error('Copy unavailable');
+    }
+    showCopyToast(t('roomUrlCopied'));
+  } catch {
+    showError(t('roomUrlCopyFailed'));
+  }
+}
+
+function leaveSharedMode(message) {
+  if (state.shared.eventSource) state.shared.eventSource.close();
+  state.shared.eventSource = null;
+  state.shared.active = false;
+  state.shared.role = null;
+  state.shared.initializing = false;
+  state.shared.lastSequence = -1;
+  state.shared.roomApplyId += 1;
+  state.shared.desiredPlaying = false;
+  state.shared.playbackIntent = null;
+  state.shared.playbackCommandInFlight = false;
+  setRemoteAudioPrompt(false);
+  if (state.shared.playbackRetryTimer) window.clearTimeout(state.shared.playbackRetryTimer);
+  state.shared.playbackRetryTimer = null;
+  state.shared.libraryRefreshPromise = null;
+  state.shared.roomUrl = null;
+  if (state.shared.roomRecoveryTimer) window.clearTimeout(state.shared.roomRecoveryTimer);
+  state.shared.roomRecoveryTimer = null;
+  updateRoomShare();
+  if (message) updateStatus(message);
+  updateControls();
+}
+
+function setSharedItems(media) {
+  state.items = media.map((item) => ({
+    id: item.contentId,
+    contentId: item.contentId,
+    mediaId: item.id,
+    relativePath: item.name,
+    size: item.size,
+    progress: null
+  }));
+  state.selectionId = null;
+  renderPlaylist();
+}
+
+function sharedMediaUrl(mediaId) {
+  return roomUrl(`/media/${encodeURIComponent(mediaId)}`);
+}
+
+async function refreshSharedLibrary() {
+  if (state.shared.libraryRefreshPromise) return state.shared.libraryRefreshPromise;
+  const refresh = sharedRequest('/api/library').then(({ media }) => {
+    if (isSharedMode()) setSharedItems(media);
+    return media;
+  });
+  state.shared.libraryRefreshPromise = refresh;
+  try {
+    return await refresh;
+  } finally {
+    if (state.shared.libraryRefreshPromise === refresh) state.shared.libraryRefreshPromise = null;
+  }
+}
+
+function scheduleSharedRoomRecovery() {
+  if (!isSharedMode() || state.shared.roomRecoveryTimer) return;
+  state.shared.roomRecoveryTimer = window.setTimeout(() => {
+    state.shared.roomRecoveryTimer = null;
+    void recoverSharedRoomState();
+  }, 1000);
+}
+
+async function applyRoomState(roomState, { allowCurrentSequence = false } = {}) {
+  if (!isSharedMode() || !roomState || !Number.isFinite(roomState.sequence)
+    || roomState.sequence < state.shared.lastSequence
+    || (!allowCurrentSequence && roomState.sequence === state.shared.lastSequence)) return;
+  let index = state.items.findIndex((item) => item.mediaId === roomState.mediaId);
+  if (roomState.mediaId && index < 0) {
+    try {
+      await refreshSharedLibrary();
+    } catch (error) {
+      showError(error.message || t('sharedRequestFailed'));
+      if (/token|required|401/i.test(error.message || '')) leaveSharedMode(t('sharedRequestFailed'));
+      else scheduleSharedRoomRecovery();
+      return;
+    }
+    if (!isSharedMode() || roomState.sequence < state.shared.lastSequence) return;
+    index = state.items.findIndex((item) => item.mediaId === roomState.mediaId);
+    if (index < 0) {
+      scheduleSharedRoomRecovery();
+      return;
+    }
+  }
+  state.shared.lastSequence = roomState.sequence;
+  const hasPlaybackIntent = state.shared.playbackIntent !== null;
+  const playing = hasPlaybackIntent ? state.shared.playbackIntent : Boolean(roomState.playing);
+  state.shared.desiredPlaying = playing;
+  const applyId = state.shared.roomApplyId + 1;
+  state.shared.roomApplyId = applyId;
+  state.shared.applyingRemote = true;
+  const isCurrentApplication = () => isSharedMode()
+    && state.shared.roomApplyId === applyId
+    && state.shared.lastSequence === roomState.sequence;
+  try {
+    if (!isCurrentApplication()) return;
+    if (index >= 0 && state.activeIndex !== index) {
+      revokeCurrentObjectUrl();
+      state.activeIndex = index;
+      const item = state.items[index];
+      elements.video.src = sharedMediaUrl(item.mediaId);
+      elements.video.load();
+      elements.nowPlaying.textContent = item.relativePath;
+      renderPlaylist();
+    }
+    if (index >= 0) {
+      const elapsed = roomState.playing
+        ? Math.max(0, (Date.now() - Number(roomState.serverTime || roomState.updatedAt || Date.now())) / 1000)
+        : 0;
+      const position = Math.max(0, roomState.position + elapsed);
+      const syncPosition = () => {
+        if (!isCurrentApplication() || hasPlaybackIntent) return;
+        try {
+          if (Number.isFinite(elements.video.duration) && elements.video.duration > 0) {
+            elements.video.currentTime = clamp(position, 0, elements.video.duration);
+          } else {
+            elements.video.currentTime = position;
+          }
+          updateVideoControls();
+        } catch {
+          if (isCurrentApplication()) showError(t('defaultPlaybackError'));
+        }
+      };
+      if (elements.video.readyState >= HTMLMediaElement.HAVE_METADATA) syncPosition();
+      else elements.video.onloadedmetadata = syncPosition;
+      if (playing) {
+        await playSharedRemoteMedia(isCurrentApplication);
+      } else if (isCurrentApplication()) {
+        setRemoteAudioPrompt(false);
+        try {
+          elements.video.pause();
+        } catch (error) {
+          if (!isAbortError(error) && isCurrentApplication()) showError(t('defaultPlaybackError'));
+        }
+      }
+    } else if (!roomState.mediaId) {
+      state.activeIndex = -1;
+      elements.video.removeAttribute('src');
+      elements.video.load();
+      elements.nowPlaying.textContent = t('nothingPlaying');
+      renderPlaylist();
+    }
+  } catch {
+    if (isCurrentApplication()) showError(t('defaultPlaybackError'));
+  } finally {
+    if (state.shared.roomApplyId === applyId) state.shared.applyingRemote = false;
+  }
+}
+
+async function recoverSharedRoomState({ allowCurrentSequence = false } = {}) {
+  try {
+    const { state: roomState } = await sharedRequest('/api/room');
+    await applyRoomState(roomState, { allowCurrentSequence });
+  } catch (error) {
+    if (/token|required|401/i.test(error.message || '')) leaveSharedMode(t('sharedRequestFailed'));
+    else scheduleSharedRoomRecovery();
+  }
+}
+
+async function sendRoomCommand(command) {
+  if (!isSharedMode()) return null;
+  try {
+    const result = await sharedRequest('/api/room/commands', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(command)
+    });
+    void applyRoomState(result.state);
+    return result.state;
+  } catch (error) {
+    showError(error.message || t('sharedRequestFailed'));
+    if (/token|required|401/i.test(error.message || '')) leaveSharedMode(t('sharedRequestFailed'));
+    else void recoverSharedRoomState();
+    return null;
+  }
+}
+
+function uploadSharedFile(file, completed, total) {
+  return new Promise((resolve, reject) => {
+    updateUploadProgress('Preparing', { completed, total, name: file.name, totalBytes: file.size });
+    const request = new XMLHttpRequest();
+    request.open('POST', roomUrl('/api/upload'));
+    request.setRequestHeader('X-Room-Token', state.shared.token);
+    request.setRequestHeader('Content-Type', 'application/octet-stream');
+    request.setRequestHeader('X-Media-Filename', file.name);
+    request.upload.onprogress = (event) => {
+      const totalBytes = event.lengthComputable ? event.total : file.size;
+      const transferred = Math.min(event.loaded, totalBytes);
+      updateUploadProgress('Uploading', {
+        completed,
+        total,
+        name: file.name,
+        transferred,
+        totalBytes,
+        percent: totalBytes ? Math.round(transferred / totalBytes * 100) : 0
+      });
+    };
+    request.onerror = () => reject(new Error('Network error'));
+    request.onload = () => {
+      if (request.status < 200 || request.status >= 300) {
+        let body = {};
+        try { body = JSON.parse(request.responseText); } catch {}
+        reject(new Error(body.error || `Upload failed (${request.status})`));
+        return;
+      }
+      try {
+        resolve(JSON.parse(request.responseText).media);
+      } catch { reject(new Error('Invalid upload response')); }
+    };
+    request.send(file);
+  });
+}
+
+async function handleSharedFiles(fileList) {
+  if (isSharedLibraryRestricted()) {
+    showHostLibraryOnlyToast();
+    elements.folderInput.value = '';
+    elements.fileInput.value = '';
+    return;
+  }
+  clearError();
+  const allFiles = Array.from(fileList || []);
+  const files = allFiles.filter(isVideoFile).sort((a, b) => collator.compare(getRelativePath(a), getRelativePath(b)));
+  if (!files.length) {
+    updateStatus(allFiles.length ? t('statusNoSupported') : t('statusNoVideos'));
+    return;
+  }
+  state.shared.libraryMutationPending = true;
+  beginUploadProgress(files);
+  updateControls();
+  try {
+    for (let index = 0; index < files.length; index += 1) {
+      const file = files[index];
+      try {
+        const uploadedMedia = await uploadSharedFile(file, index + 1, files.length);
+        const { media, state: roomState } = await sharedRequest('/api/library/append', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ mediaIds: [uploadedMedia.id] })
+        });
+        state.uploadProgress.completedBytes += file.size;
+        updateUploadProgress('Ready', { completed: index + 1, total: files.length, name: file.name, totalBytes: file.size, transferred: file.size });
+        setSharedItems(media);
+        await applyRoomState(roomState, { allowCurrentSequence: true });
+        updateStatus(t('statusLoaded', { count: media.length, rejected: allFiles.length - files.length }));
+      } catch (error) {
+        updateUploadProgress('Error', { completed: index + 1, total: files.length, name: file.name, message: error.message || '' });
+        showError(t('sharedUploadFailed', { name: file.name, message: error.message || '' }));
+        if (/token|required|401/i.test(error.message || '')) leaveSharedMode(t('sharedRequestFailed'));
+        return;
+      }
+    }
+    finishUploadProgress();
+  } catch (error) {
+    showError(error.message || t('sharedRequestFailed'));
+    if (/token|required|401/i.test(error.message || '')) leaveSharedMode(t('sharedRequestFailed'));
+    else void recoverSharedRoomState();
+  } finally {
+    state.shared.libraryMutationPending = false;
+    updateControls();
+  }
+}
+
+async function initialiseSharedRoom() {
+  if (!/^[A-Za-z0-9_-]+$/.test(state.shared.token)) {
+    updateStatus(t('statusLocalOnly'));
+    return;
+  }
+  try {
+    const { role, roomUrl: canonicalRoomUrl } = await sharedRequest('/api/session');
+    if ((role !== 'host' && role !== 'guest') || typeof canonicalRoomUrl !== 'string' || !/^http:\/\//.test(canonicalRoomUrl)) {
+      throw new Error('Invalid shared room metadata');
+    }
+    state.shared.role = role;
+    state.shared.roomUrl = canonicalRoomUrl;
+    state.shared.initializing = false;
+    state.shared.active = true;
+    const [{ media }, { state: roomState }] = await Promise.all([
+      sharedRequest('/api/library'),
+      sharedRequest('/api/room')
+    ]);
+    setSharedItems(media);
+    await applyRoomState(roomState);
+    const eventSource = new EventSource(roomUrl('/api/events'));
+    eventSource.addEventListener('snapshot', (event) => {
+      try {
+        const snapshot = JSON.parse(event.data);
+        if (Array.isArray(snapshot.media) && isSharedMode()) setSharedItems(snapshot.media);
+        void applyRoomState(snapshot.state);
+      } catch (error) { console.warn('Invalid shared room snapshot', error); }
+    });
+    eventSource.addEventListener('library', (event) => {
+      try {
+        const { media } = JSON.parse(event.data);
+        if (Array.isArray(media) && isSharedMode()) setSharedItems(media);
+      } catch (error) { console.warn('Invalid shared library event', error); }
+    });
+    eventSource.addEventListener('state', (event) => {
+      try { void applyRoomState(JSON.parse(event.data)); } catch (error) { console.warn('Invalid shared room event', error); }
+    });
+    eventSource.onerror = () => updateStatus(t('sharedRequestFailed'));
+    state.shared.eventSource = eventSource;
+    updateRoomShare();
+    updateStatus(t('statusSharedConnected'));
+  } catch (error) {
+    leaveSharedMode(t('sharedRequestFailed'));
+  }
+}
+
 async function handleFiles(fileList) {
+  if (isSharedLibraryRestricted()) return handleSharedFiles(fileList);
+  if (isSharedMode()) return handleSharedFiles(fileList);
+  hideUploadProgress();
   clearError();
   resetPlaylistSearch();
   await saveActiveProgress();
@@ -1227,6 +1982,10 @@ function revokeCurrentObjectUrl() {
 async function playIndex(index, options = {}) {
   const { autoplay = true, saveCurrent = true, source = null } = options;
   if (index < 0 || index >= state.items.length) return;
+  if (isSharedMode() && !state.shared.applyingRemote) {
+    await sendRoomCommand({ type: 'select', mediaId: state.items[index].mediaId });
+    return;
+  }
 
   clearError();
   if (saveCurrent) await saveActiveProgress();
@@ -1255,8 +2014,9 @@ async function playIndex(index, options = {}) {
   if (autoplay) {
     try {
       await elements.video.play();
+      clearError();
     } catch (error) {
-      showError(t('autoplayBlocked', { message: error.message || '' }));
+      reportPlayFailure(error);
     }
   }
 }
@@ -1271,8 +2031,8 @@ async function saveActiveProgress({ watched = false, allowThresholdWatched = tru
   const record = {
     id: item.id,
     relativePath: item.relativePath,
-    size: item.file.size,
-    lastModified: item.file.lastModified,
+    size: item.file?.size ?? item.size ?? 0,
+    lastModified: item.file?.lastModified ?? 0,
     currentTime,
     duration,
     watched: watched || thresholdWatched || Boolean(item.progress?.watched),
@@ -1290,6 +2050,10 @@ async function saveActiveProgress({ watched = false, allowThresholdWatched = tru
 }
 
 async function playRelative(offset, options = {}) {
+  if (isSharedMode()) {
+    await sendRoomCommand({ type: offset < 0 ? 'previous' : 'next' });
+    return;
+  }
   const nextIndex = state.activeIndex + offset;
   if (nextIndex >= 0 && nextIndex < state.items.length) {
     await playIndex(nextIndex, options);
@@ -1297,6 +2061,10 @@ async function playRelative(offset, options = {}) {
 }
 
 async function skipToNext() {
+  if (isSharedMode()) {
+    await sendRoomCommand({ type: 'next' });
+    return;
+  }
   await saveActiveProgress({ allowThresholdWatched: false });
   await playRelative(1, { saveCurrent: false, source: 'skip-next' });
 }
@@ -1315,6 +2083,10 @@ async function markCurrentWatchedAndNext() {
 
 async function handleEnded() {
   await releaseWakeLock();
+  if (isSharedMode()) {
+    await sendRoomCommand({ type: 'next' });
+    return;
+  }
   await saveActiveProgress({ watched: true });
   if (state.activeIndex < state.items.length - 1) {
     await playIndex(state.activeIndex + 1, { saveCurrent: false, source: 'ended-auto-next' });
@@ -1381,30 +2153,205 @@ function clamp(value, min, max) {
   return Math.min(max, Math.max(min, value));
 }
 
-async function togglePlayback() {
-  if (!elements.video.src || state.playbackTogglePending) return;
+function currentSharedPosition() {
+  const position = elements.video.currentTime;
+  return Number.isFinite(position) && position >= 0 ? position : 0;
+}
 
+function isAbortError(error) {
+  return error?.name === 'AbortError';
+}
+
+function reportPlayFailure(error) {
+  if (isAbortError(error)) return;
+  if (error?.name === 'NotAllowedError') {
+    showError(t('autoplayBlocked'));
+    return;
+  }
+  showError(t('defaultPlaybackError'));
+}
+
+function setRemoteAudioPrompt(active) {
+  state.shared.awaitingAudioActivation = active;
+  elements.remoteAudioPrompt.hidden = !active;
+}
+
+async function playSharedRemoteMedia(isCurrentApplication) {
+  try {
+    await elements.video.play();
+    if (!isCurrentApplication()) return;
+    setRemoteAudioPrompt(false);
+    clearError();
+  } catch (error) {
+    if (!isCurrentApplication()) return;
+    if (error?.name !== 'NotAllowedError') {
+      reportPlayFailure(error);
+      return;
+    }
+    try {
+      elements.video.muted = true;
+      await elements.video.play();
+      if (!isCurrentApplication()) return;
+      setRemoteAudioPrompt(true);
+      clearError();
+    } catch (mutedError) {
+      if (isCurrentApplication()) reportPlayFailure(mutedError);
+    }
+  }
+}
+
+function activateRemoteAudio() {
+  if (!state.shared.awaitingAudioActivation) return;
+  state.userMuted = false;
+  elements.video.muted = false;
+  setRemoteAudioPrompt(false);
+  if (state.shared.desiredPlaying) {
+    void elements.video.play().then(clearError).catch((error) => {
+      if (error?.name === 'NotAllowedError') setRemoteAudioPrompt(true);
+      else reportPlayFailure(error);
+    });
+  }
+}
+
+function applySharedPlaybackIntent(playing) {
+  // Invalidate every asynchronous room application before applying a newer local gesture.
+  state.shared.roomApplyId += 1;
+  state.shared.desiredPlaying = playing;
+  try {
+    if (playing) {
+      setRemoteAudioPrompt(false);
+      // Start while this user gesture is still active; the server command follows separately.
+      Promise.resolve(elements.video.play()).then(clearError).catch(reportPlayFailure).finally(updateVideoControls);
+    } else {
+      setRemoteAudioPrompt(false);
+      elements.video.pause();
+      updateVideoControls();
+    }
+  } catch (error) {
+    reportPlayFailure(error);
+    updateVideoControls();
+  }
+}
+
+function scheduleSharedPlaybackRetry() {
+  if (!isSharedMode() || state.shared.playbackIntent === null || state.shared.playbackRetryTimer) return;
+  state.shared.playbackRetryTimer = window.setTimeout(() => {
+    state.shared.playbackRetryTimer = null;
+    void recoverSharedRoomState({ allowCurrentSequence: true }).finally(flushSharedPlaybackIntent);
+  }, 1_000);
+}
+
+function flushSharedPlaybackIntent() {
+  if (!isSharedMode() || state.shared.playbackCommandInFlight || state.shared.playbackIntent === null) return;
+
+  const intent = state.shared.playbackIntent;
+  state.shared.playbackCommandInFlight = true;
+  state.playbackTogglePending = true;
+  updateVideoControls();
+  void sendRoomCommand({ type: intent ? 'play' : 'pause', position: currentSharedPosition() }).then(async (roomState) => {
+    if (!roomState || state.shared.playbackIntent !== intent) return;
+    state.shared.playbackIntent = null;
+    // Re-read after clearing the local intent so an acknowledgement cannot mask a newer SSE state.
+    await recoverSharedRoomState({ allowCurrentSequence: true });
+  }).catch((error) => {
+    showError(error.message || t('sharedRequestFailed'));
+  }).finally(() => {
+    state.shared.playbackCommandInFlight = false;
+    state.playbackTogglePending = false;
+    updateVideoControls();
+    if (state.shared.playbackIntent !== null) scheduleSharedPlaybackRetry();
+    else flushSharedPlaybackIntent();
+  });
+}
+
+function togglePlayback() {
+  if (!elements.video.src) return;
+
+  if (isSharedMode()) {
+    const currentIntent = state.shared.playbackIntent ?? (!elements.video.paused && !elements.video.ended);
+    state.shared.playbackIntent = !currentIntent;
+    applySharedPlaybackIntent(state.shared.playbackIntent);
+    flushSharedPlaybackIntent();
+    return;
+  }
   if (!elements.video.paused && !elements.video.ended) {
     elements.video.pause();
     return;
   }
 
   state.playbackTogglePending = true;
-  try {
-    await elements.video.play();
-    clearError();
-  } catch (error) {
-    showError(t('autoplayBlocked', { message: error.message || '' }));
-  } finally {
-    state.playbackTogglePending = false;
-  }
+  updateVideoControls();
+  void (async () => {
+    try {
+      await elements.video.play();
+      clearError();
+    } catch (error) {
+      reportPlayFailure(error);
+    } finally {
+      state.playbackTogglePending = false;
+      updateVideoControls();
+    }
+  })();
 }
 
 function seekBy(seconds) {
   if (!elements.video.src) return;
   const currentTime = Number.isFinite(elements.video.currentTime) ? elements.video.currentTime : 0;
   const duration = Number.isFinite(elements.video.duration) ? elements.video.duration : Number.POSITIVE_INFINITY;
-  elements.video.currentTime = clamp(currentTime + seconds, 0, duration);
+  const position = clamp(currentTime + seconds, 0, duration);
+  if (isSharedMode()) {
+    void sendRoomCommand({ type: 'seek', position });
+    return;
+  }
+  elements.video.currentTime = position;
+}
+
+function resetSeekFeedback() {
+  state.seekFeedbackDirection = 0;
+  state.seekFeedbackAmount = 0;
+}
+
+function showGestureFeedback(message, side, { icon, liveText = message } = {}) {
+  if (!elements.gestureFeedback) return;
+  if (side !== 'left' && side !== 'right') resetSeekFeedback();
+  elements.gestureFeedbackText.textContent = message;
+  elements.gestureFeedbackLive.textContent = liveText;
+  elements.gestureFeedback.dataset.side = side;
+  if (icon) elements.gestureFeedback.dataset.icon = icon;
+  else delete elements.gestureFeedback.dataset.icon;
+  elements.gestureFeedback.hidden = false;
+  if (state.gestureFeedbackTimer) window.clearTimeout(state.gestureFeedbackTimer);
+  state.gestureFeedbackTimer = window.setTimeout(() => {
+    elements.gestureFeedback.hidden = true;
+    delete elements.gestureFeedback.dataset.side;
+    delete elements.gestureFeedback.dataset.icon;
+    resetSeekFeedback();
+    state.gestureFeedbackTimer = null;
+  }, 900);
+}
+
+function showSeekFeedback(seconds) {
+  const direction = Math.sign(seconds);
+  if (!direction) return;
+
+  // Seek feedback is local presentation, so every visible client accumulates
+  // repeated same-direction gestures without altering the shared seek command.
+  if (state.seekFeedbackDirection !== direction) {
+    state.seekFeedbackDirection = direction;
+    state.seekFeedbackAmount = 0;
+  }
+  state.seekFeedbackAmount += seconds;
+
+  const amount = state.seekFeedbackAmount;
+  showGestureFeedback(`${amount > 0 ? '+' : ''}${amount}`, amount > 0 ? 'right' : 'left');
+}
+
+function showPlaybackFeedback() {
+  const isPlaying = !elements.video.paused && !elements.video.ended;
+  showGestureFeedback('', 'center', {
+    icon: isPlaying ? 'pause' : 'play',
+    liveText: t(isPlaying ? 'playbackFeedbackPause' : 'playbackFeedbackPlay')
+  });
 }
 
 function changeVolumeBy(delta) {
@@ -1417,46 +2364,155 @@ function changeVolumeBy(delta) {
   showVolumeIndicator();
 }
 
-function getFullscreenElement() {
-  return document.fullscreenElement
-    || document.webkitFullscreenElement
-    || document.mozFullScreenElement
-    || document.msFullscreenElement
+function syncFullscreenControl() {
+  const fullscreen = isVideoFullscreen();
+  elements.videoFullscreenButton.setAttribute('aria-pressed', String(fullscreen));
+  elements.videoFullscreenButton.setAttribute('aria-label', fullscreen ? 'Exit fullscreen' : 'Fullscreen');
+  elements.videoFullscreenButton.setAttribute('aria-busy', String(state.fullscreenTransitionInFlight));
+  elements.videoFullscreenButton.classList.toggle('is-fullscreen', fullscreen);
+  elements.videoFullscreenButton.classList.toggle('is-pending', state.fullscreenTransitionInFlight);
+}
+
+function setAppFullscreen(active, { real = false, fallback = false } = {}) {
+  if (!elements.videoFrame) return;
+  state.appFullscreenFallback = active && fallback;
+  elements.videoFrame.classList.toggle('is-app-fullscreen', active);
+  elements.videoFrame.classList.toggle('is-real-fullscreen', active && real);
+  document.documentElement.classList.toggle('is-app-fullscreen', active);
+  document.body.classList.toggle('is-app-fullscreen', active);
+  syncFullscreenControl();
+  if (!active) {
+    hideVolumeIndicator();
+    resetMobileGesture();
+  }
+  document.dispatchEvent(new Event('particleanimationchange'));
+  showVideoControls({ temporary: true });
+}
+
+function getFullscreenRequestMethod() {
+  const frame = elements.videoFrame;
+  return frame?.requestFullscreen
+    || frame?.webkitRequestFullscreen
+    || frame?.mozRequestFullScreen
+    || frame?.msRequestFullscreen
     || null;
 }
 
-function requestFullscreen(element) {
-  const request = element.requestFullscreen
-    || element.webkitRequestFullscreen
-    || element.mozRequestFullScreen
-    || element.msRequestFullscreen;
-  return request ? request.call(element) : Promise.resolve();
-}
-
-function exitFullscreen() {
+async function exitDocumentFullscreen() {
   const exit = document.exitFullscreen
     || document.webkitExitFullscreen
     || document.mozCancelFullScreen
     || document.msExitFullscreen;
-  return exit ? exit.call(document) : Promise.resolve();
+  if (!exit || !getDocumentFullscreenElement()) return;
+  try {
+    await exit.call(document);
+  } catch {
+    // CSS immersive mode remains available if the browser refuses to exit its element mode.
+  }
 }
 
 async function toggleFullscreen() {
-  if (!elements.video.src) return;
-
+  if (!elements.video.src || !elements.videoFrame || state.fullscreenTransitionInFlight) return;
+  state.fullscreenTransitionInFlight = true;
+  syncFullscreenControl();
   try {
-    if (getFullscreenElement()) {
-      await exitFullscreen();
+    if (isVideoFullscreen()) {
+      if (getDocumentFullscreenElement()) await exitDocumentFullscreen();
+      if (isNativeVideoFullscreen()) await elements.video.webkitExitFullscreen?.();
+      setAppFullscreen(false);
       return;
     }
-    await requestFullscreen(elements.videoFrame || elements.video);
-  } catch (error) {
-    console.warn('Could not toggle fullscreen', error);
+
+    const request = getFullscreenRequestMethod();
+    if (request) {
+      try {
+        await request.call(elements.videoFrame);
+        if (isRealVideoFullscreen()) {
+          setAppFullscreen(true, { real: true });
+          return;
+        }
+      } catch {
+        // The request was rejected; use the app fallback below.
+      }
+      await exitDocumentFullscreen();
+    }
+
+    // Element fullscreen is unavailable, rejected, or completed without the requested frame.
+    setAppFullscreen(true, { fallback: true });
+  } finally {
+    state.fullscreenTransitionInFlight = false;
+    syncFullscreenControl();
+  }
+}
+
+async function exitFullscreenMode() {
+  if (state.fullscreenTransitionInFlight) return;
+  state.fullscreenTransitionInFlight = true;
+  syncFullscreenControl();
+  try {
+    if (getDocumentFullscreenElement()) await exitDocumentFullscreen();
+    if (isNativeVideoFullscreen()) await elements.video.webkitExitFullscreen?.();
+    setAppFullscreen(false);
+  } finally {
+    state.fullscreenTransitionInFlight = false;
+    syncFullscreenControl();
+  }
+}
+
+function handleFullscreenChange() {
+  if (isRealVideoFullscreen()) {
+    setAppFullscreen(true, { real: true });
+    return;
+  }
+
+  if (getDocumentFullscreenElement()) {
+    void exitDocumentFullscreen();
+    setAppFullscreen(true, { fallback: true });
+    return;
+  }
+
+  setAppFullscreen(false);
+}
+
+function handleFullscreenError() {
+  void exitDocumentFullscreen();
+  setAppFullscreen(true, { fallback: true });
+}
+
+async function restoreAppFullscreenFromNativeVideo() {
+  if (!isNativeVideoFullscreen() || isRealVideoFullscreen()) return;
+  try {
+    await elements.video.webkitExitFullscreen?.();
+  } catch {
+    // A video-only WebKit top layer cannot host the custom controls or feedback.
+  }
+  if (!isRealVideoFullscreen()) setAppFullscreen(true, { fallback: true });
+}
+
+function handleNativeVideoFullscreenBegin() {
+  // Preserve valid element fullscreen; only replace WebKit's video-only top layer.
+  if (isRealVideoFullscreen()) {
+    setAppFullscreen(true, { real: true });
+    return;
+  }
+  void restoreAppFullscreenFromNativeVideo();
+}
+
+function handleNativeVideoFullscreenEnd() {
+  if (isRealVideoFullscreen()) {
+    setAppFullscreen(true, { real: true });
+  } else if (!state.appFullscreenFallback) {
+    setAppFullscreen(false);
   }
 }
 
 function handleKeyboardShortcuts(event) {
   if (event.defaultPrevented || event.altKey || event.ctrlKey || event.metaKey || event.shiftKey) return;
+  if (event.code === 'Escape' && isVideoFullscreen()) {
+    event.preventDefault();
+    void exitFullscreenMode();
+    return;
+  }
   if (isEditableShortcutTarget(event.target)) return;
 
   const repeatLockedCodes = new Set(['Space', 'KeyA', 'KeyD', 'KeyW', 'KeyF']);
@@ -1476,10 +2532,34 @@ function handleKeyboardShortcuts(event) {
 
   event.preventDefault();
   if (event.repeat && repeatLockedCodes.has(event.code)) return;
-  void action();
+  runAsyncAction(action);
 }
 
 async function clearPlaylist() {
+  if (isSharedMode() || state.shared.initializing) {
+    if (isSharedLibraryRestricted()) {
+      showHostLibraryOnlyToast();
+      return;
+    }
+    state.shared.libraryMutationPending = true;
+    updateControls();
+    try {
+      const { media, state: roomState } = await sharedRequest('/api/library/clear', { method: 'POST' });
+      setSharedItems(media);
+      await applyRoomState(roomState);
+      clearError();
+      stagePlaylistClearTransition();
+      updateStatus(t('statusNoVideos'));
+    } catch (error) {
+      showError(error.message || t('sharedRequestFailed'));
+      if (/token|required|401/i.test(error.message || '')) leaveSharedMode(t('sharedRequestFailed'));
+      else void recoverSharedRoomState();
+    } finally {
+      state.shared.libraryMutationPending = false;
+      updateControls();
+    }
+    return;
+  }
   await saveActiveProgress();
   await releaseWakeLock();
   revokeCurrentObjectUrl();
@@ -1499,20 +2579,211 @@ async function clearPlaylist() {
   updateStatus(t('statusNoVideos'));
 }
 
-elements.folderInput.addEventListener('change', (event) => handleFiles(event.target.files));
-elements.fileInput.addEventListener('change', (event) => handleFiles(event.target.files));
-elements.prevButton.addEventListener('click', () => playRelative(-1, { source: 'previous' }));
-elements.nextButton.addEventListener('click', skipToNext);
-elements.markWatchedButton.addEventListener('click', markCurrentWatchedAndNext);
-elements.clearPlaylistButton.addEventListener('click', clearPlaylist);
+function reportAsyncError(error) {
+  showError(error?.message || t('sharedRequestFailed'));
+}
+
+function runAsyncAction(action) {
+  void Promise.resolve().then(action).catch(reportAsyncError);
+}
+
+function preventGuestLibraryPicker(event) {
+  if (!isSharedLibraryRestricted()) return;
+  event.preventDefault();
+  event.stopPropagation();
+  showHostLibraryOnlyToast();
+}
+
+elements.folderSelectControl.addEventListener('click', preventGuestLibraryPicker);
+elements.fileSelectControl.addEventListener('click', preventGuestLibraryPicker);
+elements.folderInput.addEventListener('change', (event) => runAsyncAction(() => handleFiles(event.target.files)));
+elements.fileInput.addEventListener('change', (event) => runAsyncAction(() => handleFiles(event.target.files)));
+elements.prevButton.addEventListener('click', () => runAsyncAction(() => playRelative(-1, { source: 'previous' })));
+elements.nextButton.addEventListener('click', () => runAsyncAction(skipToNext));
+elements.markWatchedButton.addEventListener('click', () => runAsyncAction(markCurrentWatchedAndNext));
+elements.clearPlaylistButton.addEventListener('click', () => runAsyncAction(clearPlaylist));
+elements.copyRoomUrlButton.addEventListener('click', () => { void copyRoomUrl(); });
 elements.videoPlayPauseButton.addEventListener('click', togglePlayback);
+elements.videoSeekRange.addEventListener('pointerdown', beginSeekInteraction);
+elements.videoSeekRange.addEventListener('pointerup', endSeekInteraction);
+elements.videoSeekRange.addEventListener('pointercancel', endSeekInteraction);
+elements.videoSeekRange.addEventListener('change', endSeekInteraction);
 elements.videoSeekRange.addEventListener('input', handleSeekInput);
 elements.videoMuteButton.addEventListener('click', toggleMute);
 elements.videoVolumeRange.addEventListener('input', handleVolumeInput);
-elements.videoFullscreenButton.addEventListener('click', toggleFullscreen);
-elements.videoFrame.addEventListener('pointermove', () => showVideoControls({ temporary: true }));
-elements.videoFrame.addEventListener('pointerleave', hideVideoControlsIfPlaying);
-elements.videoFrame.addEventListener('focusin', () => showVideoControls());
+elements.videoFullscreenButton.addEventListener('click', () => { void toggleFullscreen(); });
+document.addEventListener('fullscreenchange', handleFullscreenChange);
+document.addEventListener('webkitfullscreenchange', handleFullscreenChange);
+document.addEventListener('mozfullscreenchange', handleFullscreenChange);
+document.addEventListener('MSFullscreenChange', handleFullscreenChange);
+document.addEventListener('fullscreenerror', handleFullscreenError);
+document.addEventListener('webkitfullscreenerror', handleFullscreenError);
+document.addEventListener('mozfullscreenerror', handleFullscreenError);
+document.addEventListener('MSFullscreenError', handleFullscreenError);
+elements.video.addEventListener('webkitbeginfullscreen', handleNativeVideoFullscreenBegin);
+elements.video.addEventListener('webkitendfullscreen', handleNativeVideoFullscreenEnd);
+elements.video.disableRemotePlayback = true;
+elements.video.controlsList?.add('nodownload', 'noremoteplayback');
+elements.remoteAudioPrompt.addEventListener('click', activateRemoteAudio);
+function isMobileGestureSurface(target) {
+  return target === elements.videoFrame
+    || target === elements.video
+    || target?.closest?.('.video-controls') === elements.videoControls;
+}
+
+function isInteractiveVideoControl(target) {
+  return Boolean(target?.closest?.('button, input, [tabindex]'));
+}
+
+function releaseMobileGesturePointer(pointerId, surface = elements.videoFrame) {
+  if (typeof pointerId !== 'number' || typeof surface?.releasePointerCapture !== 'function') return;
+  try {
+    if (surface.hasPointerCapture?.(pointerId)) surface.releasePointerCapture(pointerId);
+  } catch {
+    // The browser may have already released pointer capture.
+  }
+}
+
+function resetMobileGesture() {
+  const gesture = state.mobileGesture;
+  state.mobileGesture = null;
+  releaseMobileGesturePointer(gesture?.pointerId, gesture?.surface);
+}
+
+function handleMobileGesturePointerDown(event) {
+  if (event.pointerType !== 'touch' || state.shared.awaitingAudioActivation) return false;
+  if (state.mobileGesture) {
+    resetMobileGesture();
+    return false;
+  }
+  if (!isMobileGestureSurface(event.target) || isInteractiveVideoControl(event.target)) return false;
+  const rect = elements.videoFrame.getBoundingClientRect();
+  if (!rect.width || !rect.height) return false;
+  state.mobileGesture = {
+    pointerId: event.pointerId,
+    surface: event.currentTarget || elements.videoFrame,
+    startedAt: event.timeStamp,
+    startX: event.clientX,
+    startY: event.clientY,
+    startVolume: elements.video.muted ? 0 : elements.video.volume,
+    fullscreen: isVideoFullscreen(),
+    rightThird: event.clientX >= rect.left + (rect.width * 2 / 3),
+    moved: false,
+    horizontalGesture: false,
+    volumeGesture: false
+  };
+  if (typeof state.mobileGesture.surface?.setPointerCapture === 'function') {
+    try {
+      state.mobileGesture.surface.setPointerCapture(event.pointerId);
+    } catch {
+      // Some browsers do not allow capture for this touch sequence.
+    }
+  }
+  return true;
+}
+
+function handleMobileGesturePointerMove(event) {
+  const gesture = state.mobileGesture;
+  if (!gesture || event.pointerId !== gesture.pointerId || !gesture.fullscreen || !gesture.rightThird) return;
+  const deltaX = event.clientX - gesture.startX;
+  const deltaY = event.clientY - gesture.startY;
+  if (!gesture.moved) {
+    // Wait through initial diagonal jitter before committing this drag to a direction.
+    if (Math.hypot(deltaX, deltaY) < 28) return;
+    gesture.moved = true;
+    if (Math.abs(deltaY) <= Math.abs(deltaX) * 1.25) {
+      gesture.horizontalGesture = true;
+      return;
+    }
+    gesture.volumeGesture = true;
+  }
+  if (!gesture.volumeGesture) return;
+
+  event.preventDefault();
+  const height = elements.videoFrame.getBoundingClientRect().height;
+  if (!height || !elements.video.src) return;
+  state.userMuted = false;
+  state.userVolume = clamp(gesture.startVolume - (deltaY / height), 0, 1);
+  elements.video.volume = state.userVolume;
+  elements.video.muted = false;
+  updateVideoControls();
+  showVolumeIndicator();
+}
+
+function handleMobileGesturePointerUp(event) {
+  const gesture = state.mobileGesture;
+  if (!gesture || event.pointerId !== gesture.pointerId) return;
+  resetMobileGesture();
+  if (gesture.volumeGesture || gesture.horizontalGesture || gesture.moved || event.timeStamp - gesture.startedAt > 300) {
+    state.mobileSuppressClick = true;
+    return;
+  }
+  const movement = Math.hypot(event.clientX - gesture.startX, event.clientY - gesture.startY);
+  if (movement > 12) {
+    state.mobileSuppressClick = true;
+    return;
+  }
+
+  if (gesture.fullscreen) showVideoControls({ temporary: true });
+  const previousTap = state.mobileLastTap;
+  const isDoubleTap = previousTap
+    && event.timeStamp - previousTap.time <= 300
+    && Math.hypot(event.clientX - previousTap.x, event.clientY - previousTap.y) <= 30;
+  state.mobileLastTap = isDoubleTap ? null : { time: event.timeStamp, x: event.clientX, y: event.clientY };
+  if (!isDoubleTap) return;
+  state.mobileSuppressClick = true;
+
+  if (!gesture.fullscreen) {
+    void toggleFullscreen();
+    return;
+  }
+
+  const width = elements.videoFrame.getBoundingClientRect().width;
+  const horizontalPosition = (event.clientX - elements.videoFrame.getBoundingClientRect().left) / width;
+  if (horizontalPosition < 1 / 3) {
+    seekBy(-10);
+    showSeekFeedback(-10);
+  } else if (horizontalPosition > 2 / 3) {
+    seekBy(10);
+    showSeekFeedback(10);
+  } else {
+    showPlaybackFeedback();
+    togglePlayback();
+  }
+}
+
+elements.videoFrame.addEventListener('contextmenu', (event) => event.preventDefault());
+elements.videoFrame.addEventListener('pointermove', (event) => {
+  const fullscreenGesture = state.mobileGesture?.pointerId === event.pointerId && state.mobileGesture.fullscreen;
+  if (!fullscreenGesture) showVideoControls({ temporary: true });
+});
+elements.videoFrame.addEventListener('pointerdown', (event) => {
+  if (event.pointerType !== 'touch' && event.pointerType !== 'pen') return;
+  state.videoControlsTouchFocusPending = Boolean(event.target.closest?.('button, input, [tabindex]'));
+  const gestureStarted = handleMobileGesturePointerDown(event);
+  if (!gestureStarted || !isVideoFullscreen()) showVideoControls({ temporary: true });
+  window.setTimeout(() => {
+    state.videoControlsTouchFocusPending = false;
+  }, 0);
+});
+elements.videoFrame.addEventListener('pointermove', handleMobileGesturePointerMove);
+elements.videoFrame.addEventListener('pointerup', handleMobileGesturePointerUp);
+elements.videoFrame.addEventListener('pointercancel', resetMobileGesture);
+elements.videoFrame.addEventListener('touchstart', () => {
+  if (!state.mobileGesture?.fullscreen) showVideoControls({ temporary: true });
+}, { passive: true });
+elements.videoFrame.addEventListener('click', () => {
+  if (state.mobileSuppressClick) {
+    state.mobileSuppressClick = false;
+    return;
+  }
+  showVideoControls({ temporary: true });
+});
+elements.videoFrame.addEventListener('pointerleave', hideVideoControls);
+elements.videoFrame.addEventListener('focusin', () => {
+  showVideoControls({ temporary: state.videoControlsTouchFocusPending });
+  state.videoControlsTouchFocusPending = false;
+});
 elements.videoFrame.addEventListener('focusout', () => showVideoControls({ temporary: true }));
 elements.playlistSearch.addEventListener('input', (event) => {
   state.playlistSearchQuery = event.target.value;
@@ -1522,7 +2793,7 @@ window.addEventListener('keydown', handleKeyboardShortcuts);
 document.addEventListener('visibilitychange', handleVisibilityChange);
 elements.video.addEventListener('play', () => {
   updateVideoControls();
-  window.requestAnimationFrame(hideVideoControlsIfPlaying);
+  showVideoControls({ temporary: true });
   void requestWakeLock();
 });
 elements.video.addEventListener('pause', () => {
@@ -1530,19 +2801,26 @@ elements.video.addEventListener('pause', () => {
   void saveActiveProgress();
   void releaseWakeLock();
 });
-elements.video.addEventListener('ended', handleEnded);
+elements.video.addEventListener('ended', () => {
+  void handleEnded().catch((error) => showError(error.message || t('sharedRequestFailed')));
+});
 elements.video.addEventListener('error', () => {
-  const item = state.items[state.activeIndex];
-  const name = item?.relativePath || t('thisFile');
-  showError(`${name}: ${getVideoErrorMessage(elements.video.error)}`);
+  const message = getVideoErrorMessage(elements.video.error);
+  showError(message);
 });
-elements.video.addEventListener('loadedmetadata', updateVideoControls);
-elements.video.addEventListener('durationchange', updateVideoControls);
-elements.video.addEventListener('volumechange', updateVideoControls);
-document.addEventListener('fullscreenchange', () => {
+function enforcePlaybackRate() {
+  if (elements.video.playbackRate !== 1) elements.video.playbackRate = 1;
+  if (elements.video.defaultPlaybackRate !== 1) elements.video.defaultPlaybackRate = 1;
+}
+
+enforcePlaybackRate();
+elements.video.addEventListener('loadedmetadata', () => {
+  enforcePlaybackRate();
   updateVideoControls();
-  if (!getFullscreenElement()) hideVolumeIndicator();
 });
+elements.video.addEventListener('durationchange', updateVideoControls);
+elements.video.addEventListener('ratechange', enforcePlaybackRate);
+elements.video.addEventListener('volumechange', updateVideoControls);
 elements.video.addEventListener('timeupdate', () => {
   updateVideoProgress();
   const now = Date.now();
@@ -1565,3 +2843,4 @@ createVolumeIndicatorBlocks();
 updateControls();
 initDesktopPlaylistHeightSync();
 initParticleBackground();
+void initialiseSharedRoom();

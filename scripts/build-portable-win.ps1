@@ -56,9 +56,16 @@ try {
     Copy-Item -LiteralPath (Join-Path $repoRoot "public") -Destination $appRoot -Recurse
     Copy-Item -LiteralPath $nodeCommand.Source -Destination (Join-Path $runtimeRoot "node.exe")
 
-    $startTemplate = Join-Path $PSScriptRoot "start.cmd.template"
-    $startDestination = Join-Path $packageRoot "start.cmd"
-    Get-Content -LiteralPath $startTemplate -Raw | Set-Content -LiteralPath $startDestination -Encoding ASCII -NoNewline
+    $launcherTemplates = @{
+        "start.cmd" = "start.cmd.template"
+        "Local.cmd" = "Local.cmd.template"
+        "LAN.cmd" = "LAN.cmd.template"
+    }
+    foreach ($launcher in $launcherTemplates.GetEnumerator()) {
+        $template = Join-Path $PSScriptRoot $launcher.Value
+        $destination = Join-Path $packageRoot $launcher.Key
+        Get-Content -LiteralPath $template -Raw | Set-Content -LiteralPath $destination -Encoding ASCII -NoNewline
+    }
 
     $forbiddenPathNames = @("node_modules", ".git", ".atl", "test", "tests", "backup", "backups", ".config", "log", "logs", "profile", "profiles", "token", "tokens", "credential", "credentials")
     $forbiddenStagedPaths = Get-ChildItem -LiteralPath $packageRoot -Recurse -Force | Where-Object {
@@ -79,4 +86,4 @@ finally {
 }
 
 Write-Host "Portable Windows package created: $archivePath"
-Write-Host "Included app files under $releaseName\app, Node runtime under $releaseName\runtime, and double-click launcher $releaseName\start.cmd."
+Write-Host "Included app files under $releaseName\app, Node runtime under $releaseName\runtime, and launchers $releaseName\Local.cmd, $releaseName\LAN.cmd, and $releaseName\start.cmd (backward-compatible local alias)."
