@@ -1,0 +1,38 @@
+name: Feature request
+description: Suggest an improvement to The Player.
+title: "[Feature]: "
+labels:
+  - enhancement
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Describe the outcome you need. Never paste LAN room URLs or tokens, credentials, private addresses, or personal local paths. Use placeholders or redact sensitive values instead.
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem
+      description: What user problem or limitation should this solve?
+    validations:
+      required: true
+  - type: textarea
+    id: outcome
+    attributes:
+      label: Proposed outcome
+      description: Describe the result you want, not only an implementation.
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives and context
+      description: What workarounds, related tools, or context should we consider?
+    validations:
+      required: true
+  - type: textarea
+    id: scope
+    attributes:
+      label: Scope
+      description: State who benefits, the affected workflow, and any important constraints or non-goals.
+    validations:
+      required: true

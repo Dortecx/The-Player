@@ -1,0 +1,32 @@
+name: Question or support request
+description: Ask for help using or configuring The Player.
+title: "[Question]: "
+labels:
+  - question
+body:
+  - type: markdown
+    attributes:
+      value: |
+        For setup and LAN guidance, check the README and LAN documentation first. Never paste LAN room URLs or tokens, credentials, private addresses, or personal local paths. Use placeholders or redact sensitive values instead.
+  - type: textarea
+    id: goal
+    attributes:
+      label: Goal
+      description: What are you trying to accomplish?
+    validations:
+      required: true
+  - type: textarea
+    id: tried
+    attributes:
+      label: What have you tried?
+      description: Include safe commands, steps, and the results you observed.
+    validations:
+      required: true
+  - type: textarea
+    id: environment
+    attributes:
+      label: Relevant environment
+      description: Include The Player version, OS, browser, and whether you are using local or LAN mode.
+      placeholder: "The Player version: ...\nOS: ...\nBrowser: ...\nMode: ..."
+    validations:
+      required: true

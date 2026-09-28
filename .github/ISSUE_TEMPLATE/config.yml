@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: README
+    url: https://github.com/Dortecx/The-Player#readme
+    about: Review installation, local playback, and general usage guidance.
+  - name: LAN shared playback documentation
+    url: https://github.com/Dortecx/The-Player/blob/main/docs/lan-shared-playback.md
+    about: Review trusted-LAN setup, permissions, limits, and safety guidance.
