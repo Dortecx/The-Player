@@ -39,13 +39,13 @@ Usá Anterior, Saltar siguiente y Marcar visto y seguir para navegar. Buscar fil
 
 El token es un secreto de portador: no publiques la URL completa. Esto no es para compartir por Internet. Los invitados no pueden subir ni vaciar la biblioteca del host, y los archivos compartidos temporales se eliminan al detener normalmente el servidor.
 
-Para el comportamiento y los límites de subida, los permisos de host/invitado, los gestos móviles a pantalla completa y la lista de validación en dos navegadores, consultá [los detalles de reproducción compartida por LAN](docs/lan-shared-playback.md).
+Para el comportamiento y los límites de subida, los permisos de host/invitado, los gestos móviles a pantalla completa y la lista de validación en dos navegadores, consultá [los detalles de reproducción compartida por LAN](docs/lan-shared-playback.es.md).
 
 ## Límites
 
 - La reproducción compartida es directa en el navegador: no hay transcodificación, remux, subtítulos, descubrimiento por QR ni relay por Internet.
 - Cada cliente debe soportar el contenedor **y los códecs** del archivo elegido.
-- El límite predeterminado de subida compartida es 100 GiB por archivo; consultá los [detalles LAN](docs/lan-shared-playback.md#upload-lifecycle-and-limits) para cambiarlo antes de iniciar.
+- El límite predeterminado de subida compartida es 100 GiB por archivo; consultá los [detalles LAN](docs/lan-shared-playback.es.md#ciclo-de-carga-y-límites) para cambiarlo antes de iniciar.
 
 ## Ejecutar desde el código fuente o crear el ZIP portátil
 
