@@ -53,6 +53,7 @@ set "HOST_URL="
 for /f "tokens=4" %%A in ('findstr /b /c:"Host library URL: " "%LOG_DIR%\server.log"') do if not defined HOST_URL set "HOST_URL=%%A"
 set "ROOM_URL="
 for /f "tokens=4" %%A in ('findstr /b /c:"Shared room URL: " "%LOG_DIR%\server.log"') do if not defined ROOM_URL set "ROOM_URL=%%A"
+for /f "tokens=6" %%A in ('findstr /b /c:"Shared room URL (loopback fallback): " "%LOG_DIR%\server.log"') do if not defined ROOM_URL set "ROOM_URL=%%A"
 if not defined HOST_URL (
   echo [ERROR] LAN sharing started but no tokenized host URL was found. See "%LOG_DIR%\server.log".
   call :stop_server

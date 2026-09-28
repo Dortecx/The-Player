@@ -13,7 +13,7 @@ const PORT = Number.parseInt(process.env.PORT || '3000', 10);
 const SHARE_LAN = process.env.SHARE_LAN === '1';
 const HOST = SHARE_LAN ? '0.0.0.0' : '127.0.0.1';
 const PUBLIC_DIR = path.join(__dirname, 'public');
-const DEFAULT_MAX_UPLOAD_BYTES = 50 * 1024 * 1024 * 1024;
+const DEFAULT_MAX_UPLOAD_BYTES = 100 * 1024 * 1024 * 1024;
 
 function parseUploadLimit(value) {
   if (value === undefined || value === '') return DEFAULT_MAX_UPLOAD_BYTES;

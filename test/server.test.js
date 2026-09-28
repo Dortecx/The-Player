@@ -100,10 +100,10 @@ async function startFixture(t, options = {}) {
   return { app, port };
 }
 
-test('upload limit defaults to 50 GB and accepts an explicit byte configuration', () => {
-  assert.equal(parseUploadLimit(undefined), 50 * 1024 * 1024 * 1024);
+test('upload limit defaults to 100 GiB and preserves explicit byte configuration', () => {
+  assert.equal(parseUploadLimit(undefined), 107374182400);
   assert.equal(parseUploadLimit('1073741824'), 1024 * 1024 * 1024);
-  assert.equal(UPLOAD_PROTOCOL.maximumBytes, 50 * 1024 * 1024 * 1024);
+  assert.equal(UPLOAD_PROTOCOL.maximumBytes, 107374182400);
   assert.throws(() => parseUploadLimit('0'), /MAX_UPLOAD_BYTES/);
   assert.throws(() => parseUploadLimit('50gb'), /MAX_UPLOAD_BYTES/);
 });
