@@ -6,7 +6,7 @@ The Player is a browser-based video player for a local playlist. It remembers pr
 
 ## Download and start
 
-**Windows portable v1.5.1** — [download the ZIP](https://github.com/Dortecx/The-Player/releases/download/v1.5.1/The-Player-1.5.1-windows.zip), unzip it, then open the extracted `The-Player-1.5.1-windows` folder.
+**Windows portable v1.5.2** — [download the ZIP](https://github.com/Dortecx/The-Player/releases/download/v1.5.2/The-Player-1.5.2-windows.zip), unzip it, then open the extracted `The-Player-1.5.2-windows` folder.
 
 ```mermaid
 flowchart TD
@@ -14,8 +14,8 @@ flowchart TD
     A -->|Yes| B[Run start.cmd]
     B --> C[Open local player at 127.0.0.1]
     A -->|No, trusted Wi-Fi/LAN| D[Run LAN.cmd]
-    D --> E[Open Host library URL on host]
-    E --> F[Share printed protected LAN URL]
+    D --> E[Browser opens Host library URL]
+    E --> F[Use Copy room link to share the protected LAN URL]
 ```
 
 - `start.cmd` is **local-only**: use it for files that stay in this browser.
@@ -33,9 +33,9 @@ Use Previous, Skip next, and Mark watched & next to navigate. Search filters the
 ## Share on a LAN
 
 1. On the host, run `LAN.cmd` and allow Node through Windows Firewall on **Private** networks if prompted.
-2. On the host, open the printed **Host library URL** (`127.0.0.1` with its token), then choose files or a folder.
-3. Send clients the printed protected LAN room URL exactly as shown, including `?token=...`.
-4. Clients open that URL on the same Wi-Fi/LAN and can select, play, pause, seek, and navigate together.
+2. The browser opens the tokenized **Host library URL** (`127.0.0.1`) automatically; choose files or a folder there.
+3. Use the in-app **Copy room link** control to copy the canonical protected LAN room URL, then send it to clients unchanged.
+4. Clients open that copied URL on the same Wi-Fi/LAN and can select, play, pause, seek, and navigate together.
 
 The token is a bearer secret: do not post the full URL. This is not Internet sharing. Guests cannot upload or clear the host library, and temporary shared files are removed on ordinary server shutdown.
 
@@ -65,9 +65,9 @@ To build the Windows portable ZIP on Windows:
 npm run build:portable:win
 ```
 
-This creates `portable-win\The-Player-1.5.1-windows.zip`. The release ZIP and generated ZIP include both `start.cmd` (local-only) and `LAN.cmd` (shared mode).
+This creates `portable-win\The-Player-1.5.2-windows.zip`. The release ZIP and generated ZIP include both `start.cmd` (local-only) and `LAN.cmd` (shared mode).
 
-Repository: <https://github.com/Dortecx/The-Player> · Release: <https://github.com/Dortecx/The-Player/releases/tag/v1.5.1>
+Repository: <https://github.com/Dortecx/The-Player> · Release: <https://github.com/Dortecx/The-Player/releases/tag/v1.5.2>
 
 ## License
 

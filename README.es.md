@@ -6,7 +6,7 @@ The Player es un reproductor de video en el navegador para una playlist local. R
 
 ## Descarga e inicio
 
-**Portátil de Windows v1.5.1** — [descargá el ZIP](https://github.com/Dortecx/The-Player/releases/download/v1.5.1/The-Player-1.5.1-windows.zip), descomprimilo y abrí la carpeta extraída `The-Player-1.5.1-windows`.
+**Portátil de Windows v1.5.2** — [descargá el ZIP](https://github.com/Dortecx/The-Player/releases/download/v1.5.2/The-Player-1.5.2-windows.zip), descomprimilo y abrí la carpeta extraída `The-Player-1.5.2-windows`.
 
 ```mermaid
 flowchart TD
@@ -14,8 +14,8 @@ flowchart TD
     A -->|Sí| B[Ejecutá start.cmd]
     B --> C[Abrí el reproductor local en 127.0.0.1]
     A -->|No, Wi-Fi/LAN confiable| D[Ejecutá LAN.cmd]
-    D --> E[Abrí la URL Host library en el host]
-    E --> F[Compartí la URL LAN protegida impresa]
+    D --> E[El navegador abre la URL Host library]
+    E --> F[Usá Copiar enlace de la sala para compartir la URL LAN protegida]
 ```
 
 - `start.cmd` es **solo local**: usalo para archivos que quedan en este navegador.
@@ -33,9 +33,9 @@ Usá Anterior, Saltar siguiente y Marcar visto y seguir para navegar. Buscar fil
 ## Compartir por LAN
 
 1. En el host, ejecutá `LAN.cmd` y permití Node en el Firewall de Windows para redes **privadas** si aparece el aviso.
-2. En el host, abrí la **Host library URL** impresa (`127.0.0.1` con su token) y elegí archivos o una carpeta.
-3. Enviá a los clientes la URL protegida de sala LAN impresa exactamente como aparece, incluido `?token=...`.
-4. Los clientes abren esa URL desde la misma Wi-Fi/LAN y pueden seleccionar, reproducir, pausar, buscar y navegar juntos.
+2. El navegador abre automáticamente la **Host library URL** con token (`127.0.0.1`); ahí elegí archivos o una carpeta.
+3. Usá el control **Copiar enlace de la sala** de la app para copiar la URL canónica protegida de sala LAN y enviásela a los clientes sin modificarla.
+4. Los clientes abren esa URL copiada desde la misma Wi-Fi/LAN y pueden seleccionar, reproducir, pausar, buscar y navegar juntos.
 
 El token es un secreto de portador: no publiques la URL completa. Esto no es para compartir por Internet. Los invitados no pueden subir ni vaciar la biblioteca del host, y los archivos compartidos temporales se eliminan al detener normalmente el servidor.
 
@@ -65,9 +65,9 @@ Para crear el ZIP portátil de Windows en Windows:
 npm run build:portable:win
 ```
 
-Esto crea `portable-win\The-Player-1.5.1-windows.zip`. El ZIP del release y el ZIP generado incluyen `start.cmd` (solo local) y `LAN.cmd` (modo compartido).
+Esto crea `portable-win\The-Player-1.5.2-windows.zip`. El ZIP del release y el ZIP generado incluyen `start.cmd` (solo local) y `LAN.cmd` (modo compartido).
 
-Repositorio: <https://github.com/Dortecx/The-Player> · Release: <https://github.com/Dortecx/The-Player/releases/tag/v1.5.1>
+Repositorio: <https://github.com/Dortecx/The-Player> · Release: <https://github.com/Dortecx/The-Player/releases/tag/v1.5.2>
 
 ## Licencia
 

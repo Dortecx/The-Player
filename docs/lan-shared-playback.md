@@ -13,21 +13,22 @@ Start shared mode explicitly:
 
 The host and clients must be on the same Wi-Fi/LAN, without guest-network client isolation. Allow the Node server through Windows Firewall on **Private** networks when prompted; if needed, permit inbound TCP port `3000` on the private LAN.
 
-The startup output provides two protected URLs:
+With the portable Windows package, `LAN.cmd` waits for the tokenized Host library URL and opens it in the host browser automatically. After it opens, use the in-app **Copy room link** control to copy the canonical protected LAN room URL for guests; the launcher does not print it.
 
 ```mermaid
 flowchart TD
-    Host[Host: tokenized loopback session] --> HostLibrary[Host library URL]
+    Host[Host: tokenized loopback session] --> HostLibrary[Browser opens Host library URL]
     HostLibrary --> LibraryActions[Upload, replace, or clear the library]
-    Host --> LanUrl[Canonical LAN room URL]
+    HostLibrary --> CopyLink[Copy room link]
+    CopyLink --> LanUrl[Canonical LAN room URL]
     LanUrl --> Guests[Guests: tokenized LAN sessions]
     Guests --> Playback[Select, play, pause, seek, and navigate]
 ```
 
-| URL | Use |
+| URL or control | Use |
 | --- | --- |
-| **Host library URL** (`127.0.0.1` with `?token=...`) | Open only on the host to add media or clear the library. |
-| Canonical LAN room URL | Send unchanged to guests. It includes the bearer token. |
+| **Host library URL** (`127.0.0.1` with `?token=...`) | The portable launcher opens it only on the host to add media or clear the library. |
+| **Copy room link** | Use it in the host app to copy the canonical LAN room URL unchanged for guests. It includes the bearer token. |
 
 The server selects a usable physical Ethernet/Wi-Fi IPv4 address in preference to virtual, WSL, Docker, Hyper-V, or VPN-like adapters. If none is usable, it falls back safely to the tokenized loopback URL. The in-page clipboard control uses server-provided session metadata; it does not rebuild a share link from the browser address.
 
@@ -97,9 +98,9 @@ If audible autoplay is blocked for a remote client, that client remains muted to
 
 ## Manual two-browser validation
 
-1. Start shared mode. Open the tokenized Host library URL in Browser A and upload several small supported videos.
+1. Start shared mode. Confirm the host browser opens the tokenized Host library URL, then upload several small supported videos.
 2. Confirm the first upload has its 2.5-second centered fragment entrance, then its synchronized 3-second crossfade to the footer when the first item becomes ready. Confirm later uploads enter the footer, ready files appear immediately and remain selectable during later copies, batch progress advances continuously, and the footer exit releases space only after 2.5 seconds. Repeat with reduced motion enabled and confirm these transitions are disabled. Confirm Clear removes the whole room library and resets shared playback.
-3. Open the same complete protected room URL in Browser B, another profile, device, or LAN client. Confirm the playlist loads.
+3. Use **Copy room link** in Browser A, then open the copied complete protected room URL in Browser B, another profile, device, or LAN client. Confirm the playlist loads.
 4. From both browsers in turn, select media, play, pause, seek, use Previous, and use Skip next. Confirm the other browser converges at fixed 1× playback.
 5. Use the compact header clipboard control and confirm its success toast. Paste the result in a safe test location and confirm the token is retained without being displayed in the page UI.
 6. In a LAN guest session, try Folder, File, and Clear. Confirm each produces the host-only message without opening a picker or changing the library. Confirm the tokenized localhost host session can perform those actions.

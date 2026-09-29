@@ -33,10 +33,10 @@ if not errorlevel 1 (
 )
 
 echo Starting The Player in LAN shared mode.
-echo The host opens its tokenized loopback URL; share the guest URL printed below with LAN devices.
+echo The host browser will open automatically. Use Copy room link in the app to share with LAN devices.
 echo Logs: "%LOG_DIR%\server.log"
 > "%LOG_DIR%\server.log" echo Server log started.
-for /f %%P in ('powershell -NoProfile -Command "$process = Start-Process -FilePath $env:NODE_EXE -ArgumentList @($env:APP_DIR + '\server.js') -RedirectStandardOutput ($env:LOG_DIR + '\server.log') -RedirectStandardError ($env:LOG_DIR + '\server-error.log') -PassThru; $process.Id"') do set "SERVER_PID=%%P"
+for /f %%P in ('powershell -NoProfile -Command "$process = Start-Process -FilePath $env:NODE_EXE -ArgumentList @($env:APP_DIR + '\server.js') -WindowStyle Hidden -RedirectStandardOutput ($env:LOG_DIR + '\server.log') -RedirectStandardError ($env:LOG_DIR + '\server-error.log') -PassThru; $process.Id"') do set "SERVER_PID=%%P"
 if not defined SERVER_PID (
   echo [ERROR] Could not start the packaged Node server. See "%LOG_DIR%\server.log".
   exit /b 1
@@ -50,22 +50,12 @@ if errorlevel 1 (
 )
 
 set "HOST_URL="
-for /f "tokens=4" %%A in ('findstr /b /c:"Host library URL: " "%LOG_DIR%\server.log"') do if not defined HOST_URL set "HOST_URL=%%A"
-set "ROOM_URL="
-for /f "tokens=4" %%A in ('findstr /b /c:"Shared room URL: " "%LOG_DIR%\server.log"') do if not defined ROOM_URL set "ROOM_URL=%%A"
-for /f "tokens=6" %%A in ('findstr /b /c:"Shared room URL (loopback fallback): " "%LOG_DIR%\server.log"') do if not defined ROOM_URL set "ROOM_URL=%%A"
+for /f "usebackq delims=" %%A in (`powershell -NoProfile -Command "$deadline = (Get-Date).AddSeconds(30); while ((Get-Date) -lt $deadline) { if (Test-Path ($env:LOG_DIR + '\server.log')) { $match = Select-String -Path ($env:LOG_DIR + '\server.log') -Pattern '^Host library URL: (http://\S+\?token=[A-Za-z0-9_-]+)$' | Select-Object -First 1; if ($match) { [Console]::WriteLine($match.Matches[0].Groups[1].Value); exit 0 } }; Start-Sleep -Milliseconds 500 }; exit 1"`) do if not defined HOST_URL set "HOST_URL=%%A"
 if not defined HOST_URL (
-  echo [ERROR] LAN sharing started but no tokenized host URL was found. See "%LOG_DIR%\server.log".
+  echo [ERROR] LAN sharing started but no tokenized host URL appeared within 30 seconds. See "%LOG_DIR%\server.log".
   call :stop_server
   exit /b 1
 )
-if not defined ROOM_URL (
-  echo [ERROR] LAN sharing started but no usable LAN guest URL was found. See "%LOG_DIR%\server.log".
-  call :stop_server
-  exit /b 1
-)
-echo Host library URL: %HOST_URL%
-echo Share this guest room URL with LAN devices: %ROOM_URL%
 if not "%THE_PLAYER_NO_OPEN%"=="1" start "" "%HOST_URL%"
 exit /b 0
 

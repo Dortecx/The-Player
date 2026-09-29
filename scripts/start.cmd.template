@@ -36,7 +36,7 @@ if not errorlevel 1 (
 echo Starting The Player in local-only mode at http://%HOST%:%PORT%/
 echo Logs: "%LOG_DIR%\server.log"
 > "%LOG_DIR%\server.log" echo Server log started.
-for /f %%P in ('powershell -NoProfile -Command "$process = Start-Process -FilePath $env:NODE_EXE -ArgumentList @($env:APP_DIR + '\server.js') -RedirectStandardOutput ($env:LOG_DIR + '\server.log') -RedirectStandardError ($env:LOG_DIR + '\server-error.log') -PassThru; $process.Id"') do set "SERVER_PID=%%P"
+for /f %%P in ('powershell -NoProfile -Command "$process = Start-Process -FilePath $env:NODE_EXE -ArgumentList @($env:APP_DIR + '\server.js') -WindowStyle Hidden -RedirectStandardOutput ($env:LOG_DIR + '\server.log') -RedirectStandardError ($env:LOG_DIR + '\server-error.log') -PassThru; $process.Id"') do set "SERVER_PID=%%P"
 if not defined SERVER_PID (
   echo [ERROR] Could not start the packaged Node server. See "%LOG_DIR%\server.log".
   exit /b 1

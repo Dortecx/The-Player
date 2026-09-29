@@ -13,21 +13,22 @@ Iniciá explícitamente el modo compartido:
 
 El host y los clientes deben estar en la misma Wi-Fi/LAN, sin aislamiento de clientes de red de invitados. Cuando se solicite, permití el servidor Node a través del Firewall de Windows en redes **privadas**; si hace falta, permití el puerto TCP de entrada `3000` en la LAN privada.
 
-La salida de inicio proporciona dos URL protegidas:
+Con el paquete portátil de Windows, `LAN.cmd` espera la URL de biblioteca del host con token y la abre automáticamente en el navegador del host. Cuando se abra, usá el control **Copiar enlace de la sala** dentro de la app para copiar la URL canónica protegida de sala LAN para los invitados; el launcher no la imprime.
 
 ```mermaid
 flowchart TD
-    Host[Host: sesión de loopback con token] --> HostLibrary[URL de biblioteca del host]
+    Host[Host: sesión de loopback con token] --> HostLibrary[El navegador abre la URL de biblioteca del host]
     HostLibrary --> LibraryActions[Subir, reemplazar o vaciar la biblioteca]
-    Host --> LanUrl[URL canónica de sala LAN]
+    HostLibrary --> CopyLink[Copiar enlace de la sala]
+    CopyLink --> LanUrl[URL canónica de sala LAN]
     LanUrl --> Guests[Invitados: sesiones LAN con token]
     Guests --> Playback[Seleccionar, reproducir, pausar, buscar y navegar]
 ```
 
-| URL | Uso |
+| URL o control | Uso |
 | --- | --- |
-| **URL de biblioteca del host** (`127.0.0.1` con `?token=...`) | Abrila solo en el host para agregar medios o vaciar la biblioteca. |
-| URL canónica de sala LAN | Enviála sin modificaciones a los invitados. Incluye el token de portador. |
+| **URL de biblioteca del host** (`127.0.0.1` con `?token=...`) | El launcher portátil la abre solo en el host para agregar medios o vaciar la biblioteca. |
+| **Copiar enlace de la sala** | Usalo en la app del host para copiar sin cambios la URL canónica de LAN para invitados. Incluye el token de portador. |
 
 El servidor selecciona una dirección IPv4 física de Ethernet/Wi-Fi utilizable con preferencia sobre adaptadores virtuales, WSL, Docker, Hyper-V o similares a VPN. Si ninguna es utilizable, recurre de forma segura a la URL de loopback con token. El control de portapapeles de la página usa metadatos de sesión proporcionados por el servidor; no reconstruye un enlace compartido a partir de la dirección del navegador.
 
@@ -97,9 +98,9 @@ Si la reproducción automática con audio está bloqueada para un cliente remoto
 
 ## Validación manual con dos navegadores
 
-1. Iniciá el modo compartido. Abrí la URL de biblioteca del host con token en el navegador A y subí varios videos pequeños compatibles.
+1. Iniciá el modo compartido. Confirmá que el navegador del host abra la URL de biblioteca del host con token y subí varios videos pequeños compatibles.
 2. Confirmá que la primera carga tenga su entrada centrada de fragmentos de 2.5 segundos y, cuando el primer elemento esté listo, su fundido cruzado sincronizado de 3 segundos al pie de página. Confirmá que las cargas posteriores entren en el pie de página, que los archivos listos aparezcan de inmediato y se puedan seleccionar durante copias posteriores, que el progreso del lote avance continuamente y que la salida del pie de página libere espacio solo después de 2.5 segundos. Repetí con movimiento reducido activado y confirmá que estas transiciones estén desactivadas. Confirmá que Vaciar elimine toda la biblioteca de la sala y restablezca la reproducción compartida.
-3. Abrí la misma URL completa de sala protegida en el navegador B, otro perfil, dispositivo o cliente LAN. Confirmá que cargue la playlist.
+3. Usá **Copiar enlace de la sala** en el navegador A y abrí la URL completa de sala protegida copiada en el navegador B, otro perfil, dispositivo o cliente LAN. Confirmá que cargue la playlist.
 4. Desde ambos navegadores por turnos, seleccioná medios, reproducí, pausá, buscá, usá Anterior y usá Saltar siguiente. Confirmá que el otro navegador converja a reproducción fija de 1×.
 5. Usá el control compacto de portapapeles del encabezado y confirmá su aviso de éxito. Pegá el resultado en una ubicación de prueba segura y confirmá que el token se conserve sin mostrarse en la interfaz de la página.
 6. En una sesión LAN de invitado, intentá usar Carpeta, Archivo y Vaciar. Confirmá que cada uno muestre el mensaje exclusivo del host sin abrir un selector ni cambiar la biblioteca. Confirmá que la sesión de host localhost con token pueda realizar esas acciones.
