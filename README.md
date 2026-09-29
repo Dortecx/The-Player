@@ -20,13 +20,15 @@ flowchart TD
 
 - `start.cmd` is **local-only**: use it for files that stay in this browser.
 - `LAN.cmd` explicitly starts **shared mode**: use it only when the host and clients are on the same trusted Wi-Fi/LAN.
+- Each launcher opens the browser automatically after the server is ready and keeps its console as the server lifecycle owner. Close that launcher console to stop its server.
 - The ZIP includes `runtime\node.exe`; end users do not need Node.js, npm, or `npm install`.
 
 ## Local playback
 
-1. Run `start.cmd`.
-2. Choose **Folder** or **File** in the browser page.
-3. Choose a playlist item and watch. Progress, watched state, and recent activity stay in browser IndexedDB.
+1. Run `start.cmd`; it opens the local player in your browser automatically.
+2. Keep the launcher console open while using the player; closing it stops the local server.
+3. Choose **Folder** or **File** in the browser page.
+4. Choose a playlist item and watch. Progress, watched state, and recent activity stay in browser IndexedDB.
 
 Use Previous, Skip next, and Mark watched & next to navigate. Search filters the visible playlist without changing playback order. Supported extensions are `.mp4`, `.webm`, `.m4v`, `.mov`, and best-effort `.mkv`; playback depends on browser codec support.
 
@@ -34,8 +36,9 @@ Use Previous, Skip next, and Mark watched & next to navigate. Search filters the
 
 1. On the host, run `LAN.cmd` and allow Node through Windows Firewall on **Private** networks if prompted.
 2. The browser opens the tokenized **Host library URL** (`127.0.0.1`) automatically; choose files or a folder there.
-3. Use the in-app **Copy room link** control to copy the canonical protected LAN room URL, then send it to clients unchanged.
-4. Clients open that copied URL on the same Wi-Fi/LAN and can select, play, pause, seek, and navigate together.
+3. Keep the launcher console open while the room is in use; closing it stops the shared server and ends the room.
+4. Use the in-app **Copy room link** control to copy the canonical protected LAN room URL, then send it to clients unchanged.
+5. Clients open that copied URL on the same Wi-Fi/LAN and can select, play, pause, seek, and navigate together.
 
 The token is a bearer secret: do not post the full URL. This is not Internet sharing. Guests cannot upload or clear the host library, and temporary shared files are removed on ordinary server shutdown.
 

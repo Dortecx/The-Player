@@ -13,7 +13,7 @@ Iniciá explícitamente el modo compartido:
 
 El host y los clientes deben estar en la misma Wi-Fi/LAN, sin aislamiento de clientes de red de invitados. Cuando se solicite, permití el servidor Node a través del Firewall de Windows en redes **privadas**; si hace falta, permití el puerto TCP de entrada `3000` en la LAN privada.
 
-Con el paquete portátil de Windows, `LAN.cmd` espera la URL de biblioteca del host con token y la abre automáticamente en el navegador del host. Cuando se abra, usá el control **Copiar enlace de la sala** dentro de la app para copiar la URL canónica protegida de sala LAN para los invitados; el launcher no la imprime.
+Con el paquete portátil de Windows, `LAN.cmd` espera la URL de biblioteca del host con token y la abre automáticamente en el navegador del host. Mantené abierta la consola del launcher mientras la sala esté en uso: es dueña del ciclo de vida del servidor, así que cerrarla detiene el servidor y termina la sala. Cuando se abra el navegador, usá el control **Copiar enlace de la sala** dentro de la app para copiar la URL canónica protegida de sala LAN para los invitados; el launcher no la imprime.
 
 ```mermaid
 flowchart TD
@@ -106,4 +106,4 @@ Si la reproducción automática con audio está bloqueada para un cliente remoto
 6. En una sesión LAN de invitado, intentá usar Carpeta, Archivo y Vaciar. Confirmá que cada uno muestre el mensaje exclusivo del host sin abrir un selector ni cambiar la biblioteca. Confirmá que la sesión de host localhost con token pueda realizar esas acciones.
 7. En un teléfono o tableta, probá pantalla completa en vertical y horizontal, rotación, las rutas de pantalla completa mediante botón/`F`/doble toque, los dobles toques izquierdo/derecho/central, el gesto de volumen vertical del tercio derecho y los deslizamientos horizontales sin efecto. Confirmá que los controles táctiles y de teclado sigan funcionando, mientras que el zoom por pinza/desplazamiento se suprima solo en la superficie de pantalla completa.
 8. Cuando el navegador lo permita, mantené presionado y abrí un menú contextual del marco de video; confirmá que el endurecimiento de la interfaz suprima estos elementos donde sea compatible. Esto no hace inaccesibles los medios transmitidos autorizados.
-9. Detené el servidor y confirmá que la sesión temporal ya no sea accesible.
+9. Cerrá la consola del launcher `LAN.cmd` para detener el servidor y confirmá que la sesión temporal ya no sea accesible.

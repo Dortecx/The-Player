@@ -20,13 +20,15 @@ flowchart TD
 
 - `start.cmd` es **solo local**: usalo para archivos que quedan en este navegador.
 - `LAN.cmd` inicia explícitamente el **modo compartido**: usalo solo si el host y los clientes están en la misma Wi-Fi/LAN confiable.
+- Cada launcher abre el navegador automáticamente cuando el servidor está listo y mantiene su consola como dueña del ciclo de vida del servidor. Cerrá esa consola para detener su servidor.
 - El ZIP incluye `runtime\node.exe`; quienes usan el paquete no necesitan Node.js, npm ni `npm install`.
 
 ## Reproducción local
 
-1. Ejecutá `start.cmd`.
-2. Elegí **Carpeta** o **Archivo** en la página del navegador.
-3. Elegí un elemento de la playlist y miralo. El progreso, el estado visto y la actividad reciente quedan en IndexedDB del navegador.
+1. Ejecutá `start.cmd`; abre automáticamente el reproductor local en el navegador.
+2. Mantené abierta la consola del launcher mientras usás el reproductor; al cerrarla se detiene el servidor local.
+3. Elegí **Carpeta** o **Archivo** en la página del navegador.
+4. Elegí un elemento de la playlist y miralo. El progreso, el estado visto y la actividad reciente quedan en IndexedDB del navegador.
 
 Usá Anterior, Saltar siguiente y Marcar visto y seguir para navegar. Buscar filtra la playlist visible sin cambiar el orden de reproducción. Las extensiones soportadas son `.mp4`, `.webm`, `.m4v`, `.mov` y `.mkv` con soporte limitado; la reproducción depende de los códecs que soporte el navegador.
 
@@ -34,8 +36,9 @@ Usá Anterior, Saltar siguiente y Marcar visto y seguir para navegar. Buscar fil
 
 1. En el host, ejecutá `LAN.cmd` y permití Node en el Firewall de Windows para redes **privadas** si aparece el aviso.
 2. El navegador abre automáticamente la **Host library URL** con token (`127.0.0.1`); ahí elegí archivos o una carpeta.
-3. Usá el control **Copiar enlace de la sala** de la app para copiar la URL canónica protegida de sala LAN y enviásela a los clientes sin modificarla.
-4. Los clientes abren esa URL copiada desde la misma Wi-Fi/LAN y pueden seleccionar, reproducir, pausar, buscar y navegar juntos.
+3. Mantené abierta la consola del launcher mientras la sala esté en uso; al cerrarla se detiene el servidor compartido y termina la sala.
+4. Usá el control **Copiar enlace de la sala** de la app para copiar la URL canónica protegida de sala LAN y enviásela a los clientes sin modificarla.
+5. Los clientes abren esa URL copiada desde la misma Wi-Fi/LAN y pueden seleccionar, reproducir, pausar, buscar y navegar juntos.
 
 El token es un secreto de portador: no publiques la URL completa. Esto no es para compartir por Internet. Los invitados no pueden subir ni vaciar la biblioteca del host, y los archivos compartidos temporales se eliminan al detener normalmente el servidor.
 

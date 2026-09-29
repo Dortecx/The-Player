@@ -13,7 +13,7 @@ Start shared mode explicitly:
 
 The host and clients must be on the same Wi-Fi/LAN, without guest-network client isolation. Allow the Node server through Windows Firewall on **Private** networks when prompted; if needed, permit inbound TCP port `3000` on the private LAN.
 
-With the portable Windows package, `LAN.cmd` waits for the tokenized Host library URL and opens it in the host browser automatically. After it opens, use the in-app **Copy room link** control to copy the canonical protected LAN room URL for guests; the launcher does not print it.
+With the portable Windows package, `LAN.cmd` waits for the tokenized Host library URL and opens it in the host browser automatically. Keep the launcher console open while the room is in use: it owns the server lifecycle, so closing it stops the server and ends the room. After the browser opens, use the in-app **Copy room link** control to copy the canonical protected LAN room URL for guests; the launcher does not print it.
 
 ```mermaid
 flowchart TD
@@ -106,4 +106,4 @@ If audible autoplay is blocked for a remote client, that client remains muted to
 6. In a LAN guest session, try Folder, File, and Clear. Confirm each produces the host-only message without opening a picker or changing the library. Confirm the tokenized localhost host session can perform those actions.
 7. On a phone or tablet, test portrait and landscape fullscreen, rotation, the button/`F`/double-tap fullscreen routes, left/right/center double-taps, the right-third vertical volume gesture, and no-op horizontal swipes. Confirm touch controls and keyboard controls still work, while pinch/scroll is suppressed only on the fullscreen surface.
 8. Where the browser permits it, long-press and open a video-frame context menu; confirm UI hardening suppresses these affordances where supported. This does not make authorized streamed media inaccessible.
-9. Stop the server and confirm the temporary session is no longer reachable.
+9. Close the `LAN.cmd` launcher console to stop the server, then confirm the temporary session is no longer reachable.
