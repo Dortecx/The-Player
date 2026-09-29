@@ -6,7 +6,7 @@ The Player is a browser-based video player for a local playlist. It remembers pr
 
 ## Download and start
 
-**Windows portable v1.5.2** — [download the ZIP](https://github.com/Dortecx/The-Player/releases/download/v1.5.2/The-Player-1.5.2-windows.zip), unzip it, then open the extracted `The-Player-1.5.2-windows` folder.
+**Windows portable v1.5.3** — [download the ZIP](https://github.com/Dortecx/The-Player/releases/download/v1.5.3/The-Player-1.5.3-windows.zip), unzip it, then open the extracted `The-Player-1.5.3-windows` folder.
 
 ```mermaid
 flowchart TD
@@ -68,9 +68,9 @@ To build the Windows portable ZIP on Windows:
 npm run build:portable:win
 ```
 
-This creates `portable-win\The-Player-1.5.2-windows.zip`. The release ZIP and generated ZIP include both `start.cmd` (local-only) and `LAN.cmd` (shared mode).
+This creates `portable-win\The-Player-1.5.3-windows.zip`. The release ZIP and generated ZIP include both `start.cmd` (local-only) and `LAN.cmd` (shared mode).
 
-Repository: <https://github.com/Dortecx/The-Player> · Release: <https://github.com/Dortecx/The-Player/releases/tag/v1.5.2>
+Repository: <https://github.com/Dortecx/The-Player> · Release: <https://github.com/Dortecx/The-Player/releases/tag/v1.5.3>
 
 ## License
 
