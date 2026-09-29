@@ -110,16 +110,18 @@ test('upload limit defaults to 100 GiB and preserves explicit byte configuration
 
 test('LAN address selection prefers physical adapters and falls back to virtual adapters', () => {
   const interfaces = {
+    LogMeIn: [{ family: 'IPv4', address: '100.64.0.1', internal: false }],
+    Hamachi: [{ family: 'IPv4', address: '25.13.49.234', internal: false }],
     DockerNAT: [{ family: 'IPv4', address: '172.20.0.1', internal: false }],
-    'Wi-Fi': [{ family: 'IPv4', address: '192.168.1.24', internal: false }],
+    'Wi-Fi': [{ family: 'IPv4', address: '192.168.100.11', internal: false }],
     vEthernet: [{ family: 'IPv4', address: '172.30.64.1', internal: false }],
     Ethernet: [{ family: 'IPv4', address: '10.0.0.18', internal: false }],
     lo: [{ family: 'IPv4', address: '127.0.0.1', internal: true }],
     WSL: [{ family: 'IPv4', address: '172.28.192.1', internal: false }]
   };
 
-  assert.deepEqual(selectLanAddresses(interfaces), ['192.168.1.24', '10.0.0.18']);
-  assert.deepEqual(selectLanAddresses({ DockerNAT: interfaces.DockerNAT, WSL: interfaces.WSL, vEthernet: interfaces.vEthernet }), ['172.20.0.1', '172.28.192.1', '172.30.64.1']);
+  assert.deepEqual(selectLanAddresses(interfaces), ['192.168.100.11', '10.0.0.18']);
+  assert.deepEqual(selectLanAddresses({ LogMeIn: interfaces.LogMeIn, Hamachi: interfaces.Hamachi, DockerNAT: interfaces.DockerNAT, WSL: interfaces.WSL, vEthernet: interfaces.vEthernet }), ['100.64.0.1', '25.13.49.234', '172.20.0.1', '172.28.192.1', '172.30.64.1']);
 });
 
 test('LAN routes require the room token while static UI remains public', async (t) => {

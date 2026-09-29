@@ -30,7 +30,18 @@ flowchart TD
 | **Host library URL** (`127.0.0.1` with `?token=...`) | The portable launcher opens it only on the host to add media or clear the library. |
 | **Copy room link** | Use it in the host app to copy the canonical LAN room URL unchanged for guests. It includes the bearer token. |
 
-The server selects a usable physical Ethernet/Wi-Fi IPv4 address in preference to virtual, WSL, Docker, Hyper-V, or VPN-like adapters. If none is usable, it falls back safely to the tokenized loopback URL. The in-page clipboard control uses server-provided session metadata; it does not rebuild a share link from the browser address.
+The server selects a usable physical Ethernet/Wi-Fi IPv4 address in preference to virtual, WSL, Docker, Hyper-V, Hamachi, LogMeIn, or other VPN-like adapters. If only virtual adapters are available, it uses their addresses; if no usable LAN address is available, it falls back safely to the tokenized loopback URL. The in-page clipboard control uses server-provided session metadata; it does not rebuild a share link from the browser address.
+
+### Unexpected virtual-adapter room URL
+
+If **Copy room link** copies an unexpected LAN URL—for example, one from a virtual, VPN, Hamachi, or LogMeIn adapter—do this only when that adapter is not needed:
+
+1. Stop the current launcher/server by closing its `LAN.cmd` console.
+2. In Windows **Settings** > **Network & Internet** > **Advanced network settings**, temporarily disconnect or disable the unwanted virtual adapter.
+3. Restart `LAN.cmd`, then use **Copy room link** again.
+4. Restore or reconnect the adapter afterward if you need it.
+
+Do not remove adapters or change firewall rules unnecessarily. Do not post room URLs or their tokens publicly.
 
 The room token is a bearer secret: anyone with the complete URL can view uploaded media and control the room until the host stops the server. Do not post it publicly. A LAN-IP room URL opened on the host is intentionally a guest session.
 

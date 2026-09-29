@@ -30,7 +30,18 @@ flowchart TD
 | **URL de biblioteca del host** (`127.0.0.1` con `?token=...`) | El launcher portátil la abre solo en el host para agregar medios o vaciar la biblioteca. |
 | **Copiar enlace de la sala** | Usalo en la app del host para copiar sin cambios la URL canónica de LAN para invitados. Incluye el token de portador. |
 
-El servidor selecciona una dirección IPv4 física de Ethernet/Wi-Fi utilizable con preferencia sobre adaptadores virtuales, WSL, Docker, Hyper-V o similares a VPN. Si ninguna es utilizable, recurre de forma segura a la URL de loopback con token. El control de portapapeles de la página usa metadatos de sesión proporcionados por el servidor; no reconstruye un enlace compartido a partir de la dirección del navegador.
+El servidor selecciona una dirección IPv4 física de Ethernet/Wi-Fi utilizable con preferencia sobre adaptadores virtuales, WSL, Docker, Hyper-V, Hamachi, LogMeIn u otros similares a VPN. Si solo hay adaptadores virtuales disponibles, usa sus direcciones; si no hay ninguna dirección LAN utilizable, recurre de forma segura a la URL de loopback con token. El control de portapapeles de la página usa metadatos de sesión proporcionados por el servidor; no reconstruye un enlace compartido a partir de la dirección del navegador.
+
+### URL de sala de un adaptador virtual inesperado
+
+Si **Copiar enlace de la sala** copia una URL LAN inesperada, por ejemplo, de un adaptador virtual, VPN, Hamachi o LogMeIn, hacé esto solo si no necesitás ese adaptador:
+
+1. Detené el launcher/servidor actual cerrando su consola `LAN.cmd`.
+2. En **Configuración** de Windows > **Red e Internet** > **Configuración avanzada de red**, desconectá o deshabilitá temporalmente el adaptador virtual no deseado.
+3. Reiniciá `LAN.cmd` y usá **Copiar enlace de la sala** otra vez.
+4. Restaurá o reconectá el adaptador después si lo necesitás.
+
+No elimines adaptadores ni modifiques reglas del firewall sin necesidad. No publiques URL de sala ni sus tokens.
 
 El token de sala es un secreto de portador: cualquier persona con la URL completa puede ver los medios subidos y controlar la sala hasta que el host detenga el servidor. No lo publiques. Una URL de sala LAN-IP abierta en el host es intencionalmente una sesión de invitado.
 

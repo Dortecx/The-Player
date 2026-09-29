@@ -171,7 +171,7 @@ function isHostRequest(req) {
 }
 
 function selectLanAddresses(networkInterfaces) {
-  const virtualAdapter = /docker|veth|\bbr[-\d]|virbr|vmnet|vbox|virtual|hyper-v|vethernet|wsl|vpn|\btun\d*\b|\btap\d*\b|\bppp\d*\b|tailscale|zerotier|wireguard|\bwg\d*\b/i;
+  const virtualAdapter = /docker|veth|\bbr[-\d]|virbr|vmnet|vbox|virtual|hyper-v|vethernet|wsl|vpn|logmein|hamachi|\btun\d*\b|\btap\d*\b|\bppp\d*\b|tailscale|zerotier|wireguard|\bwg\d*\b/i;
   const addresses = Object.entries(networkInterfaces || {})
     .flatMap(([name, entries]) => (entries || [])
       .filter((address) => address && address.family === 'IPv4' && !address.internal)
