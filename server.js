@@ -6,6 +6,7 @@ const fsp = require('node:fs/promises');
 const http = require('node:http');
 const os = require('node:os');
 const path = require('node:path');
+const { spawn } = require('node:child_process');
 const { Transform } = require('node:stream');
 const { pipeline } = require('node:stream/promises');
 
@@ -32,6 +33,8 @@ const UPLOAD_PROTOCOL = Object.freeze({
 });
 const MAX_COMMAND_BYTES = 16 * 1024;
 const MAX_POSITION_SECONDS = 7 * 24 * 60 * 60;
+const MAX_FFPROBE_OUTPUT_BYTES = 1024 * 1024;
+const FFPROBE_TIMEOUT_MS = 10_000;
 
 const MIME_TYPES = {
   '.html': 'text/html; charset=utf-8',
@@ -184,6 +187,98 @@ function formatRoomUrl(address, port, token) {
   return `http://${address}:${port}/?token=${encodeURIComponent(token)}`;
 }
 
+function normalizeTrackText(value) {
+  if (typeof value !== 'string') return undefined;
+  const normalized = value.trim();
+  return normalized ? normalized.slice(0, 128) : undefined;
+}
+
+function normalizeMediaTracks(output) {
+  if (typeof output === 'string') {
+    try {
+      output = JSON.parse(output);
+    } catch {
+      throw new Error('FFprobe returned invalid JSON');
+    }
+  }
+  if (!output || typeof output !== 'object' || !Array.isArray(output.streams)) {
+    throw new Error('FFprobe returned invalid JSON');
+  }
+  const tracks = { status: 'available', audio: [], subtitles: [] };
+  for (const stream of output.streams) {
+    if (!stream || typeof stream !== 'object') continue;
+    const index = stream.index;
+    const kind = stream.codec_type;
+    const codec = normalizeTrackText(stream.codec_name);
+    if (!Number.isSafeInteger(index) || index < 0 || (kind !== 'audio' && kind !== 'subtitle') || !codec) continue;
+    const track = { index, kind, codec };
+    const language = normalizeTrackText(stream.tags?.language);
+    const title = normalizeTrackText(stream.tags?.title);
+    if (language) track.language = language;
+    if (title) track.title = title;
+    if (kind === 'audio') {
+      if (Number.isSafeInteger(stream.channels) && stream.channels > 0) track.channels = stream.channels;
+      tracks.audio.push(track);
+    } else {
+      tracks.subtitles.push(track);
+    }
+  }
+  return tracks;
+}
+
+function createFfprobeRunner({
+  command = 'ffprobe',
+  spawnProcess = spawn,
+  timeoutMs = FFPROBE_TIMEOUT_MS,
+  maximumOutputBytes = MAX_FFPROBE_OUTPUT_BYTES
+} = {}) {
+  return (filePath) => new Promise((resolve, reject) => {
+    let child;
+    try {
+      child = spawnProcess(command, [
+        '-v', 'error',
+        '-show_streams',
+        '-show_entries', 'stream=index,codec_type,codec_name,channels:stream_tags=language,title',
+        '-of', 'json',
+        filePath
+      ], { shell: false, stdio: ['ignore', 'pipe', 'ignore'] });
+    } catch (error) {
+      reject(error);
+      return;
+    }
+    let outputSize = 0;
+    const output = [];
+    let settled = false;
+    const finish = (error, value) => {
+      if (settled) return;
+      settled = true;
+      clearTimeout(timeout);
+      if (error) reject(error);
+      else resolve(value);
+    };
+    const stop = (message) => {
+      child.kill();
+      finish(new Error(message));
+    };
+    const timeout = setTimeout(() => stop('FFprobe timed out'), timeoutMs);
+    child.once('error', () => finish(new Error('FFprobe unavailable')));
+    child.stdout.on('error', () => finish(new Error('FFprobe output failed')));
+    child.stdout.on('data', (chunk) => {
+      outputSize += chunk.length;
+      if (outputSize > maximumOutputBytes) return stop('FFprobe output exceeded limit');
+      output.push(chunk);
+    });
+    child.once('close', (code) => {
+      if (code !== 0) return finish(new Error('FFprobe failed'));
+      try {
+        finish(null, JSON.parse(Buffer.concat(output).toString('utf8')));
+      } catch {
+        finish(new Error('FFprobe returned invalid JSON'));
+      }
+    });
+  });
+}
+
 function parseRange(range, size) {
   if (!range) return null;
   const match = /^bytes=(\d*)-(\d*)$/.exec(range);
@@ -208,7 +303,8 @@ function createMediaServer({
   token = crypto.randomBytes(32).toString('base64url'),
   maxUploadBytes = MAX_UPLOAD_BYTES,
   hostAuthority = isHostRequest,
-  lanAddresses = () => selectLanAddresses(os.networkInterfaces())
+  lanAddresses = () => selectLanAddresses(os.networkInterfaces()),
+  ffprobeRunner = createFfprobeRunner()
 } = {}) {
   if (!Number.isSafeInteger(maxUploadBytes) || maxUploadBytes <= 0) {
     throw new RangeError('maxUploadBytes must be a positive whole number of bytes');
@@ -220,7 +316,7 @@ function createMediaServer({
   let state = { mediaId: null, playing: false, position: 0, sequence: 0, updatedAt: Date.now() };
 
   function publicMedia(media) {
-    return { id: media.id, contentId: media.contentId, name: media.name, size: media.size, mime: media.mime, uploadedAt: media.uploadedAt };
+    return { id: media.id, contentId: media.contentId, name: media.name, size: media.size, mime: media.mime, uploadedAt: media.uploadedAt, tracks: media.tracks };
   }
   function roomState() { return { ...state, serverTime: Date.now() }; }
   function getRoomUrl() {
@@ -351,7 +447,13 @@ function createMediaServer({
       const diskName = `${id}${file.extension}`;
       filePath = path.join(storageDir, diskName);
       const { size, contentId } = await streamUpload(req, filePath, maxUploadBytes);
-      const media = { id, contentId, diskName, name: file.filename, size, mime: file.mime, uploadedAt: Date.now() };
+      let tracks = { status: 'unavailable' };
+      try {
+        tracks = normalizeMediaTracks(await ffprobeRunner(filePath));
+      } catch {
+        // A probe failure must not make successfully uploaded media unavailable.
+      }
+      const media = { id, contentId, diskName, name: file.filename, size, mime: file.mime, uploadedAt: Date.now(), tracks };
       stagedMedia.set(id, media);
       sendJson(res, 201, { media: publicMedia(media) });
     } catch (error) {
@@ -526,4 +628,4 @@ if (require.main === module) {
   app.server.on('error', (error) => { console.error(error.message); process.exitCode = 1; void shutdown(); });
 }
 
-module.exports = { createMediaServer, isHostRequest, isLoopbackRemoteAddress, parseRange, parseUploadLimit, selectLanAddresses, UPLOAD_PROTOCOL };
+module.exports = { createFfprobeRunner, createMediaServer, isHostRequest, isLoopbackRemoteAddress, normalizeMediaTracks, parseRange, parseUploadLimit, selectLanAddresses, UPLOAD_PROTOCOL };

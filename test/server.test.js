@@ -2,12 +2,14 @@
 
 const assert = require('node:assert/strict');
 const crypto = require('node:crypto');
+const { EventEmitter } = require('node:events');
 const fs = require('node:fs');
 const http = require('node:http');
 const os = require('node:os');
 const path = require('node:path');
+const { PassThrough } = require('node:stream');
 const test = require('node:test');
-const { createMediaServer, isHostRequest, isLoopbackRemoteAddress, parseUploadLimit, selectLanAddresses, UPLOAD_PROTOCOL } = require('../server');
+const { createFfprobeRunner, createMediaServer, isHostRequest, isLoopbackRemoteAddress, parseUploadLimit, selectLanAddresses, UPLOAD_PROTOCOL } = require('../server');
 
 function request(port, options = {}, body) {
   return new Promise((resolve, reject) => {
@@ -222,6 +224,100 @@ test('upload streams raw binary media and serves valid byte ranges', async (t) =
   assert.equal(response.headers['accept-ranges'], 'bytes');
   assert.equal(response.headers['content-length'], '4');
   assert.deepEqual(response.body, Buffer.from('cdef'));
+});
+
+test('uploaded media exposes normalized embedded audio and subtitle tracks only through protected responses', async (t) => {
+  const observedPaths = [];
+  const { port } = await startFixture(t, {
+    ffprobeRunner: async (filePath) => {
+      observedPaths.push(filePath);
+      return JSON.stringify({
+        streams: [
+          { index: 0, codec_type: 'video', codec_name: 'h264' },
+          { index: 1, codec_type: 'audio', codec_name: 'aac', tags: { language: 'eng', title: 'English' }, channels: 2 },
+          { index: 2, codec_type: 'subtitle', codec_name: 'ass', tags: { language: 'spa' } },
+          { index: 'bad', codec_type: 'audio', codec_name: 'aac', channels: 2 },
+          { index: 3, codec_type: 'subtitle' }
+        ]
+      });
+    }
+  });
+  const uploaded = await rawUpload(port, 'clip.mkv', Buffer.from('media'));
+  assert.equal(uploaded.status, 201);
+  const media = JSON.parse(uploaded.body).media;
+  assert.equal(observedPaths.length, 1);
+  assert.deepEqual(media.tracks, {
+    status: 'available',
+    audio: [{ index: 1, kind: 'audio', codec: 'aac', language: 'eng', title: 'English', channels: 2 }],
+    subtitles: [{ index: 2, kind: 'subtitle', codec: 'ass', language: 'spa' }]
+  });
+
+  assert.equal((await appendLibrary(port, [media.id])).status, 200);
+  const library = await request(port, { path: '/api/library?token=test-room-token' });
+  assert.equal(library.status, 200);
+  assert.deepEqual(JSON.parse(library.body).media[0].tracks, media.tracks);
+  assert.equal((await request(port, { path: '/api/library' })).status, 401);
+  assert.equal((await request(port, { path: `/media/${media.id}?token=test-room-token` })).status, 200);
+});
+
+test('ffprobe stdout errors settle once and preserve the non-sensitive upload fallback', async (t) => {
+  const child = new EventEmitter();
+  child.stdout = new PassThrough();
+  child.kill = () => true;
+  const sensitiveError = new Error('/private/path: ffprobe stdout exploded');
+  const spawned = [];
+  const runner = createFfprobeRunner({
+    spawnProcess(command, args, options) {
+      spawned.push({ command, args, options });
+      queueMicrotask(() => {
+        child.stdout.emit('error', sensitiveError);
+        child.stdout.emit('error', sensitiveError);
+        child.emit('close', 0);
+      });
+      return child;
+    }
+  });
+  let settlements = 0;
+  const { port } = await startFixture(t, {
+    ffprobeRunner: async (filePath) => {
+      try {
+        return await runner(filePath);
+      } finally {
+        settlements += 1;
+      }
+    }
+  });
+
+  const uploaded = await rawUpload(port, 'clip.mkv', Buffer.from('abcdefghij'));
+  assert.equal(uploaded.status, 201);
+  const media = JSON.parse(uploaded.body).media;
+  assert.deepEqual(media.tracks, { status: 'unavailable' });
+  assert.equal(settlements, 1);
+  assert.equal(spawned.length, 1);
+  assert.equal(spawned[0].options.shell, false);
+  assert.equal(spawned[0].args.at(-1).startsWith('/'), true);
+  assert.doesNotMatch(uploaded.body.toString(), /private|ffprobe|stdout|exploded/i);
+
+  assert.equal((await replaceLibrary(port, [media.id])).status, 200);
+  const playback = await request(port, { path: `/media/${media.id}?token=test-room-token`, headers: { Range: 'bytes=2-5' } });
+  assert.equal(playback.status, 206);
+  assert.deepEqual(playback.body, Buffer.from('cdef'));
+});
+
+test('failed media-track probing leaves upload and raw playback usable without exposing probe details', async (t) => {
+  const { port } = await startFixture(t, {
+    ffprobeRunner: async () => { throw new Error('/private/path: ffprobe exploded'); }
+  });
+  const uploaded = await rawUpload(port, 'clip.mkv', Buffer.from('abcdefghij'));
+  assert.equal(uploaded.status, 201);
+  const media = JSON.parse(uploaded.body).media;
+  assert.deepEqual(media.tracks, { status: 'unavailable' });
+
+  assert.equal((await replaceLibrary(port, [media.id])).status, 200);
+  const playback = await request(port, { path: `/media/${media.id}?token=test-room-token`, headers: { Range: 'bytes=2-5' } });
+  assert.equal(playback.status, 206);
+  assert.deepEqual(playback.body, Buffer.from('cdef'));
+  assert.doesNotMatch(uploaded.body.toString(), /private|ffprobe|exploded/i);
 });
 
 test('upload exposes a stable SHA-256 content identity independently of random media IDs', async (t) => {
