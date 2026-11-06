@@ -43,6 +43,10 @@ Si **Copiar enlace de la sala** copia una URL LAN inesperada, por ejemplo, de un
 
 No elimines adaptadores ni modifiques reglas del firewall sin necesidad. No publiques URL de sala ni sus tokens.
 
+### Nota avanzada: acceso privado por Tailscale
+
+The Player no crea automáticamente una URL de sala de Tailscale; el modo LAN prioriza intencionalmente una dirección física de Wi-Fi/Ethernet. Si el host y los invitados ya usan Tailscale, el host puede reemplazar manualmente solo la dirección física de una URL de sala copiada por la dirección Tailscale `100.x.x.x` del host, conservando `:3000` y el valor completo de `?token=...`. Los invitados necesitan Tailscale instalado, conectado y autorizado para llegar a la máquina host; no necesitan The Player ni Node.js. Es acceso mediante una red superpuesta privada, no compartir públicamente por Internet. Usá una cuenta Tailscale distinta para cada invitado y compartí solo la máquina host cuando sea posible. Tratá la URL de sala como un secreto de portador y no la publiques.
+
 El token de sala es un secreto de portador: cualquier persona con la URL completa puede ver los medios subidos y controlar la sala hasta que el host detenga el servidor. No lo publiques. Una URL de sala LAN-IP abierta en el host es intencionalmente una sesión de invitado.
 
 Solo una solicitud con token cuyo par TCP real sea loopback (`127/8`, `::1` o loopback mapeado a IPv4) puede subir, reemplazar o vaciar la biblioteca. El servidor no confía en `Host`, `Origin` ni encabezados reenviados para esta decisión. Los invitados pueden usar los controles de reproducción compartida, pero Carpeta, Archivo y Vaciar siguen siendo exclusivos del host.

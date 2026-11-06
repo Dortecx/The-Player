@@ -43,6 +43,10 @@ If **Copy room link** copies an unexpected LAN URL—for example, one from a vir
 
 Do not remove adapters or change firewall rules unnecessarily. Do not post room URLs or their tokens publicly.
 
+### Advanced note: private Tailscale access
+
+The Player does not automatically create a Tailscale room URL; LAN mode intentionally prefers a physical Wi-Fi/Ethernet address. If the host and guests already use Tailscale, the host can manually replace only the physical address in a copied room URL with the host's Tailscale `100.x.x.x` address, preserving `:3000` and the complete `?token=...` value. Guests need Tailscale installed, connected, and authorized to reach the host machine; they do not need The Player or Node.js. This is private overlay-network access, not public Internet sharing. Use a separate Tailscale account for each guest and share only the host machine when possible. Treat the room URL as a bearer secret and do not post it publicly.
+
 The room token is a bearer secret: anyone with the complete URL can view uploaded media and control the room until the host stops the server. Do not post it publicly. A LAN-IP room URL opened on the host is intentionally a guest session.
 
 Only a tokenized request whose actual TCP peer is loopback (`127/8`, `::1`, or IPv4-mapped loopback) can upload, replace, or clear the library. The server does not trust `Host`, `Origin`, or forwarded headers for this decision. Guests can use shared playback controls, but Folder, File, and Clear remain host-only.
