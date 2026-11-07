@@ -182,7 +182,9 @@ try {
             "$releaseName\runtime\node.exe",
             "$releaseName\runtime\ffmpeg.exe",
             "$releaseName\runtime\ffprobe.exe",
-            "$releaseName\third_party\FFmpeg-LGPL-NOTICE.md"
+            "$releaseName\third_party\FFmpeg-LGPL-NOTICE.md",
+            "$releaseName\app\public\vendor\hls.js\hls.min.js",
+            "$releaseName\app\public\vendor\hls.js\LICENSE"
         )) {
             if ($archiveEntries -notcontains $requiredEntry) { throw "Portable ZIP is missing required entry: $requiredEntry" }
         }

@@ -1391,6 +1391,58 @@ body.is-app-fullscreen {
   touch-action: manipulation;
 }
 
+.track-controls {
+  border: 1px solid var(--line-soft);
+  border-radius: 0.75rem;
+  margin-top: 0.6rem;
+  padding: 0.7rem;
+}
+
+.track-controls h3 {
+  font-size: 0.9rem;
+  margin: 0 0 0.55rem;
+}
+
+.track-control-fields {
+  align-items: center;
+  display: grid;
+  gap: 0.4rem 0.6rem;
+  grid-template-columns: auto minmax(0, 1fr);
+}
+
+.track-control-fields label {
+  color: var(--muted);
+  font-size: 0.82rem;
+  font-weight: 700;
+}
+
+.track-control-fields select {
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid var(--line);
+  border-radius: 0.45rem;
+  color: var(--text);
+  font: inherit;
+  min-width: 0;
+  padding: 0.38rem 0.5rem;
+}
+
+.track-control-fields select:focus-visible {
+  border-color: var(--accent-strong);
+  outline: 2px solid rgba(255, 255, 255, 0.72);
+  outline-offset: 2px;
+}
+
+.track-selection-help,
+.track-playback-status {
+  color: var(--muted);
+  font-size: 0.78rem;
+  margin: 0.55rem 0 0;
+}
+
+.track-playback-status {
+  color: var(--danger);
+}
+
 .transport {
   flex: 0 0 auto;
   margin-top: 0.6rem;

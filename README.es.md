@@ -46,8 +46,9 @@ Para el comportamiento y los límites de subida, los permisos de host/invitado, 
 
 ## Límites
 
-- La reproducción compartida es directa en el navegador: todavía no hay UI de selección de pistas, descubrimiento por QR ni relay por Internet. El runtime de FFmpeg incluido prepara la entrega HLS del servidor para una futura selección de audio interno/subtítulos de texto.
-- La selección de pistas HLS copia el video de origen (mientras genera audio AAC y subtítulos de texto WebVTT), por lo que requiere un flujo de video de origen compatible con el navegador. Para códecs de video incompatibles, la reproducción cruda en `/media` sigue siendo la alternativa; cada cliente debe soportar el contenedor **y los códecs** de ese archivo.
+- Cuando un video compartido subido tiene pistas internas inspeccionadas, el host puede elegir el audio y el subtítulo de texto opcional en **Pistas internas**. La selección es estado autoritativo de la sala: los invitados la ven en modo de solo lectura y todos los clientes convergen en ella. La reproducción solo local conserva sus controles nativos del navegador.
+- Las pistas elegidas usan el cliente `hls.js` local incluido (o el soporte HLS nativo del navegador), nunca un CDN. El ZIP portátil incluye ese recurso de navegador y su aviso Apache-2.0, por lo que las personas usuarias no instalan nada.
+- La selección HLS copia el video de origen (mientras genera audio AAC y subtítulos de texto WebVTT), por lo que requiere un flujo de video de origen compatible con el navegador y subtítulos de texto que admita el servidor (ASS/SSA, SRT/SubRip, WebVTT, MOV text, text o TTML). Los subtítulos de imagen/mapa de bits no se pueden elegir. Para un cliente HLS no disponible o video de origen incompatible, la reproducción vuelve sin destruir nada al video compartido original con un estado dentro de la app; cada cliente debe admitir el contenedor **y los códecs** de ese archivo.
 - El límite predeterminado de subida compartida es 100 GiB por archivo; consultá los [detalles LAN](docs/lan-shared-playback.es.md#ciclo-de-carga-y-límites) para cambiarlo antes de iniciar.
 
 ## Ejecutar desde el código fuente o crear el ZIP portátil

@@ -79,6 +79,17 @@
               </button>
             </div>
           </div>
+          <section id="trackControls" class="track-controls" aria-labelledby="trackControlsHeading" hidden>
+            <h3 id="trackControlsHeading" data-i18n="trackControlsHeading">Embedded tracks</h3>
+            <div class="track-control-fields">
+              <label for="audioTrackSelect" data-i18n="audioTrackLabel">Audio</label>
+              <select id="audioTrackSelect" aria-describedby="trackSelectionHelp"></select>
+              <label for="subtitleTrackSelect" data-i18n="subtitleTrackLabel">Subtitles</label>
+              <select id="subtitleTrackSelect" aria-describedby="trackSelectionHelp"></select>
+            </div>
+            <p id="trackSelectionHelp" class="track-selection-help"></p>
+            <p id="trackPlaybackStatus" class="track-playback-status" role="status" aria-live="polite" hidden></p>
+          </section>
           <div class="transport">
             <button id="prevButton" class="transport-action-button" type="button" data-i18n-aria-label="previousButton">
               <svg class="action-icon" aria-hidden="true" viewBox="0 0 24 24" focusable="false">
@@ -147,6 +158,7 @@
       </section>
     </main>
 
+    <script src="vendor/hls.js/hls.min.js" defer></script>
     <script src="app.js" defer></script>
   </body>
 </html>

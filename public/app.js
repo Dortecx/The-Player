@@ -60,6 +60,14 @@ const COPY = {
     playbackReadError: 'A network or local file read error interrupted playback.',
     playbackCorrupt: 'The video appears to be corrupt or unsupported by this browser.',
     playbackUnsupported: 'This file type or codec is not supported by this browser.',
+    trackControlsHeading: 'Embedded tracks',
+    audioTrackLabel: 'Audio',
+    audioTrackOriginal: 'Original video audio',
+    subtitleTrackLabel: 'Subtitles',
+    subtitleTrackOff: 'Off',
+    trackSelectionHostHelp: 'Your selection is shared with everyone in this room.',
+    trackSelectionGuestHelp: 'The host chooses the shared embedded tracks.',
+    hlsUnavailable: 'Selected embedded tracks could not be played here; continuing with the original video.',
     thisFile: 'this file'
   },
   es: {
@@ -112,6 +120,14 @@ const COPY = {
     playbackReadError: 'Un error de red o lectura local interrumpió la reproducción.',
     playbackCorrupt: 'El video parece estar dañado o no es compatible con este navegador.',
     playbackUnsupported: 'Este tipo de archivo o codec no es compatible con este navegador.',
+    trackControlsHeading: 'Pistas internas',
+    audioTrackLabel: 'Audio',
+    audioTrackOriginal: 'Audio original del video',
+    subtitleTrackLabel: 'Subtítulos',
+    subtitleTrackOff: 'Desactivados',
+    trackSelectionHostHelp: 'Tu selección se comparte con todas las personas de esta sala.',
+    trackSelectionGuestHelp: 'El host elige las pistas internas compartidas.',
+    hlsUnavailable: 'Las pistas internas elegidas no se pudieron reproducir aquí; se continúa con el video original.',
     thisFile: 'este archivo'
   }
 };
@@ -182,7 +198,14 @@ const state = {
     playbackIntent: null,
     playbackCommandInFlight: false,
     playbackRetryTimer: null,
-    awaitingAudioActivation: false
+    awaitingAudioActivation: false,
+    hls: {
+      client: null,
+      sourceKey: null,
+      selectionKey: null,
+      fallbackKey: null,
+      suppressNextVideoAbort: false
+    }
   }
 };
 
@@ -225,6 +248,11 @@ const elements = {
   gestureFeedbackText: document.querySelector('#gestureFeedback .gesture-feedback-text'),
   gestureFeedbackLive: document.querySelector('#gestureFeedback .gesture-feedback-live'),
   remoteAudioPrompt: document.querySelector('#remoteAudioPrompt'),
+  trackControls: document.querySelector('#trackControls'),
+  audioTrackSelect: document.querySelector('#audioTrackSelect'),
+  subtitleTrackSelect: document.querySelector('#subtitleTrackSelect'),
+  trackSelectionHelp: document.querySelector('#trackSelectionHelp'),
+  trackPlaybackStatus: document.querySelector('#trackPlaybackStatus'),
   error: document.querySelector('#errorMessage'),
   layout: document.querySelector('.layout'),
   playerPanel: document.querySelector('.player-panel'),
@@ -1608,6 +1636,9 @@ function leaveSharedMode(message) {
   state.shared.desiredPlaying = false;
   state.shared.playbackIntent = null;
   state.shared.playbackCommandInFlight = false;
+  destroyHlsClient();
+  state.shared.hls.selectionKey = null;
+  state.shared.hls.fallbackKey = null;
   setRemoteAudioPrompt(false);
   if (state.shared.playbackRetryTimer) window.clearTimeout(state.shared.playbackRetryTimer);
   state.shared.playbackRetryTimer = null;
@@ -1627,6 +1658,7 @@ function setSharedItems(media) {
     mediaId: item.id,
     relativePath: item.name,
     size: item.size,
+    tracks: item.tracks,
     progress: null
   }));
   state.selectionId = null;
@@ -1635,6 +1667,138 @@ function setSharedItems(media) {
 
 function sharedMediaUrl(mediaId) {
   return roomUrl(`/media/${encodeURIComponent(mediaId)}`);
+}
+
+function sharedHlsUrl(mediaId) {
+  return roomUrl(`/hls/${encodeURIComponent(mediaId)}/master.m3u8`);
+}
+
+function trackSelectionKey(mediaId, selection) {
+  return `${mediaId || ''}:${selection?.audioTrackIndex ?? ''}:${selection?.subtitleTrackIndex ?? ''}`;
+}
+
+function selectedSharedTracks(item, selection) {
+  if (!item || item.tracks?.status !== 'available' || !Number.isSafeInteger(selection?.audioTrackIndex)) return null;
+  const audio = item.tracks.audio?.find((track) => track.index === selection.audioTrackIndex);
+  const subtitle = selection.subtitleTrackIndex === null
+    ? null
+    : item.tracks.subtitles?.find((track) => track.index === selection.subtitleTrackIndex);
+  return audio && (selection.subtitleTrackIndex === null || subtitle) ? { audio, subtitle } : null;
+}
+
+function trackLabel(track, ordinal) {
+  const details = [track.language, track.title].filter(Boolean).join(' — ');
+  return details || `${track.kind === 'audio' ? t('audioTrackLabel') : t('subtitleTrackLabel')} ${ordinal + 1}`;
+}
+
+function setTrackPlaybackStatus(message = '') {
+  elements.trackPlaybackStatus.textContent = message;
+  elements.trackPlaybackStatus.hidden = !message;
+}
+
+function renderTrackControls(roomState) {
+  const item = state.items[state.activeIndex];
+  const tracks = item?.tracks;
+  const hasTracks = isSharedMode() && tracks?.status === 'available' && Array.isArray(tracks.audio) && tracks.audio.length > 0;
+  elements.trackControls.hidden = !hasTracks;
+  if (!hasTracks) {
+    setTrackPlaybackStatus();
+    return;
+  }
+  const selection = roomState?.trackSelection || { audioTrackIndex: null, subtitleTrackIndex: null };
+  const host = isSharedHost();
+  const buildOptions = (select, entries, emptyLabel, selectedValue, disableEmpty = false) => {
+    const emptyOption = emptyLabel ? new Option(emptyLabel, '') : null;
+    if (emptyOption) emptyOption.disabled = disableEmpty;
+    select.replaceChildren(...(emptyOption ? [emptyOption] : []), ...entries.map((track, index) => {
+      const option = new Option(trackLabel(track, index), String(track.index));
+      return option;
+    }));
+    select.value = selectedValue;
+    if (select.value !== selectedValue) select.selectedIndex = 0;
+    select.disabled = !host;
+  };
+  buildOptions(elements.audioTrackSelect, tracks.audio, t('audioTrackOriginal'), selection.audioTrackIndex === null ? '' : String(selection.audioTrackIndex), selection.audioTrackIndex !== null);
+  buildOptions(elements.subtitleTrackSelect, tracks.subtitles || [], t('subtitleTrackOff'), selection.subtitleTrackIndex === null ? '' : String(selection.subtitleTrackIndex));
+  elements.trackSelectionHelp.textContent = t(host ? 'trackSelectionHostHelp' : 'trackSelectionGuestHelp');
+}
+
+function destroyHlsClient() {
+  if (state.shared.hls.client) state.shared.hls.client.destroy();
+  state.shared.hls.client = null;
+  state.shared.hls.sourceKey = null;
+}
+
+function canUseNativeHls() {
+  return Boolean(elements.video.canPlayType('application/vnd.apple.mpegurl') || elements.video.canPlayType('application/x-mpegURL'));
+}
+
+function fallBackToSharedMedia(item, sourceKey) {
+  if (!isSharedMode() || state.shared.hls.sourceKey !== sourceKey) return;
+  const fallbackPosition = currentSharedPosition();
+  state.shared.hls.fallbackKey = sourceKey;
+  state.shared.hls.suppressNextVideoAbort = true;
+  destroyHlsClient();
+  elements.video.onloadedmetadata = null;
+  elements.video.src = sharedMediaUrl(item.mediaId);
+  elements.video.addEventListener('loadedmetadata', () => {
+    if (!isSharedMode() || state.shared.hls.fallbackKey !== sourceKey) return;
+    const duration = Number.isFinite(elements.video.duration) ? elements.video.duration : 0;
+    elements.video.currentTime = duration > 0
+      ? clamp(fallbackPosition, 0, duration)
+      : fallbackPosition;
+    updateVideoControls();
+  }, { once: true });
+  elements.video.load();
+  setTrackPlaybackStatus(t('hlsUnavailable'));
+}
+
+function loadSharedHls(item, selection) {
+  const sourceKey = trackSelectionKey(item.mediaId, selection);
+  if (state.shared.hls.fallbackKey === sourceKey) {
+    destroyHlsClient();
+    elements.video.src = sharedMediaUrl(item.mediaId);
+    elements.video.load();
+    setTrackPlaybackStatus(t('hlsUnavailable'));
+    return;
+  }
+  destroyHlsClient();
+  state.shared.hls.suppressNextVideoAbort = false;
+  state.shared.hls.sourceKey = sourceKey;
+  const source = sharedHlsUrl(item.mediaId);
+  const unavailable = () => fallBackToSharedMedia(item, sourceKey);
+  if (window.Hls?.isSupported?.()) {
+    const client = new window.Hls({ enableWorker: true });
+    state.shared.hls.client = client;
+    client.on(window.Hls.Events.ERROR, (_, data) => {
+      if (data.fatal) unavailable();
+    });
+    client.loadSource(source);
+    client.attachMedia(elements.video);
+    return;
+  }
+  if (canUseNativeHls()) {
+    elements.video.src = source;
+    elements.video.load();
+    elements.video.addEventListener('error', unavailable, { once: true });
+    return;
+  }
+  unavailable();
+}
+
+function loadSharedMedia(item, selection) {
+  state.shared.hls.selectionKey = trackSelectionKey(item.mediaId, selection);
+  const selectedTracks = selectedSharedTracks(item, selection);
+  if (selectedTracks) {
+    loadSharedHls(item, selection);
+    return;
+  }
+  destroyHlsClient();
+  state.shared.hls.fallbackKey = null;
+  state.shared.hls.suppressNextVideoAbort = false;
+  elements.video.src = sharedMediaUrl(item.mediaId);
+  elements.video.load();
+  setTrackPlaybackStatus();
 }
 
 async function refreshSharedLibrary() {
@@ -1692,12 +1856,14 @@ async function applyRoomState(roomState, { allowCurrentSequence = false } = {}) 
     && state.shared.lastSequence === roomState.sequence;
   try {
     if (!isCurrentApplication()) return;
-    if (index >= 0 && state.activeIndex !== index) {
+    const selectionKey = index >= 0 ? trackSelectionKey(state.items[index].mediaId, roomState.trackSelection) : null;
+    let sourceChanged = false;
+    if (index >= 0 && (state.activeIndex !== index || state.shared.hls.selectionKey !== selectionKey)) {
+      sourceChanged = true;
       revokeCurrentObjectUrl();
       state.activeIndex = index;
       const item = state.items[index];
-      elements.video.src = sharedMediaUrl(item.mediaId);
-      elements.video.load();
+      loadSharedMedia(item, roomState.trackSelection);
       elements.nowPlaying.textContent = item.relativePath;
       renderPlaylist();
     }
@@ -1705,7 +1871,8 @@ async function applyRoomState(roomState, { allowCurrentSequence = false } = {}) 
       const elapsed = roomState.playing
         ? Math.max(0, (Date.now() - Number(roomState.serverTime || roomState.updatedAt || Date.now())) / 1000)
         : 0;
-      const position = Math.max(0, roomState.position + elapsed);
+      const roomPosition = Math.max(0, roomState.position + elapsed);
+      const position = roomPosition;
       const syncPosition = () => {
         if (!isCurrentApplication() || hasPlaybackIntent) return;
         try {
@@ -1719,8 +1886,8 @@ async function applyRoomState(roomState, { allowCurrentSequence = false } = {}) 
           if (isCurrentApplication()) showError(t('defaultPlaybackError'));
         }
       };
-      if (elements.video.readyState >= HTMLMediaElement.HAVE_METADATA) syncPosition();
-      else elements.video.onloadedmetadata = syncPosition;
+      if (!sourceChanged && elements.video.readyState >= HTMLMediaElement.HAVE_METADATA) syncPosition();
+      else if (state.shared.hls.fallbackKey !== selectionKey) elements.video.onloadedmetadata = syncPosition;
       if (playing) {
         await playSharedRemoteMedia(isCurrentApplication);
       } else if (isCurrentApplication()) {
@@ -1738,6 +1905,7 @@ async function applyRoomState(roomState, { allowCurrentSequence = false } = {}) 
       elements.nowPlaying.textContent = t('nothingPlaying');
       renderPlaylist();
     }
+    renderTrackControls(roomState);
   } catch {
     if (isCurrentApplication()) showError(t('defaultPlaybackError'));
   } finally {
@@ -2594,6 +2762,17 @@ function preventGuestLibraryPicker(event) {
   showHostLibraryOnlyToast();
 }
 
+async function selectSharedTracks() {
+  if (!isSharedHost()) return;
+  const audioTrackIndex = Number.parseInt(elements.audioTrackSelect.value, 10);
+  const subtitleTrackIndex = elements.subtitleTrackSelect.value === ''
+    ? null
+    : Number.parseInt(elements.subtitleTrackSelect.value, 10);
+  if (!Number.isSafeInteger(audioTrackIndex) || (subtitleTrackIndex !== null && !Number.isSafeInteger(subtitleTrackIndex))) return;
+  setTrackPlaybackStatus();
+  await sendRoomCommand({ type: 'selectTracks', audioTrackIndex, subtitleTrackIndex });
+}
+
 elements.folderSelectControl.addEventListener('click', preventGuestLibraryPicker);
 elements.fileSelectControl.addEventListener('click', preventGuestLibraryPicker);
 elements.folderInput.addEventListener('change', (event) => runAsyncAction(() => handleFiles(event.target.files)));
@@ -2603,6 +2782,8 @@ elements.nextButton.addEventListener('click', () => runAsyncAction(skipToNext));
 elements.markWatchedButton.addEventListener('click', () => runAsyncAction(markCurrentWatchedAndNext));
 elements.clearPlaylistButton.addEventListener('click', () => runAsyncAction(clearPlaylist));
 elements.copyRoomUrlButton.addEventListener('click', () => { void copyRoomUrl(); });
+elements.audioTrackSelect.addEventListener('change', () => runAsyncAction(selectSharedTracks));
+elements.subtitleTrackSelect.addEventListener('change', () => runAsyncAction(selectSharedTracks));
 elements.videoPlayPauseButton.addEventListener('click', togglePlayback);
 elements.videoSeekRange.addEventListener('pointerdown', beginSeekInteraction);
 elements.videoSeekRange.addEventListener('pointerup', endSeekInteraction);
@@ -2805,6 +2986,10 @@ elements.video.addEventListener('ended', () => {
   void handleEnded().catch((error) => showError(error.message || t('sharedRequestFailed')));
 });
 elements.video.addEventListener('error', () => {
+  if (state.shared.hls.suppressNextVideoAbort && elements.video.error?.code === MediaError.MEDIA_ERR_ABORTED) {
+    state.shared.hls.suppressNextVideoAbort = false;
+    return;
+  }
   const message = getVideoErrorMessage(elements.video.error);
   showError(message);
 });

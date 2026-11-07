@@ -46,8 +46,9 @@ For upload behavior and limits, host/guest permissions, mobile fullscreen gestur
 
 ## Limits
 
-- Shared playback is direct browser playback: there is no browser track-selection UI yet, QR discovery, or Internet relay. The bundled FFmpeg runtime prepares server-side HLS delivery for a future embedded-audio/text-subtitle selection feature.
-- HLS track selection stream-copies the source video (while producing AAC audio and WebVTT text subtitles), so it requires a browser-compatible source video stream. For incompatible video codecs, raw `/media` playback remains the fallback; every client must support that file's container **and codecs**.
+- When an uploaded shared video has inspected embedded tracks, the host can choose its audio and optional text subtitle track in **Embedded tracks**. The selection is authoritative room state: guests see it read-only and every client converges on it. Local-only playback keeps its existing browser-native controls.
+- Selected tracks use the bundled local `hls.js` client (or a browser's native HLS support), never a CDN. The portable ZIP includes that browser asset and its Apache-2.0 notice, so end users install nothing.
+- HLS track selection stream-copies the source video (while producing AAC audio and WebVTT text subtitles), so it requires a browser-compatible source video stream and text subtitles supported by the server (ASS/SSA, SRT/SubRip, WebVTT, MOV text, text, or TTML). Image/bitmap subtitles are not selectable. For an unavailable HLS client or incompatible source video, playback returns non-destructively to the original shared video with an in-app status; every client must support that file's container **and codecs**.
 - The default shared upload cap is 100 GiB per file; see the [LAN details](docs/lan-shared-playback.md#upload-lifecycle-and-limits) to change it before startup.
 
 ## Run from source or build the portable ZIP
