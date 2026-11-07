@@ -9,7 +9,7 @@ const os = require('node:os');
 const path = require('node:path');
 const { PassThrough } = require('node:stream');
 const test = require('node:test');
-const { createFfprobeRunner, createMediaServer, isHostRequest, isLoopbackRemoteAddress, parseUploadLimit, selectLanAddresses, UPLOAD_PROTOCOL } = require('../server');
+const { createFfmpegRunner, createFfprobeRunner, createMediaServer, isHostRequest, isLoopbackRemoteAddress, parseUploadLimit, resolveMediaCommand, selectLanAddresses, UPLOAD_PROTOCOL } = require('../server');
 
 function request(port, options = {}, body) {
   return new Promise((resolve, reject) => {
@@ -61,6 +61,14 @@ function appendLibrary(port, mediaIds) {
   }, Buffer.from(JSON.stringify({ mediaIds })));
 }
 
+function roomCommand(port, body, extra = {}) {
+  return request(port, {
+    path: '/api/room/commands?token=test-room-token',
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'X-Room-Token': 'test-room-token', ...extra }
+  }, Buffer.from(JSON.stringify(body)));
+}
+
 function openEvents(port) {
   return new Promise((resolve, reject) => {
     const req = http.get({ host: '127.0.0.1', port, path: '/api/events?token=test-room-token' });
@@ -101,6 +109,14 @@ async function startFixture(t, options = {}) {
   });
   return { app, port };
 }
+
+test('portable runtime resolution prefers packaged Windows tools and leaves development on PATH', () => {
+  const appDirectory = path.join(path.sep, 'portable', 'app');
+  const packaged = path.join(path.sep, 'portable', 'runtime', 'ffprobe.exe');
+  assert.equal(resolveMediaCommand('ffprobe', { appDirectory, exists: (candidate) => candidate === packaged }), packaged);
+  assert.equal(resolveMediaCommand('ffmpeg', { appDirectory, exists: () => false }), 'ffmpeg');
+  assert.throws(() => resolveMediaCommand('unknown', { appDirectory, exists: () => true }), /Unknown media tool/);
+});
 
 test('upload limit defaults to 100 GiB and preserves explicit byte configuration', () => {
   assert.equal(parseUploadLimit(undefined), 107374182400);
@@ -619,8 +635,259 @@ test('malformed static paths return an error without crashing the request listen
   assert.equal(app.server.listening, true);
 });
 
-test('factory shutdown closes SSE clients, the server, and temporary storage idempotently', async (t) => {
-  const { port, app } = await startFixture(t);
+test('host-only track selection converges through room and SSE state and validates text tracks', async (t) => {
+  const { port } = await startFixture(t, {
+    hostAuthority: (req) => req.headers['x-host'] === 'yes',
+    ffprobeRunner: async () => ({ streams: [
+      { index: 0, codec_type: 'video', codec_name: 'h264' },
+      { index: 1, codec_type: 'audio', codec_name: 'aac' },
+      { index: 2, codec_type: 'audio', codec_name: 'opus' },
+      { index: 3, codec_type: 'subtitle', codec_name: 'ass' },
+      { index: 4, codec_type: 'subtitle', codec_name: 'hdmv_pgs_subtitle' },
+      { index: 5, codec_type: 'subtitle', codec_name: 'dvd_subtitle' }
+    ] })
+  });
+  const media = JSON.parse((await rawUpload(port, 'clip.mkv', Buffer.from('media'), { 'X-Host': 'yes' })).body).media;
+  assert.equal((await replaceLibrary(port, [media.id])).status, 403);
+  assert.equal((await request(port, {
+    path: '/api/library/replace?token=test-room-token', method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'X-Room-Token': 'test-room-token', 'X-Host': 'yes' }
+  }, Buffer.from(JSON.stringify({ mediaIds: [media.id] })))).status, 200);
+
+  const events = await openEvents(port);
+  await events.nextEvent();
+  const guest = await roomCommand(port, { type: 'selectTracks', audioTrackIndex: 2, subtitleTrackIndex: 3 });
+  assert.equal(guest.status, 403);
+  const selected = await roomCommand(port, { type: 'selectTracks', audioTrackIndex: 2, subtitleTrackIndex: 3 }, { 'X-Host': 'yes' });
+  assert.equal(selected.status, 200);
+  assert.deepEqual(JSON.parse(selected.body).state.trackSelection, { audioTrackIndex: 2, subtitleTrackIndex: 3 });
+  const stateEvent = await events.nextEvent();
+  assert.equal(stateEvent.type, 'state');
+  assert.deepEqual(stateEvent.data.trackSelection, { audioTrackIndex: 2, subtitleTrackIndex: 3 });
+  assert.deepEqual(JSON.parse((await request(port, { path: '/api/room?token=test-room-token' })).body).state.trackSelection, { audioTrackIndex: 2, subtitleTrackIndex: 3 });
+
+  for (const subtitleTrackIndex of [4, 5, 99]) {
+    const rejected = await roomCommand(port, { type: 'selectTracks', audioTrackIndex: 1, subtitleTrackIndex }, { 'X-Host': 'yes' });
+    assert.equal(rejected.status, 422);
+    assert.doesNotMatch(rejected.body.toString(), /ffmpeg|path|pgs|vobsub/i);
+  }
+  const clearSubtitle = await roomCommand(port, { type: 'selectTracks', audioTrackIndex: 1, subtitleTrackIndex: null }, { 'X-Host': 'yes' });
+  assert.equal(clearSubtitle.status, 200);
+  assert.deepEqual(JSON.parse(clearSubtitle.body).state.trackSelection, { audioTrackIndex: 1, subtitleTrackIndex: null });
+  events.response.destroy();
+});
+
+test('protected HLS master playlist tokenizes generated child playlists, segments, and WebVTT renditions', async (t) => {
+  const invocations = [];
+  const { port, app } = await startFixture(t, {
+    ffprobeRunner: async () => ({ streams: [
+      { index: 0, codec_type: 'video', codec_name: 'h264' },
+      { index: 1, codec_type: 'audio', codec_name: 'aac' },
+      { index: 2, codec_type: 'subtitle', codec_name: 'subrip' }
+    ] }),
+    ffmpegRunner: async (input, outputDir, selection) => {
+      invocations.push({ input, outputDir, selection });
+      if (selection.subtitleTrackIndex === null) throw new Error('/private/ffmpeg unavailable');
+      fs.mkdirSync(outputDir, { recursive: true, mode: 0o700 });
+      fs.writeFileSync(path.join(outputDir, 'master.m3u8'), '#EXTM3U\n#EXT-X-MEDIA:TYPE=SUBTITLES,GROUP-ID="subs",URI="subtitle_0.m3u8"\n#EXT-X-STREAM-INF:BANDWIDTH=1000,SUBTITLES="subs"\nmedia_0.m3u8\n');
+      fs.writeFileSync(path.join(outputDir, 'media_0.m3u8'), '#EXTM3U\nsegment000.ts\n');
+      fs.writeFileSync(path.join(outputDir, 'subtitle_0.m3u8'), '#EXTM3U\nsubtitle_000.vtt\n');
+      fs.writeFileSync(path.join(outputDir, 'segment000.ts'), 'segment');
+      fs.writeFileSync(path.join(outputDir, 'subtitle_000.vtt'), 'WEBVTT\n');
+    }
+  });
+  const media = JSON.parse((await rawUpload(port, 'clip.mkv', Buffer.from('media'))).body).media;
+  assert.equal((await replaceLibrary(port, [media.id])).status, 200);
+  assert.equal((await roomCommand(port, { type: 'selectTracks', audioTrackIndex: 1, subtitleTrackIndex: 2 })).status, 200);
+  assert.equal((await request(port, { path: `/hls/${media.id}/master.m3u8` })).status, 401);
+  const playlist = await request(port, { path: `/hls/${media.id}/master.m3u8?token=test-room-token` });
+  assert.equal(playlist.status, 200);
+  assert.match(playlist.body.toString(), /URI="subtitle_0\.m3u8\?token=test-room-token"/);
+  assert.match(playlist.body.toString(), /media_0\.m3u8\?token=test-room-token/);
+  assert.equal(invocations.length, 1);
+  assert.equal(invocations[0].input.startsWith(app.storageDir), true);
+  assert.equal(invocations[0].outputDir.startsWith(path.join(app.storageDir, 'hls') + path.sep), true);
+  assert.deepEqual(invocations[0].selection, { audioTrackIndex: 1, subtitleTrackIndex: 2 });
+  const mediaPlaylist = await request(port, { path: `/hls/${media.id}/media_0.m3u8?token=test-room-token` });
+  assert.match(mediaPlaylist.body.toString(), /segment000\.ts\?token=test-room-token/);
+  assert.equal((await request(port, { path: `/hls/${media.id}/segment000.ts?token=test-room-token` })).status, 200);
+  const subtitlePlaylist = await request(port, { path: `/hls/${media.id}/subtitle_0.m3u8?token=test-room-token` });
+  assert.match(subtitlePlaylist.body.toString(), /subtitle_000\.vtt\?token=test-room-token/);
+  const subtitle = await request(port, { path: `/hls/${media.id}/subtitle_000.vtt?token=test-room-token` });
+  assert.equal(subtitle.status, 200);
+  assert.equal(subtitle.headers['content-type'], 'text/vtt; charset=utf-8');
+
+  assert.equal((await roomCommand(port, { type: 'selectTracks', audioTrackIndex: 1, subtitleTrackIndex: null })).status, 200);
+  assert.equal(fs.existsSync(invocations[0].outputDir), false);
+  const unavailable = await request(port, { path: `/hls/${media.id}/master.m3u8?token=test-room-token` });
+  assert.equal(unavailable.status, 503);
+  assert.doesNotMatch(unavailable.body.toString(), /ffmpeg|path|private/i);
+  assert.equal((await request(port, { path: `/media/${media.id}?token=test-room-token` })).status, 200);
+
+  assert.equal((await roomCommand(port, { type: 'selectTracks', audioTrackIndex: 1, subtitleTrackIndex: 2 })).status, 200);
+  assert.equal((await request(port, { path: `/hls/${media.id}/master.m3u8?token=test-room-token` })).status, 200);
+  const replacementDirectory = invocations.at(-1).outputDir;
+  const replacementMedia = JSON.parse((await rawUpload(port, 'replacement.mkv', Buffer.from('replacement'))).body).media;
+  assert.equal((await replaceLibrary(port, [replacementMedia.id])).status, 200);
+  assert.equal(fs.existsSync(replacementDirectory), false);
+  assert.equal((await roomCommand(port, { type: 'selectTracks', audioTrackIndex: 1, subtitleTrackIndex: 2 })).status, 200);
+  assert.equal((await request(port, { path: `/hls/${replacementMedia.id}/master.m3u8?token=test-room-token` })).status, 200);
+  const clearDirectory = invocations.at(-1).outputDir;
+  assert.equal((await request(port, { path: '/api/library/clear?token=test-room-token', method: 'POST', headers: { 'X-Room-Token': 'test-room-token' } })).status, 200);
+  assert.equal(fs.existsSync(clearDirectory), false);
+});
+
+test('HLS invalidation cancels in-flight generation for selection, library clear, and shutdown', async (t) => {
+  for (const action of ['selection', 'replace', 'clear', 'shutdown']) {
+    let cancel;
+    let outputDir;
+    let started;
+    const startedPromise = new Promise((resolve) => { started = resolve; });
+    const { port, app } = await startFixture(t, {
+      ffprobeRunner: async () => ({ streams: [
+        { index: 0, codec_type: 'video', codec_name: 'h264' },
+        { index: 1, codec_type: 'audio', codec_name: 'aac' },
+        { index: 2, codec_type: 'subtitle', codec_name: 'subrip' }
+      ] }),
+      ffmpegRunner: (input, directory) => {
+        outputDir = directory;
+        const pending = new Promise((resolve, reject) => { cancel = () => reject(new Error('cancelled')); });
+        pending.cancel = cancel;
+        started();
+        return pending;
+      }
+    });
+    const media = JSON.parse((await rawUpload(port, 'clip.mkv', Buffer.from('media'))).body).media;
+    await replaceLibrary(port, [media.id]);
+    await roomCommand(port, { type: 'selectTracks', audioTrackIndex: 1, subtitleTrackIndex: 2 });
+    const pendingRequest = request(port, { path: `/hls/${media.id}/master.m3u8?token=test-room-token` }).then(
+      (response) => ({ response }),
+      (error) => ({ error })
+    );
+    await startedPromise;
+    if (action === 'selection') await roomCommand(port, { type: 'selectTracks', audioTrackIndex: 1, subtitleTrackIndex: null });
+    if (action === 'replace') {
+      const replacement = JSON.parse((await rawUpload(port, 'replacement.mkv', Buffer.from('replacement'))).body).media;
+      await replaceLibrary(port, [replacement.id]);
+    }
+    if (action === 'clear') await request(port, { path: '/api/library/clear?token=test-room-token', method: 'POST', headers: { 'X-Room-Token': 'test-room-token' } });
+    if (action === 'shutdown') await app.close();
+    assert.equal(typeof cancel, 'function', action);
+    const outcome = await pendingRequest;
+    if (action === 'shutdown') assert.match(outcome.error?.message || '', /socket hang up/);
+    else assert.equal(outcome.response?.status, 503, action);
+    assert.equal(fs.existsSync(outputDir), false, action);
+  }
+});
+
+test('HLS admission rejects old selection requests while invalidation cleanup is paused', async (t) => {
+  let releaseCleanup;
+  let cleanupPaused;
+  const cleanupPausedPromise = new Promise((resolve) => { cleanupPaused = resolve; });
+  let generationStarted;
+  const generationStartedPromise = new Promise((resolve) => { generationStarted = resolve; });
+  let generations = 0;
+  const { port } = await startFixture(t, {
+    ffprobeRunner: async () => ({ streams: [
+      { index: 0, codec_type: 'video', codec_name: 'h264' },
+      { index: 1, codec_type: 'audio', codec_name: 'aac' },
+      { index: 2, codec_type: 'subtitle', codec_name: 'subrip' }
+    ] }),
+    ffmpegRunner: (input, outputDir) => {
+      generations += 1;
+      if (generations === 1) {
+        generationStarted();
+        const pending = new Promise((resolve, reject) => {
+          releaseCleanup = () => reject(new Error('cancelled'));
+        });
+        pending.cancel = () => cleanupPaused();
+        return pending;
+      }
+      fs.mkdirSync(outputDir, { recursive: true, mode: 0o700 });
+      fs.writeFileSync(path.join(outputDir, 'master.m3u8'), '#EXTM3U\n');
+      return Promise.resolve();
+    }
+  });
+  const media = JSON.parse((await rawUpload(port, 'clip.mkv', Buffer.from('media'))).body).media;
+  await replaceLibrary(port, [media.id]);
+  await roomCommand(port, { type: 'selectTracks', audioTrackIndex: 1, subtitleTrackIndex: 2 });
+  const initial = request(port, { path: `/hls/${media.id}/master.m3u8?token=test-room-token` });
+  await generationStartedPromise;
+  const changingSelection = roomCommand(port, { type: 'selectTracks', audioTrackIndex: 1, subtitleTrackIndex: null });
+  await cleanupPausedPromise;
+  const concurrent = await request(port, { path: `/hls/${media.id}/master.m3u8?token=test-room-token` });
+  releaseCleanup();
+  assert.equal((await changingSelection).status, 200);
+  assert.equal((await initial).status, 503);
+  assert.equal(concurrent.status, 503);
+  assert.equal(generations, 1);
+});
+
+test('ffmpeg runner uses fixed argv without a shell and reports failures without process details', async () => {
+  const child = new EventEmitter();
+  child.stdout = new PassThrough();
+  child.stderr = new PassThrough();
+  child.kill = () => true;
+  const calls = [];
+  const runner = createFfmpegRunner({
+    spawnProcess(command, args, options) {
+      calls.push({ command, args, options });
+      queueMicrotask(() => child.emit('close', 1));
+      return child;
+    }
+  });
+  await assert.rejects(runner('/safe/input.mkv', '/safe/output', { audioTrackIndex: 7, subtitleTrackIndex: 9 }), /FFmpeg failed/);
+  assert.equal(calls.length, 1);
+  assert.equal(calls[0].options.shell, false);
+  assert.deepEqual(calls[0].args.filter((arg) => /^-map$/.test(arg)).length, 3);
+  assert.equal(calls[0].args.includes('0:7'), true);
+  assert.equal(calls[0].args.includes('0:9'), true);
+  assert.equal(calls[0].args.includes('/safe/output/media_%v.m3u8'), true);
+  assert.equal(calls[0].args.includes('-master_pl_name'), true);
+  assert.equal(calls[0].args.some((arg) => arg.includes('s:0,sgroup:subs')), true);
+  assert.deepEqual(calls[0].args.slice(calls[0].args.indexOf('-c:v'), calls[0].args.indexOf('-f')), ['-c:v', 'copy', '-c:a', 'aac', '-c:s', 'webvtt']);
+  assert.equal(calls[0].args.includes('libx264'), false);
+});
+
+test('ffmpeg runner stops injected children for child, output, timeout, and output-limit failures', async () => {
+  const cases = [
+    ['child error', (child) => child.emit('error', new Error('missing')), {}],
+    ['stdout error', (child) => child.stdout.emit('error', new Error('broken')), {}],
+    ['stderr error', (child) => child.stderr.emit('error', new Error('broken')), {}],
+    ['timeout', () => {}, { timeoutMs: 1 }],
+    ['output limit', (child) => child.stderr.write(Buffer.from('too much')), { maximumOutputBytes: 1 }]
+  ];
+  for (const [name, trigger, options] of cases) {
+    const child = new EventEmitter();
+    child.stdout = new PassThrough();
+    child.stderr = new PassThrough();
+    let kills = 0;
+    child.kill = () => { kills += 1; return true; };
+    const runner = createFfmpegRunner({
+      ...options,
+      spawnProcess() {
+        queueMicrotask(() => trigger(child));
+        return child;
+      }
+    });
+    await assert.rejects(runner('/safe/input.mkv', '/safe/output', { audioTrackIndex: 7, subtitleTrackIndex: null }), /FFmpeg/);
+    assert.equal(kills, 1, name);
+  }
+});
+
+test('factory shutdown closes SSE clients, generated HLS artifacts, the server, and temporary storage idempotently', async (t) => {
+  const { port, app } = await startFixture(t, {
+    ffprobeRunner: async () => ({ streams: [{ index: 0, codec_type: 'video', codec_name: 'h264' }, { index: 1, codec_type: 'audio', codec_name: 'aac' }] }),
+    ffmpegRunner: async (input, outputDir) => {
+      fs.mkdirSync(outputDir, { recursive: true, mode: 0o700 });
+      fs.writeFileSync(path.join(outputDir, 'index.m3u8'), '#EXTM3U\\n');
+    }
+  });
+  const media = JSON.parse((await rawUpload(port, 'clip.mkv', Buffer.from('media'))).body).media;
+  await replaceLibrary(port, [media.id]);
+  await roomCommand(port, { type: 'selectTracks', audioTrackIndex: 1, subtitleTrackIndex: null });
+  assert.equal((await request(port, { path: `/hls/${media.id}/index.m3u8?token=test-room-token` })).status, 200);
+  assert.equal(fs.existsSync(path.join(app.storageDir, 'hls')), true);
   const eventResponse = await new Promise((resolve, reject) => {
     const events = http.get({ host: '127.0.0.1', port, path: '/api/events?token=test-room-token' });
     events.once('response', resolve);

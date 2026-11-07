@@ -15,6 +15,13 @@ const SHARE_LAN = process.env.SHARE_LAN === '1';
 const HOST = SHARE_LAN ? '0.0.0.0' : '127.0.0.1';
 const PUBLIC_DIR = path.join(__dirname, 'public');
 const DEFAULT_MAX_UPLOAD_BYTES = 100 * 1024 * 1024 * 1024;
+const MEDIA_TOOLS = new Set(['ffmpeg', 'ffprobe']);
+
+function resolveMediaCommand(tool, { appDirectory = __dirname, exists = fs.existsSync } = {}) {
+  if (!MEDIA_TOOLS.has(tool)) throw new RangeError('Unknown media tool');
+  const packaged = path.resolve(appDirectory, '..', 'runtime', `${tool}.exe`);
+  return exists(packaged) ? packaged : tool;
+}
 
 function parseUploadLimit(value) {
   if (value === undefined || value === '') return DEFAULT_MAX_UPLOAD_BYTES;
@@ -35,6 +42,9 @@ const MAX_COMMAND_BYTES = 16 * 1024;
 const MAX_POSITION_SECONDS = 7 * 24 * 60 * 60;
 const MAX_FFPROBE_OUTPUT_BYTES = 1024 * 1024;
 const FFPROBE_TIMEOUT_MS = 10_000;
+const MAX_FFMPEG_OUTPUT_BYTES = 1024 * 1024;
+const FFMPEG_TIMEOUT_MS = 5 * 60_000;
+const TEXT_SUBTITLE_CODECS = new Set(['ass', 'ssa', 'subrip', 'srt', 'webvtt', 'mov_text', 'text', 'ttml']);
 
 const MIME_TYPES = {
   '.html': 'text/html; charset=utf-8',
@@ -227,7 +237,7 @@ function normalizeMediaTracks(output) {
 }
 
 function createFfprobeRunner({
-  command = 'ffprobe',
+  command = resolveMediaCommand('ffprobe'),
   spawnProcess = spawn,
   timeoutMs = FFPROBE_TIMEOUT_MS,
   maximumOutputBytes = MAX_FFPROBE_OUTPUT_BYTES
@@ -279,6 +289,74 @@ function createFfprobeRunner({
   });
 }
 
+function createFfmpegRunner({
+  command = resolveMediaCommand('ffmpeg'),
+  spawnProcess = spawn,
+  timeoutMs = FFMPEG_TIMEOUT_MS,
+  maximumOutputBytes = MAX_FFMPEG_OUTPUT_BYTES
+} = {}) {
+  return (inputPath, outputDir, selection) => {
+    let cancel = () => {};
+    const result = new Promise((resolve, reject) => {
+      const hasSubtitle = selection.subtitleTrackIndex !== null;
+      const args = ['-y', '-v', 'error', '-i', inputPath, '-map', '0:v:0', '-map', `0:${selection.audioTrackIndex}`];
+      if (hasSubtitle) args.push('-map', `0:${selection.subtitleTrackIndex}`);
+      args.push('-c:v', 'copy', '-c:a', 'aac');
+      if (hasSubtitle) args.push('-c:s', 'webvtt');
+      args.push('-f', 'hls', '-hls_time', '6', '-hls_list_size', '0', '-hls_segment_filename', path.join(outputDir, 'segment_%v_%05d.ts'), '-master_pl_name', 'master.m3u8');
+      if (hasSubtitle) args.push('-var_stream_map', 'v:0,a:0,s:0,sgroup:subs');
+      args.push(path.join(outputDir, 'media_%v.m3u8'));
+      let child;
+      try {
+        child = spawnProcess(command, args, { shell: false, stdio: ['ignore', 'pipe', 'pipe'] });
+      } catch (error) {
+        reject(error);
+        return;
+      }
+      let outputSize = 0;
+      let settled = false;
+      let timeout;
+      const finish = (error) => {
+        if (settled) return;
+        settled = true;
+        clearTimeout(timeout);
+        if (error) reject(error); else resolve();
+      };
+      const stop = (message) => {
+        if (settled) return;
+        try { child.kill(); } catch {}
+        finish(new Error(message));
+      };
+      cancel = () => stop('FFmpeg cancelled');
+      timeout = setTimeout(() => stop('FFmpeg timed out'), timeoutMs);
+      child.once('error', () => stop('FFmpeg unavailable'));
+      const observeOutput = (stream) => {
+        stream.on('error', () => stop('FFmpeg output failed'));
+        stream.on('data', (chunk) => {
+          outputSize += chunk.length;
+          if (outputSize > maximumOutputBytes) stop('FFmpeg output exceeded limit');
+        });
+      };
+      observeOutput(child.stdout);
+      observeOutput(child.stderr);
+      child.once('close', (code) => finish(code === 0 ? null : new Error('FFmpeg failed')));
+    });
+    result.cancel = () => cancel();
+    return result;
+  };
+}
+
+function tokenizeHlsManifest(manifest, token) {
+  const addToken = (uri) => /^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$/.test(uri)
+    ? `${uri}?token=${encodeURIComponent(token)}`
+    : uri;
+  return manifest.split(/(\r?\n)/).map((part) => {
+    if (!part || /^\r?\n$/.test(part)) return part;
+    if (!part.startsWith('#')) return addToken(part);
+    return part.replace(/URI="([^"]+)"/g, (match, uri) => `URI="${addToken(uri)}"`);
+  }).join('');
+}
+
 function parseRange(range, size) {
   if (!range) return null;
   const match = /^bytes=(\d*)-(\d*)$/.exec(range);
@@ -304,7 +382,8 @@ function createMediaServer({
   maxUploadBytes = MAX_UPLOAD_BYTES,
   hostAuthority = isHostRequest,
   lanAddresses = () => selectLanAddresses(os.networkInterfaces()),
-  ffprobeRunner = createFfprobeRunner()
+  ffprobeRunner = createFfprobeRunner(),
+  ffmpegRunner = createFfmpegRunner()
 } = {}) {
   if (!Number.isSafeInteger(maxUploadBytes) || maxUploadBytes <= 0) {
     throw new RangeError('maxUploadBytes must be a positive whole number of bytes');
@@ -313,7 +392,10 @@ function createMediaServer({
   const library = new Map();
   const stagedMedia = new Map();
   const clients = new Set();
-  let state = { mediaId: null, playing: false, position: 0, sequence: 0, updatedAt: Date.now() };
+  const hlsRoot = path.join(storageDir, 'hls');
+  const hlsArtifacts = new Map();
+  let hlsInvalidations = 0;
+  let state = { mediaId: null, playing: false, position: 0, trackSelection: { audioTrackIndex: null, subtitleTrackIndex: null }, sequence: 0, updatedAt: Date.now() };
 
   function publicMedia(media) {
     return { id: media.id, contentId: media.contentId, name: media.name, size: media.size, mime: media.mime, uploadedAt: media.uploadedAt, tracks: media.tracks };
@@ -356,7 +438,19 @@ function createMediaServer({
     return roomState();
   }
   function resetRoomState() {
-    return { mediaId: null, playing: false, position: 0 };
+    return { mediaId: null, playing: false, position: 0, trackSelection: { audioTrackIndex: null, subtitleTrackIndex: null } };
+  }
+  async function clearHlsArtifacts() {
+    hlsInvalidations += 1;
+    const artifacts = [...hlsArtifacts.values()];
+    hlsArtifacts.clear();
+    try {
+      for (const artifact of artifacts) artifact.cancel?.();
+      await Promise.allSettled(artifacts.map((artifact) => artifact.promise).filter(Boolean));
+      await fsp.rm(hlsRoot, { recursive: true, force: true });
+    } finally {
+      hlsInvalidations -= 1;
+    }
   }
   async function removeMedia(media) {
     const diskName = path.basename(media.diskName);
@@ -390,7 +484,8 @@ function createMediaServer({
       library.clear();
       stagedMedia.clear();
       for (const media of replacement) library.set(media.id, media);
-      updateState({ mediaId: replacement[0].id, playing: false, position }, { libraryChanged: true });
+      updateState({ mediaId: replacement[0].id, playing: false, position, trackSelection: { audioTrackIndex: null, subtitleTrackIndex: null } }, { libraryChanged: true });
+      await clearHlsArtifacts();
       await Promise.all(obsolete.map(removeMedia));
       sendJson(res, 200, { media: [...library.values()].map(publicMedia), state: roomState() });
     } catch (error) {
@@ -422,6 +517,7 @@ function createMediaServer({
     library.clear();
     stagedMedia.clear();
     updateState(resetRoomState(), { libraryChanged: true });
+    await clearHlsArtifacts();
     await Promise.all(obsolete.map(removeMedia));
     sendJson(res, 200, { media: [], state: roomState() });
   }
@@ -482,14 +578,79 @@ function createMediaServer({
     stream.on('error', () => { if (!res.headersSent) send(res, 500, 'Media unavailable'); else res.destroy(); });
     stream.pipe(res);
   }
+  function selectedTracks(media, selection) {
+    if (!media || media.tracks?.status !== 'available') return false;
+    const audio = media.tracks.audio.find((track) => track.index === selection.audioTrackIndex);
+    const subtitle = selection.subtitleTrackIndex === null ? null : media.tracks.subtitles.find((track) => track.index === selection.subtitleTrackIndex);
+    return Boolean(audio) && (selection.subtitleTrackIndex === null || (subtitle && TEXT_SUBTITLE_CODECS.has(subtitle.codec)));
+  }
+  async function serveHls(req, res, url, mediaId, artifactName) {
+    const media = library.get(mediaId);
+    if (hlsInvalidations || !media || state.mediaId !== mediaId || !selectedTracks(media, state.trackSelection)) return send(res, 503, 'HLS unavailable');
+    let artifact = hlsArtifacts.get(mediaId);
+    if (!artifact) {
+      const directory = path.join(hlsRoot, crypto.randomBytes(18).toString('hex'));
+      const selection = { ...state.trackSelection };
+      const entry = { directory, selection, promise: null, cancel: null };
+      entry.promise = (async () => {
+        try {
+          await fsp.mkdir(directory, { recursive: true, mode: 0o700 });
+          if (hlsArtifacts.get(mediaId) !== entry) throw new Error('HLS selection replaced');
+          const running = ffmpegRunner(path.join(storageDir, media.diskName), directory, selection);
+          entry.cancel = typeof running?.cancel === 'function' ? () => running.cancel() : null;
+          await running;
+          if (hlsArtifacts.get(mediaId) !== entry || state.mediaId !== mediaId || state.trackSelection.audioTrackIndex !== selection.audioTrackIndex || state.trackSelection.subtitleTrackIndex !== selection.subtitleTrackIndex) throw new Error('HLS selection replaced');
+          const ready = { directory, selection };
+          hlsArtifacts.set(mediaId, ready);
+          return ready;
+        } catch (error) {
+          await fsp.rm(directory, { recursive: true, force: true });
+          throw error;
+        }
+      })();
+      hlsArtifacts.set(mediaId, entry);
+      entry.promise.catch(() => {});
+      try { artifact = await entry.promise; } catch { if (hlsArtifacts.get(mediaId) === entry) hlsArtifacts.delete(mediaId); return send(res, 503, 'HLS unavailable'); }
+    } else if (artifact.promise) {
+      try { artifact = await artifact.promise; } catch { if (hlsArtifacts.get(mediaId) === artifact) hlsArtifacts.delete(mediaId); return send(res, 503, 'HLS unavailable'); }
+    }
+    if (!/^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$/.test(artifactName)) return send(res, 404, 'Not Found');
+    const filePath = path.join(artifact.directory, artifactName);
+    if (!filePath.startsWith(artifact.directory + path.sep)) return send(res, 404, 'Not Found');
+    try {
+      const stat = await fsp.stat(filePath);
+      if (!stat.isFile()) return send(res, 404, 'Not Found');
+      const isPlaylist = artifactName.endsWith('.m3u8');
+      const contentType = isPlaylist ? 'application/vnd.apple.mpegurl' : artifactName.endsWith('.ts') ? 'video/mp2t' : artifactName.endsWith('.vtt') ? 'text/vtt; charset=utf-8' : 'application/octet-stream';
+      if (isPlaylist) {
+        const manifest = await fsp.readFile(filePath, 'utf8');
+        const body = Buffer.from(tokenizeHlsManifest(manifest, token));
+        res.writeHead(200, { 'Content-Type': contentType, 'Content-Length': body.length, 'Cache-Control': 'no-store', 'X-Content-Type-Options': 'nosniff' });
+        return req.method === 'HEAD' ? res.end() : res.end(body);
+      }
+      res.writeHead(200, { 'Content-Type': contentType, 'Content-Length': stat.size, 'Cache-Control': 'no-store', 'X-Content-Type-Options': 'nosniff' });
+      if (req.method === 'HEAD') return res.end();
+      fs.createReadStream(filePath).on('error', () => res.destroy()).pipe(res);
+    } catch { return send(res, 404, 'Not Found'); }
+  }
   async function command(req, res) {
     try {
       const body = JSON.parse((await readRequestBody(req, MAX_COMMAND_BYTES)).toString('utf8'));
       if (!body || typeof body !== 'object' || typeof body.type !== 'string') throw Object.assign(new Error('Invalid room command'), { statusCode: 400 });
       const next = { ...state };
+      let invalidatesHls = false;
       if (body.type === 'select') {
         if (typeof body.mediaId !== 'string' || !library.has(body.mediaId)) throw Object.assign(new Error('Unknown media ID'), { statusCode: 422 });
-        next.mediaId = body.mediaId; next.position = 0;
+        invalidatesHls = body.mediaId !== state.mediaId;
+        next.mediaId = body.mediaId; next.position = 0; next.trackSelection = { audioTrackIndex: null, subtitleTrackIndex: null };
+      } else if (body.type === 'selectTracks') {
+        if (!hostAuthority(req)) throw Object.assign(new Error('Only the localhost host may select embedded tracks'), { statusCode: 403 });
+        const selection = { audioTrackIndex: body.audioTrackIndex, subtitleTrackIndex: body.subtitleTrackIndex === undefined ? null : body.subtitleTrackIndex };
+        if (!Number.isSafeInteger(selection.audioTrackIndex) || selection.audioTrackIndex < 0 || (selection.subtitleTrackIndex !== null && (!Number.isSafeInteger(selection.subtitleTrackIndex) || selection.subtitleTrackIndex < 0)) || !selectedTracks(library.get(state.mediaId), selection)) {
+          throw Object.assign(new Error('Invalid embedded track selection'), { statusCode: 422 });
+        }
+        invalidatesHls = true;
+        next.trackSelection = selection;
       } else if (body.type === 'play' || body.type === 'pause') {
         if (body.position !== undefined) {
           if (!Number.isFinite(body.position) || body.position < 0 || body.position > MAX_POSITION_SECONDS) throw Object.assign(new Error('Invalid seek position'), { statusCode: 422 });
@@ -504,10 +665,14 @@ function createMediaServer({
         if (!items.length) throw Object.assign(new Error('Library is empty'), { statusCode: 422 });
         const current = items.findIndex((item) => item.id === state.mediaId);
         const index = current === -1 ? (body.type === 'previous' ? items.length - 1 : 0) : (current + (body.type === 'next' ? 1 : -1) + items.length) % items.length;
+        invalidatesHls = items[index].id !== state.mediaId;
         next.mediaId = items[index].id;
         next.position = 0;
+        next.trackSelection = { audioTrackIndex: null, subtitleTrackIndex: null };
       } else throw Object.assign(new Error('Unsupported room command'), { statusCode: 400 });
-      sendJson(res, 200, { state: updateState(next) });
+      const room = updateState(next);
+      if (invalidatesHls) await clearHlsArtifacts();
+      sendJson(res, 200, { state: room });
     } catch (error) {
       sendJson(res, error.statusCode || 400, { error: error.statusCode ? error.message : 'Invalid room command' });
     }
@@ -534,7 +699,7 @@ function createMediaServer({
     const requestId = crypto.randomBytes(6).toString('hex');
     res.setHeader('X-Request-Id', requestId);
     const url = new URL(req.url || '/', 'http://localhost');
-    const protectedRoute = url.pathname === '/api/session' || url.pathname === '/api/upload' || url.pathname === '/api/library' || url.pathname === '/api/library/replace' || url.pathname === '/api/library/append' || url.pathname === '/api/library/clear' || url.pathname === '/api/room' || url.pathname === '/api/room/commands' || url.pathname === '/api/events' || url.pathname.startsWith('/media/');
+    const protectedRoute = url.pathname === '/api/session' || url.pathname === '/api/upload' || url.pathname === '/api/library' || url.pathname === '/api/library/replace' || url.pathname === '/api/library/append' || url.pathname === '/api/library/clear' || url.pathname === '/api/room' || url.pathname === '/api/room/commands' || url.pathname === '/api/events' || url.pathname.startsWith('/media/') || url.pathname.startsWith('/hls/');
     if (protectedRoute && !requireToken(req, res, url)) return;
     if (url.pathname === '/api/session') return req.method === 'GET' ? sendJson(res, 200, { role: hostAuthority(req) ? 'host' : 'guest', roomUrl: getRoomUrl() }) : send(res, 405, 'Method Not Allowed', { Allow: 'GET' });
     if (url.pathname === '/api/upload') return req.method === 'POST' ? (requireHost(req, res) ? upload(req, res) : undefined) : send(res, 405, 'Method Not Allowed', { Allow: 'POST' });
@@ -543,6 +708,10 @@ function createMediaServer({
     if (url.pathname === '/api/library/clear') return req.method === 'POST' ? (requireHost(req, res) ? clearLibrary(res) : undefined) : send(res, 405, 'Method Not Allowed', { Allow: 'POST' });
     if (url.pathname === '/api/library') return req.method === 'GET' ? sendJson(res, 200, { media: [...library.values()].map(publicMedia) }) : send(res, 405, 'Method Not Allowed', { Allow: 'GET' });
     if (url.pathname.startsWith('/media/')) return (req.method === 'GET' || req.method === 'HEAD') ? streamMedia(req, res, url.pathname.slice('/media/'.length)) : send(res, 405, 'Method Not Allowed', { Allow: 'GET, HEAD' });
+    if (url.pathname.startsWith('/hls/')) {
+      const parts = url.pathname.slice('/hls/'.length).split('/');
+      return (req.method === 'GET' || req.method === 'HEAD') && parts.length === 2 ? serveHls(req, res, url, parts[0], parts[1]) : send(res, 404, 'Not Found');
+    }
     if (url.pathname === '/api/room') return req.method === 'GET' ? sendJson(res, 200, { state: roomState() }) : send(res, 405, 'Method Not Allowed', { Allow: 'GET' });
     if (url.pathname === '/api/room/commands') return req.method === 'POST' ? command(req, res) : send(res, 405, 'Method Not Allowed', { Allow: 'POST' });
     if (url.pathname === '/api/events') {
@@ -572,6 +741,7 @@ function createMediaServer({
   });
   let closePromise;
   async function cleanup() {
+    await clearHlsArtifacts();
     await fsp.rm(storageDir, { recursive: true, force: true });
   }
   function closeServer() {
@@ -628,4 +798,4 @@ if (require.main === module) {
   app.server.on('error', (error) => { console.error(error.message); process.exitCode = 1; void shutdown(); });
 }
 
-module.exports = { createFfprobeRunner, createMediaServer, isHostRequest, isLoopbackRemoteAddress, normalizeMediaTracks, parseRange, parseUploadLimit, selectLanAddresses, UPLOAD_PROTOCOL };
+module.exports = { createFfmpegRunner, createFfprobeRunner, createMediaServer, isHostRequest, isLoopbackRemoteAddress, normalizeMediaTracks, parseRange, parseUploadLimit, resolveMediaCommand, selectLanAddresses, UPLOAD_PROTOCOL };

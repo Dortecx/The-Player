@@ -21,7 +21,7 @@ flowchart TD
 - `start.cmd` is **local-only**: use it for files that stay in this browser.
 - `LAN.cmd` explicitly starts **shared mode**: use it only when the host and clients are on the same trusted Wi-Fi/LAN.
 - Each launcher opens the browser automatically after the server is ready and keeps its console as the server lifecycle owner. Close that launcher console to stop its server.
-- The ZIP includes `runtime\node.exe`; end users do not need Node.js, npm, or `npm install`.
+- The ZIP includes `runtime\node.exe`, `runtime\ffmpeg.exe`, and `runtime\ffprobe.exe`; end users do not need Node.js, FFmpeg, npm, or `npm install`.
 
 ## Local playback
 
@@ -46,8 +46,8 @@ For upload behavior and limits, host/guest permissions, mobile fullscreen gestur
 
 ## Limits
 
-- Shared playback is direct browser playback: there is no transcoding, remuxing, subtitles, QR discovery, or Internet relay.
-- Every client must support the selected file container **and codecs**.
+- Shared playback is direct browser playback: there is no browser track-selection UI yet, QR discovery, or Internet relay. The bundled FFmpeg runtime prepares server-side HLS delivery for a future embedded-audio/text-subtitle selection feature.
+- HLS track selection stream-copies the source video (while producing AAC audio and WebVTT text subtitles), so it requires a browser-compatible source video stream. For incompatible video codecs, raw `/media` playback remains the fallback; every client must support that file's container **and codecs**.
 - The default shared upload cap is 100 GiB per file; see the [LAN details](docs/lan-shared-playback.md#upload-lifecycle-and-limits) to change it before startup.
 
 ## Run from source or build the portable ZIP
@@ -68,7 +68,7 @@ To build the Windows portable ZIP on Windows:
 npm run build:portable:win
 ```
 
-This creates `portable-win\The-Player-1.5.4-windows.zip`. The release ZIP and generated ZIP include both `start.cmd` (local-only) and `LAN.cmd` (shared mode).
+This creates `portable-win\The-Player-1.5.4-windows.zip`. The Windows build downloads the pinned BtbN 64-bit LGPL FFmpeg archive, refuses a SHA-256 mismatch, copies its FFmpeg/FFprobe binaries and notices into the ZIP, then validates an embedded-text-subtitle MKV → HLS/WebVTT fixture with copied video. It requires Internet access while building; end users install nothing extra. The release ZIP and generated ZIP include both `start.cmd` (local-only) and `LAN.cmd` (shared mode).
 
 Repository: <https://github.com/Dortecx/The-Player> · Release: <https://github.com/Dortecx/The-Player/releases/tag/v1.5.4>
 

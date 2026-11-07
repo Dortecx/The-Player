@@ -21,7 +21,7 @@ flowchart TD
 - `start.cmd` es **solo local**: usalo para archivos que quedan en este navegador.
 - `LAN.cmd` inicia explícitamente el **modo compartido**: usalo solo si el host y los clientes están en la misma Wi-Fi/LAN confiable.
 - Cada launcher abre el navegador automáticamente cuando el servidor está listo y mantiene su consola como dueña del ciclo de vida del servidor. Cerrá esa consola para detener su servidor.
-- El ZIP incluye `runtime\node.exe`; quienes usan el paquete no necesitan Node.js, npm ni `npm install`.
+- El ZIP incluye `runtime\node.exe`, `runtime\ffmpeg.exe` y `runtime\ffprobe.exe`; quienes usan el paquete no necesitan Node.js, FFmpeg, npm ni `npm install`.
 
 ## Reproducción local
 
@@ -46,8 +46,8 @@ Para el comportamiento y los límites de subida, los permisos de host/invitado, 
 
 ## Límites
 
-- La reproducción compartida es directa en el navegador: no hay transcodificación, remux, subtítulos, descubrimiento por QR ni relay por Internet.
-- Cada cliente debe soportar el contenedor **y los códecs** del archivo elegido.
+- La reproducción compartida es directa en el navegador: todavía no hay UI de selección de pistas, descubrimiento por QR ni relay por Internet. El runtime de FFmpeg incluido prepara la entrega HLS del servidor para una futura selección de audio interno/subtítulos de texto.
+- La selección de pistas HLS copia el video de origen (mientras genera audio AAC y subtítulos de texto WebVTT), por lo que requiere un flujo de video de origen compatible con el navegador. Para códecs de video incompatibles, la reproducción cruda en `/media` sigue siendo la alternativa; cada cliente debe soportar el contenedor **y los códecs** de ese archivo.
 - El límite predeterminado de subida compartida es 100 GiB por archivo; consultá los [detalles LAN](docs/lan-shared-playback.es.md#ciclo-de-carga-y-límites) para cambiarlo antes de iniciar.
 
 ## Ejecutar desde el código fuente o crear el ZIP portátil
@@ -68,7 +68,7 @@ Para crear el ZIP portátil de Windows en Windows:
 npm run build:portable:win
 ```
 
-Esto crea `portable-win\The-Player-1.5.4-windows.zip`. El ZIP del release y el ZIP generado incluyen `start.cmd` (solo local) y `LAN.cmd` (modo compartido).
+Esto crea `portable-win\The-Player-1.5.4-windows.zip`. El build de Windows descarga el archivo LGPL de FFmpeg BtbN de 64 bits fijado, rechaza un SHA-256 distinto, copia sus binarios FFmpeg/FFprobe y avisos dentro del ZIP, y luego valida una fixture MKV con subtítulo de texto interno → HLS/WebVTT con video copiado. Requiere Internet durante el build; las personas usuarias no instalan nada extra. El ZIP del release y el ZIP generado incluyen `start.cmd` (solo local) y `LAN.cmd` (modo compartido).
 
 Repositorio: <https://github.com/Dortecx/The-Player> · Release: <https://github.com/Dortecx/The-Player/releases/tag/v1.5.4>
 
