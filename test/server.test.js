@@ -393,7 +393,7 @@ test('portable build bounds every runtime process and parses when Windows PowerS
   assert.doesNotMatch(script, /& \$Ffprobe/);
   assert.match(script, /\$curlCommand = Get-Command curl\.exe -CommandType Application -ErrorAction SilentlyContinue/);
   assert.match(script, /if \(-not \$curlCommand\) \{\s*throw 'Windows curl\.exe is required to download the pinned FFmpeg asset, but was not found\.'/);
-  assert.match(script, /\[ValidateSet\(115, 180, 600, 900\)\]\[int\]\$FfmpegDownloadTimeoutSeconds = 115/);
+  assert.match(script, /\[ValidateSet\(115, 180, 600, 900, 1800\)\]\[int\]\$FfmpegDownloadTimeoutSeconds = 115/);
   assert.match(script, /\[ValidateRange\(1, 905\)\]\[int\]\$TimeoutSeconds = 60/);
   assert.match(script, /\$downloadStateRoot = Join-Path \$tempRoot 'the-player-ffmpeg-download-v1'/);
   assert.match(script, /Invoke-ResumableFfmpegDownload -Curl \$curlCommand\.Source -Url \$ffmpegAssetUrl -Sha256 \$ffmpegAssetSha256 -StageArchive \$ffmpegArchive -TimeoutSeconds \$FfmpegDownloadTimeoutSeconds -StateRoot \$downloadStateRoot/);

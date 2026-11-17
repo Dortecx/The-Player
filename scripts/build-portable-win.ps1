@@ -2,7 +2,7 @@
 [CmdletBinding()]
 param(
     [string]$OutputDirectory = "portable-win",
-    [ValidateSet(115, 180, 600, 900)][int]$FfmpegDownloadTimeoutSeconds = 115
+    [ValidateSet(115, 180, 600, 900, 1800)][int]$FfmpegDownloadTimeoutSeconds = 115
 )
 
 Set-StrictMode -Version Latest
