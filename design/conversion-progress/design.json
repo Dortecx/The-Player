@@ -1,0 +1,16 @@
+{
+  "title": "Complete VOD conversion progress",
+  "brief": "A discreet, truthful progress overlay on the lower edge of the player while a complete compatible VOD is prepared for hosts and guests.",
+  "feature": "odd/tasks/internal-mkv-tracks.md",
+  "placement": "Inside the player, pinned to the lower video edge; it never becomes a separate page panel.",
+  "implementation_notes": [
+    "Render percentage and ETA only from reported conversion values; the numeric values in measurable artboards are layout specimens, not product defaults.",
+    "Use the indeterminate preparation state until measurable progress exists, and explicitly say ETA is unavailable when it cannot be calculated.",
+    "Keep progressbar semantics, AA-contrast text, DOM reading order, narrow-screen stacking, and no nonessential motion."
+  ],
+  "artboards": [
+    { "file": "01-initial-preparing.html", "title": "Initial preparation", "tradeoff": "Uses a static indeterminate treatment and deliberately withholds percentage and ETA until conversion reports them.", "width": 1440, "height": 900 },
+    { "file": "02-measurable-progress.html", "title": "Measured progress", "tradeoff": "Makes reported percentage and ETA immediately scannable without obscuring the player; shown values are layout specimens.", "width": 1440, "height": 900 },
+    { "file": "03-estimate-unavailable.html", "title": "Measured progress without ETA", "tradeoff": "Preserves a reported percentage while explicitly declining to invent a remaining-time estimate.", "width": 1440, "height": 900 }
+  ]
+}

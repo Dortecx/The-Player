@@ -1,0 +1,15 @@
+{
+  "version": 1,
+  "chosen": "02-measurable-progress.html",
+  "handoffs": {
+    "02-measurable-progress.html": {
+      "status": "implemented",
+      "queued": false,
+      "sentAt": "2026-11-12T02:07:30.114Z",
+      "startedAt": "2026-11-12T02:07:34.068Z",
+      "implementedAt": "2026-11-12T03:13:24.243Z",
+      "feature": "odd/tasks/internal-mkv-tracks.md",
+      "note": "Implemented authoritative FFmpeg progress overlay with accessible measurable, indeterminate, and ETA-unavailable states."
+    }
+  }
+}
