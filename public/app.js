@@ -3241,7 +3241,7 @@ async function saveActiveProgress({ watched = false, allowThresholdWatched = tru
 
 async function playRelative(offset, options = {}) {
   if (state.items.length === 1) {
-    updateStatus(t('statusSingleFileNavigation'));
+    showCopyToast(t('statusSingleFileNavigation'));
     return;
   }
   if (isSharedMode()) {
@@ -3256,7 +3256,7 @@ async function playRelative(offset, options = {}) {
 
 async function skipToNext() {
   if (state.items.length === 1) {
-    updateStatus(t('statusSingleFileNavigation'));
+    showCopyToast(t('statusSingleFileNavigation'));
     return;
   }
   if (isSharedMode()) {
@@ -3272,7 +3272,7 @@ async function markCurrentWatchedAndNext() {
   if (!item) return;
   await saveActiveProgress({ watched: true });
   if (state.items.length === 1) {
-    updateStatus(t('statusSingleFileWatched', { name: item.relativePath }));
+    showCopyToast(t('statusSingleFileWatched', { name: item.relativePath }));
     return;
   }
   updateStatus(t('statusMarkedWatched', { name: item.relativePath }));

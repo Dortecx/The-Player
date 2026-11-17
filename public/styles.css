@@ -280,9 +280,7 @@ button:focus-visible,
 .playlist-action-button:focus-visible,
 .playlist-action-button:focus-within,
 .transport-action-button:hover:not(:disabled),
-.transport-action-button:focus,
-.transport-action-button:focus-visible,
-.transport-action-button:focus-within {
+.transport-action-button:focus-visible {
   gap: 0;
   padding: 0 0.95rem;
   width: 7rem;
@@ -297,23 +295,17 @@ button:focus-visible,
 }
 
 #prevButton.transport-action-button:hover:not(:disabled),
-#prevButton.transport-action-button:focus,
-#prevButton.transport-action-button:focus-visible,
-#prevButton.transport-action-button:focus-within {
+#prevButton.transport-action-button:focus-visible {
   width: 7.5rem;
 }
 
 #nextButton.transport-action-button:hover:not(:disabled),
-#nextButton.transport-action-button:focus,
-#nextButton.transport-action-button:focus-visible,
-#nextButton.transport-action-button:focus-within {
+#nextButton.transport-action-button:focus-visible {
   width: 8.5rem;
 }
 
 .mark-watched-action-button:hover:not(:disabled),
-.mark-watched-action-button:focus,
-.mark-watched-action-button:focus-visible,
-.mark-watched-action-button:focus-within {
+.mark-watched-action-button:focus-visible {
   width: 13.5rem;
 }
 
@@ -339,9 +331,7 @@ button:focus-visible,
 }
 
 .transport-action-button:hover:not(:disabled) .action-icon,
-.transport-action-button:focus .action-icon,
-.transport-action-button:focus-visible .action-icon,
-.transport-action-button:focus-within .action-icon {
+.transport-action-button:focus-visible .action-icon {
   flex-basis: 0;
   opacity: 0;
   transform: scale(0.8);
@@ -353,9 +343,7 @@ button:focus-visible,
 .playlist-action-button:focus-visible .button-text,
 .playlist-action-button:focus-within .button-text,
 .transport-action-button:hover:not(:disabled) .button-text,
-.transport-action-button:focus .button-text,
-.transport-action-button:focus-visible .button-text,
-.transport-action-button:focus-within .button-text {
+.transport-action-button:focus-visible .button-text {
   flex: 1 1 auto;
   max-width: 11.5rem;
   opacity: 1;
