@@ -2186,7 +2186,9 @@ function clearVideoTextTracks() {
 
 function clearSharedPlaybackForLibraryClear() {
   // Clearing is terminal, not a source switch: detach before the request waits
-  // for server-side FFmpeg cancellation.
+  // for server-side FFmpeg cancellation. Leave fullscreen too: without media,
+  // mobile clients need their browser dock available without an extra gesture.
+  void exitFullscreenMode();
   state.shared.roomApplyId += 1;
   state.shared.applyingRemote = false;
   state.shared.desiredPlaying = false;

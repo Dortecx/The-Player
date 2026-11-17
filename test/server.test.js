@@ -3506,8 +3506,8 @@ test('browser clear detaches HLS, removes subtitle cues, and invalidates stale c
     state.shared.hls.mediaId = null;
     state.shared.hls.preparationKey = null;
   };
-  const clear = new Function('state', 'elements', 'destroyHlsClient', 'renderConversionProgress', 'setTrackPlaybackStatus', `${clearTracks}\n${clearPlayback}\nreturn clearSharedPlaybackForLibraryClear;`)(
-    state, elements, destroyHlsClient, (...args) => calls.push(['overlay', ...args]), (...args) => calls.push(['status', ...args])
+  const clear = new Function('state', 'elements', 'destroyHlsClient', 'renderConversionProgress', 'setTrackPlaybackStatus', 'exitFullscreenMode', `${clearTracks}\n${clearPlayback}\nreturn clearSharedPlaybackForLibraryClear;`)(
+    state, elements, destroyHlsClient, (...args) => calls.push(['overlay', ...args]), (...args) => calls.push(['status', ...args]), () => calls.push('exit-fullscreen')
   );
   clear();
   assert.deepEqual(removedCues, ['cue-1']);
@@ -3516,6 +3516,7 @@ test('browser clear detaches HLS, removes subtitle cues, and invalidates stale c
   assert.equal(state.shared.hls.selectionKey, null);
   assert.equal(state.shared.hls.playbackFailureStage, null);
   assert.equal(state.shared.desiredPlaying, false);
+  assert.ok(calls.includes('exit-fullscreen'), 'a terminal shared clear leaves fullscreen so mobile controls remain accessible');
   assert.ok(calls.includes('destroy'));
   assert.ok(calls.includes('remove:src'));
   assert.ok(calls.includes('load'));
