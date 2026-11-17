@@ -39,6 +39,8 @@ const COPY = {
     statusSelected: ({ name }) => `Selected ${name}.`,
     selectionPending: 'Selecting…',
     statusMarkedWatched: ({ name }) => `Marked ${name} as watched.`,
+    statusSingleFileNavigation: 'Only 1 file is loaded; you cannot move forward or backward.',
+    statusSingleFileWatched: ({ name }) => `Marked ${name} as watched. There is no next file.`,
     statusPlaylistFinished: 'Playlist finished.',
     playerHeading: 'Player',
     nothingPlaying: 'Nothing playing',
@@ -128,6 +130,8 @@ const COPY = {
     statusSelected: ({ name }) => `Seleccionado: ${name}.`,
     selectionPending: 'Seleccionando…',
     statusMarkedWatched: ({ name }) => `Marcado como visto: ${name}.`,
+    statusSingleFileNavigation: 'Solo hay 1 archivo; no se puede adelantar ni retroceder.',
+    statusSingleFileWatched: ({ name }) => `Marcado como visto: ${name}. No hay otro archivo para continuar.`,
     statusPlaylistFinished: 'Playlist terminada.',
     playerHeading: 'Reproductor',
     nothingPlaying: 'Nada en reproducción',
@@ -1073,8 +1077,9 @@ function updateControls() {
   const hasActiveItem = state.activeIndex >= 0 && state.activeIndex < state.items.length;
   const libraryMutationPending = state.shared.active && state.shared.libraryMutationPending;
   const sharedGuest = (isSharedMode() || state.shared.initializing) && state.shared.role !== 'host';
-  elements.prevButton.disabled = libraryMutationPending || !hasActiveItem || (!state.shared.active && state.activeIndex <= 0);
-  elements.nextButton.disabled = libraryMutationPending || !hasActiveItem || (!state.shared.active && state.activeIndex >= state.items.length - 1);
+  const singleItem = state.items.length === 1;
+  elements.prevButton.disabled = libraryMutationPending || !hasActiveItem || (!singleItem && !state.shared.active && state.activeIndex <= 0);
+  elements.nextButton.disabled = libraryMutationPending || !hasActiveItem || (!singleItem && !state.shared.active && state.activeIndex >= state.items.length - 1);
   elements.markWatchedButton.disabled = libraryMutationPending || !hasActiveItem;
   elements.clearPlaylistButton.hidden = !hasItems;
   elements.clearPlaylistButton.disabled = libraryMutationPending || !hasItems;
@@ -3235,6 +3240,10 @@ async function saveActiveProgress({ watched = false, allowThresholdWatched = tru
 }
 
 async function playRelative(offset, options = {}) {
+  if (state.items.length === 1) {
+    updateStatus(t('statusSingleFileNavigation'));
+    return;
+  }
   if (isSharedMode()) {
     await sendRoomCommand({ type: offset < 0 ? 'previous' : 'next' });
     return;
@@ -3246,6 +3255,10 @@ async function playRelative(offset, options = {}) {
 }
 
 async function skipToNext() {
+  if (state.items.length === 1) {
+    updateStatus(t('statusSingleFileNavigation'));
+    return;
+  }
   if (isSharedMode()) {
     await sendRoomCommand({ type: 'next' });
     return;
@@ -3258,6 +3271,10 @@ async function markCurrentWatchedAndNext() {
   const item = state.items[state.activeIndex];
   if (!item) return;
   await saveActiveProgress({ watched: true });
+  if (state.items.length === 1) {
+    updateStatus(t('statusSingleFileWatched', { name: item.relativePath }));
+    return;
+  }
   updateStatus(t('statusMarkedWatched', { name: item.relativePath }));
   if (state.activeIndex < state.items.length - 1) {
     await playIndex(state.activeIndex + 1, { saveCurrent: false, source: 'mark-watched-next' });

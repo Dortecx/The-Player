@@ -3539,6 +3539,37 @@ test('browser suppresses only the expected clear cancellation response', () => {
   assert.equal(isExpectedClearCancellation({ status: 503 }), false, 'ordinary server failures remain visible outside clear');
 });
 
+test('single-item navigation reports the limit without requesting another playback source', async () => {
+  const app = fs.readFileSync(path.join(__dirname, '..', 'public', 'app.js'), 'utf8');
+  const navigation = app.match(/async function playRelative\(offset, options = \{\}\) \{[\s\S]*?\n\}\n\nasync function skipToNext\(\) \{[\s\S]*?\n\}\n\nasync function markCurrentWatchedAndNext\(\) \{[\s\S]*?\n\}/)?.[0];
+  assert.ok(navigation, 'navigation helpers are present');
+  const state = { activeIndex: 0, items: [{ relativePath: 'only.mkv' }] };
+  const calls = [];
+  const helpers = new Function('state', 'isSharedMode', 'sendRoomCommand', 'playIndex', 'saveActiveProgress', 'updateStatus', 't', `${navigation}\nreturn { playRelative, skipToNext, markCurrentWatchedAndNext };`)(
+    state,
+    () => false,
+    async (command) => calls.push(['room', command]),
+    async (...args) => calls.push(['play', ...args]),
+    async (options) => calls.push(['save', options]),
+    (message) => calls.push(['status', message]),
+    (key, values = {}) => `${key}:${values.name || ''}`
+  );
+
+  await helpers.playRelative(-1, { source: 'previous' });
+  await helpers.skipToNext();
+  assert.deepEqual(calls, [
+    ['status', 'statusSingleFileNavigation:'],
+    ['status', 'statusSingleFileNavigation:']
+  ], 'previous and next do not save, command the room, or request HLS for the only item');
+
+  await helpers.markCurrentWatchedAndNext();
+  assert.deepEqual(calls.slice(2), [
+    ['save', { watched: true }],
+    ['status', 'statusSingleFileWatched:only.mkv']
+  ], 'mark watched remains available and reports that there is no next item');
+  assert.match(app, /const singleItem = state\.items\.length === 1;[\s\S]*?elements\.prevButton\.disabled = libraryMutationPending \|\| !hasActiveItem \|\| \(!singleItem && !state\.shared\.active && state\.activeIndex <= 0\);[\s\S]*?elements\.nextButton\.disabled = libraryMutationPending \|\| !hasActiveItem \|\| \(!singleItem && !state\.shared\.active && state\.activeIndex >= state\.items\.length - 1\);/, 'the one-item controls stay available to explain their no-op');
+});
+
 test('browser reconciles screen wake locks for playback, uploads, and HLS preparation', async () => {
   const app = fs.readFileSync(path.join(__dirname, '..', 'public', 'app.js'), 'utf8');
   const start = app.indexOf('function supportsWakeLock()');
