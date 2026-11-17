@@ -278,9 +278,7 @@ button:focus-visible,
 .playlist-action-button:hover:not(:disabled),
 .playlist-action-button:focus,
 .playlist-action-button:focus-visible,
-.playlist-action-button:focus-within,
-.transport-action-button:hover:not(:disabled),
-.transport-action-button:focus-visible {
+.playlist-action-button:focus-within {
   gap: 0;
   padding: 0 0.95rem;
   width: 7rem;
@@ -292,21 +290,6 @@ button:focus-visible,
 
 #prevButton.transport-action-button {
   width: 2.75rem;
-}
-
-#prevButton.transport-action-button:hover:not(:disabled),
-#prevButton.transport-action-button:focus-visible {
-  width: 7.5rem;
-}
-
-#nextButton.transport-action-button:hover:not(:disabled),
-#nextButton.transport-action-button:focus-visible {
-  width: 8.5rem;
-}
-
-.mark-watched-action-button:hover:not(:disabled),
-.mark-watched-action-button:focus-visible {
-  width: 13.5rem;
 }
 
 .action-icon {
@@ -330,24 +313,46 @@ button:focus-visible,
   transition: max-width 180ms ease, opacity 140ms ease;
 }
 
-.transport-action-button:hover:not(:disabled) .action-icon,
-.transport-action-button:focus-visible .action-icon {
-  flex-basis: 0;
-  opacity: 0;
-  transform: scale(0.8);
-  width: 0;
-}
-
 .playlist-action-button:hover:not(:disabled) .button-text,
 .playlist-action-button:focus .button-text,
 .playlist-action-button:focus-visible .button-text,
-.playlist-action-button:focus-within .button-text,
-.transport-action-button:hover:not(:disabled) .button-text,
-.transport-action-button:focus-visible .button-text {
+.playlist-action-button:focus-within .button-text {
   flex: 1 1 auto;
   max-width: 11.5rem;
   opacity: 1;
   text-align: center;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .transport-action-button:hover:not(:disabled),
+  .transport-action-button:focus-visible {
+    gap: 0;
+    padding: 0 0.95rem;
+    width: 7rem;
+  }
+
+  #prevButton.transport-action-button:hover:not(:disabled),
+  #prevButton.transport-action-button:focus-visible { width: 7.5rem; }
+  #nextButton.transport-action-button:hover:not(:disabled),
+  #nextButton.transport-action-button:focus-visible { width: 8.5rem; }
+  .mark-watched-action-button:hover:not(:disabled),
+  .mark-watched-action-button:focus-visible { width: 13.5rem; }
+
+  .transport-action-button:hover:not(:disabled) .action-icon,
+  .transport-action-button:focus-visible .action-icon {
+    flex-basis: 0;
+    opacity: 0;
+    transform: scale(0.8);
+    width: 0;
+  }
+
+  .transport-action-button:hover:not(:disabled) .button-text,
+  .transport-action-button:focus-visible .button-text {
+    flex: 1 1 auto;
+    max-width: 11.5rem;
+    opacity: 1;
+    text-align: center;
+  }
 }
 
 /* Mobile browsers can keep :hover after a tap. Collapse the completed action

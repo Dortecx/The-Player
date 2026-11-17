@@ -3592,6 +3592,7 @@ test('transport controls settle after a touch action without suppressing mouse h
   assert.equal(blurred, 1, 'mouse clicks keep normal focus behavior');
   assert.match(app, /button\.addEventListener\('pointerup', settleTransportTouchState\);/, 'every transport action settles after a touch');
   assert.match(styles, /\.transport-action-button\.is-touch-settled:hover/, 'the settled state overrides sticky touch hover styles');
+  assert.match(styles, /@media \(hover: hover\) and \(pointer: fine\) \s*\{[\s\S]*?\.transport-action-button:hover:not\(:disabled\)/, 'transport labels expand only when the browser reports precise hover support');
 });
 
 test('browser reconciles screen wake locks for playback, uploads, and HLS preparation', async () => {
