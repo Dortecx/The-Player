@@ -655,8 +655,8 @@ button:focus-visible,
   text-align: center;
   text-shadow: -0.055em -0.055em 0 rgba(0, 0, 0, 0.82), 0.055em -0.055em 0 rgba(0, 0, 0, 0.82), -0.055em 0.055em 0 rgba(0, 0, 0, 0.82), 0.055em 0.055em 0 rgba(0, 0, 0, 0.82);
   transform: translateX(-50%);
-  max-width: 75%;
-  min-width: 25%;
+  max-width: 90%;
+  min-width: 10%;
   white-space: pre-wrap;
   width: fit-content;
   z-index: 2;

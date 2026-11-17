@@ -1758,7 +1758,7 @@ test('aggregate subtitle overlay renders supported WebVTT italics as safe DOM no
   const authoredLines = document.createElement('span');
   appendWebVttCueText(authoredLines, 'Speaker one\nSpeaker two');
   assert.equal(authoredLines.children[0].textContent, 'Speaker one\nSpeaker two', 'authored WebVTT newlines remain in the rendered cue');
-  assert.match(styles, /\.generated-subtitle-overlay\s*\{[\s\S]*?max-width:\s*75%;[\s\S]*?min-width:\s*25%;[\s\S]*?white-space:\s*pre-wrap;[\s\S]*?width:\s*fit-content;/, 'the centered aggregate overlay keeps authored lines while ranging from 25% to 75% of the video width');
+  assert.match(styles, /\.generated-subtitle-overlay\s*\{[\s\S]*?max-width:\s*90%;[\s\S]*?min-width:\s*10%;[\s\S]*?white-space:\s*pre-wrap;[\s\S]*?width:\s*fit-content;/, 'the centered aggregate overlay keeps authored lines while ranging from 10% to 90% of the video width');
   assert.match(styles, /\.generated-subtitle-overlay\s*\{[\s\S]*?font-family:\s*Arial,\s*"Helvetica Neue",\s*Helvetica,\s*sans-serif;[\s\S]*?font-weight:\s*400;/, 'the aggregate selected-track overlay uses regular VLC-like Arial-first typography without affecting native cues');
   assert.match(styles, /\.video-frame\.is-app-fullscreen \.generated-subtitle-overlay,[\s\S]*?\.video-frame:fullscreen \.generated-subtitle-overlay[\s\S]*?font-size:\s*clamp\(1\.45rem, 3\.333vw, 4\.375rem\)/, 'app and native fullscreen preserve the responsive slope while capping aggregate overlay typography at 70px wide-2560');
   const fullscreenSubtitlePixels = (viewportWidth) => Math.min(70, Math.max(23.2, viewportWidth * 0.03333));
@@ -3292,7 +3292,7 @@ test('selected HLS subtitles use the protected aggregate overlay while native HL
   assert.match(app, /function reportSubtitleTrackDiagnostic\(event, client, textTrack, count\) \{[\s\S]*?count:[\s\S]*?selectedIndex:[\s\S]*?subtitleDisplay:[\s\S]*?cueCount:[\s\S]*?activeCueCount:/);
   assert.doesNotMatch(app, /HLS subtitle track diagnostic[\s\S]{0,500}(?:url|token|path|text):/i);
   assert.match(app, /state\.shared\.hls\.subtitleOverlayCleanup\?\.\(\)/);
-  assert.match(styles, /\.generated-subtitle-overlay \{[\s\S]*?bottom: clamp\(2\.5rem, 6vw, 3\.25rem\);[\s\S]*?left: 50%;[\s\S]*?transform: translateX\(-50%\);[\s\S]*?max-width: 75%;[\s\S]*?min-width: 25%;[\s\S]*?white-space: pre-wrap;[\s\S]*?width: fit-content;[\s\S]*?z-index: 2;/);
+  assert.match(styles, /\.generated-subtitle-overlay \{[\s\S]*?bottom: clamp\(2\.5rem, 6vw, 3\.25rem\);[\s\S]*?left: 50%;[\s\S]*?transform: translateX\(-50%\);[\s\S]*?max-width: 90%;[\s\S]*?min-width: 10%;[\s\S]*?white-space: pre-wrap;[\s\S]*?width: fit-content;[\s\S]*?z-index: 2;/);
   assert.match(styles, /\.video-frame\.is-app-fullscreen \.generated-subtitle-overlay,[\s\S]*?\.video-frame:fullscreen \.generated-subtitle-overlay \{[\s\S]*?font-size: clamp\(1\.45rem, 3\.333vw, 4\.375rem\);/);
   assert.match(styles, /\.video-controls \{[\s\S]*?z-index: 3;/);
   assert.match(styles, /\.video-frame video::cue\s*\{\s*background-color: transparent;\s*color: #fff;\s*text-shadow:/);

@@ -32,7 +32,7 @@ When video conversion is required, FFmpeg checks NVENC, then QSV, then AMF; it u
 
 Selectable text subtitle codecs are ASS/SSA, SRT/SubRip, WebVTT, MOV text, text, and TTML. Image/bitmap subtitles are unavailable.
 
-Text conversion is independent: it never forces audio/video conversion. The player renders selected subtitles from a complete protected aggregate WebVTT document, rather than native or hls.js segmented TextTrack events. This keeps cue timing, late cues, and safe italic rendering stable across segment boundaries.
+Text conversion is independent: it never forces audio/video conversion. The player renders selected subtitles from a complete protected aggregate WebVTT document, rather than native or hls.js segmented TextTrack events. This keeps cue timing, late cues, and safe italic rendering stable across segment boundaries. The overlay is centered and ranges from 10% to 90% of the video width, so longer cues have room before wrapping.
 
 ## Cache and privacy
 
@@ -54,7 +54,7 @@ After the foreground selected stream is ready, the server may prepare exactly th
 
 ## Progress and limits
 
-The player shows preparation first as indeterminate. Once FFmpeg reports output time for a known source duration, it can show percentage, elapsed time, and an ETA only when that estimate is stable. Shared room state contains normalized progress only; it never exposes FFmpeg output, paths, commands, tokens, raw errors, or driver details.
+The player shows preparation first as indeterminate. Once FFmpeg reports output time for a known source duration, it can show percentage, elapsed time, and an ETA only when that estimate is stable. Shared room state contains normalized progress only; it never exposes FFmpeg output, paths, commands, tokens, raw errors, or driver details. Each visible client, including a room guest, requests a best-effort Screen Wake Lock while its video plays or active preparation/upload work needs the display awake; browser support and permission still apply.
 
 A VOD job has a duration-aware deadline: at least 30 minutes and at most 12 hours. Reaching it produces `job-timeout` and no playable partial output.
 
