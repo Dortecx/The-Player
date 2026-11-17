@@ -11,7 +11,7 @@ $ErrorActionPreference = "Stop"
 Add-Type -AssemblyName System.IO.Compression.FileSystem
 
 $ffmpegAssetUrl = "https://github.com/BtbN/FFmpeg-Builds/releases/download/latest/ffmpeg-master-latest-win64-gpl.zip"
-$ffmpegAssetSha256 = "339ea3c11b8a0665a790a8b91ad11e099ae2421e8a9343b78f14942565eb4fbd"
+$ffmpegAssetSha256 = "2eaae393fe3ea3e79206d0a37be74e7e68beb57b507d2c20ed58f6f15a58a321"
 
 function Write-StageMarker {
     param(

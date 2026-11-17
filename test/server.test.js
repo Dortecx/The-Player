@@ -268,7 +268,7 @@ test('GPL runtime notice matches the current approved portable build pin', () =>
   const script = fs.readFileSync(path.join(__dirname, '..', 'scripts', 'build-portable-win.ps1'), 'utf8');
   const notice = fs.readFileSync(path.join(__dirname, '..', 'third_party', 'FFmpeg-GPL-NOTICE.md'), 'utf8');
   const pin = /\$ffmpegAssetSha256 = "([a-f0-9]{64})"/.exec(script)?.[1];
-  assert.equal(pin, '339ea3c11b8a0665a790a8b91ad11e099ae2421e8a9343b78f14942565eb4fbd');
+  assert.equal(pin, '2eaae393fe3ea3e79206d0a37be74e7e68beb57b507d2c20ed58f6f15a58a321');
   assert.match(notice, new RegExp(pin));
   assert.match(notice, /current user-approved build-script pin/i);
 });

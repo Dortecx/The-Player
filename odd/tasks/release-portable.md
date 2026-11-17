@@ -15,3 +15,5 @@ Publication remains a distinct, evidence-gated delivery action.
 ## Log
 - L1 — Vale, comienza
 - L2 — Adelante
+- L3 — Aceptar y re-pinnear
+- L4 — Reparar el entorno primero
