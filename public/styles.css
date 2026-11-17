@@ -350,6 +350,35 @@ button:focus-visible,
   text-align: center;
 }
 
+/* Mobile browsers can keep :hover after a tap. Collapse the completed action
+   until a real mouse hover returns, so touch controls never stay expanded. */
+.transport-action-button.is-touch-settled,
+.transport-action-button.is-touch-settled:hover,
+.transport-action-button.is-touch-settled:focus-visible,
+#prevButton.transport-action-button.is-touch-settled,
+#prevButton.transport-action-button.is-touch-settled:hover,
+#prevButton.transport-action-button.is-touch-settled:focus-visible,
+#nextButton.transport-action-button.is-touch-settled,
+#nextButton.transport-action-button.is-touch-settled:hover,
+#nextButton.transport-action-button.is-touch-settled:focus-visible {
+  gap: 0;
+  padding: 0;
+  width: 2.75rem;
+}
+
+.transport-action-button.is-touch-settled .action-icon {
+  flex-basis: auto;
+  opacity: 1;
+  transform: scale(1);
+  width: 1.15rem;
+}
+
+.transport-action-button.is-touch-settled .button-text {
+  flex: 0 1 auto;
+  max-width: 0;
+  opacity: 0;
+}
+
 .clear-playlist-button {
   background: rgba(255, 154, 154, 0.08);
 }

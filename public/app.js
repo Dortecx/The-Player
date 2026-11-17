@@ -3852,6 +3852,17 @@ function preventGuestLibraryPicker(event) {
   showHostLibraryOnlyToast();
 }
 
+function settleTransportTouchState(event) {
+  if (event.pointerType !== 'touch') return;
+  event.currentTarget.classList.add('is-touch-settled');
+  event.currentTarget.blur();
+}
+
+function restoreTransportHoverState(event) {
+  if (event.pointerType !== 'mouse') return;
+  event.currentTarget.classList.remove('is-touch-settled');
+}
+
 function useOriginalSharedMedia() {
   const item = state.items[state.activeIndex];
   const sourceKey = state.shared.hls.sourceKey
@@ -3881,6 +3892,10 @@ elements.folderSelectControl.addEventListener('click', preventGuestLibraryPicker
 elements.fileSelectControl.addEventListener('click', preventGuestLibraryPicker);
 elements.folderInput.addEventListener('change', (event) => runAsyncAction(() => handleFiles(event.target.files)));
 elements.fileInput.addEventListener('change', (event) => runAsyncAction(() => handleFiles(event.target.files)));
+for (const button of [elements.prevButton, elements.nextButton, elements.markWatchedButton]) {
+  button.addEventListener('pointerup', settleTransportTouchState);
+  button.addEventListener('pointerenter', restoreTransportHoverState);
+}
 elements.prevButton.addEventListener('click', () => runAsyncAction(() => playRelative(-1, { source: 'previous' })));
 elements.nextButton.addEventListener('click', () => runAsyncAction(skipToNext));
 elements.markWatchedButton.addEventListener('click', () => runAsyncAction(markCurrentWatchedAndNext));

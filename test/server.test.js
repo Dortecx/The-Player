@@ -3573,6 +3573,27 @@ test('single-item navigation reports the limit without requesting another playba
   assert.doesNotMatch(styles, /\.transport-action-button:focus(?:,|\s)/, 'ordinary touch focus does not leave transport controls expanded');
 });
 
+test('transport controls settle after a touch action without suppressing mouse hover', () => {
+  const app = fs.readFileSync(path.join(__dirname, '..', 'public', 'app.js'), 'utf8');
+  const styles = fs.readFileSync(path.join(__dirname, '..', 'public', 'styles.css'), 'utf8');
+  const helpersSource = app.match(/function settleTransportTouchState\(event\) \{[\s\S]*?\n\}\n\nfunction restoreTransportHoverState\(event\) \{[\s\S]*?\n\}/)?.[0];
+  assert.ok(helpersSource, 'transport touch-state helpers are present');
+  const helpers = new Function(`${helpersSource}\nreturn { settleTransportTouchState, restoreTransportHoverState };`)();
+  const classes = new Set();
+  let blurred = 0;
+  const target = { classList: { add: (name) => classes.add(name), remove: (name) => classes.delete(name) }, blur: () => { blurred += 1; } };
+
+  helpers.settleTransportTouchState({ pointerType: 'touch', currentTarget: target });
+  assert.deepEqual([...classes], ['is-touch-settled']);
+  assert.equal(blurred, 1, 'a completed touch releases keyboard-style focus');
+  helpers.restoreTransportHoverState({ pointerType: 'mouse', currentTarget: target });
+  assert.equal(classes.size, 0, 'mouse hover restores the label affordance');
+  helpers.settleTransportTouchState({ pointerType: 'mouse', currentTarget: target });
+  assert.equal(blurred, 1, 'mouse clicks keep normal focus behavior');
+  assert.match(app, /button\.addEventListener\('pointerup', settleTransportTouchState\);/, 'every transport action settles after a touch');
+  assert.match(styles, /\.transport-action-button\.is-touch-settled:hover/, 'the settled state overrides sticky touch hover styles');
+});
+
 test('browser reconciles screen wake locks for playback, uploads, and HLS preparation', async () => {
   const app = fs.readFileSync(path.join(__dirname, '..', 'public', 'app.js'), 'utf8');
   const start = app.indexOf('function supportsWakeLock()');
