@@ -6,7 +6,7 @@ The Player es un reproductor de video en el navegador para una playlist local. R
 
 ## Descarga e inicio
 
-**Portátil de Windows v1.5.4** — [descargá el ZIP](https://github.com/Dortecx/The-Player/releases/download/v1.5.4/The-Player-1.5.4-windows.zip), descomprimilo y abrí la carpeta extraída `The-Player-1.5.4-windows`.
+**Portátil de Windows v1.5.5** — [descargá el ZIP](https://github.com/Dortecx/The-Player/releases/download/v1.5.5/The-Player-1.5.5-windows.zip), descomprimilo y abrí la carpeta extraída `The-Player-1.5.5-windows`.
 
 ```mermaid
 flowchart TD
@@ -76,7 +76,7 @@ npm run build:portable:win
 
 Esto crea `portable-win\The-Player-1.5.5-windows.zip`. El build de Windows descarga el archivo GPL de FFmpeg BtbN de 64 bits fijado por SHA-256, rechaza una diferencia, y empaqueta sus binarios FFmpeg/FFprobe, aviso GPL y avisos extraídos del archivo. Ese runtime incluye `libx264`; el build valida una fixture MKV con subtítulo de texto interno → HLS/WebVTT H.264/x264. Requiere Internet durante el build; las personas usuarias no instalan nada extra. El ZIP del release y el ZIP generado incluyen `start.cmd` (solo local) y `LAN.cmd` (modo compartido). La fixture fMP4 verifica los artefactos y manifiestos generados, pero no prueba la reproducción en navegador; completá la comprobación LAN manual antes de afirmar que Chrome reproduce.
 
-Repositorio: <https://github.com/Dortecx/The-Player> · Release: <https://github.com/Dortecx/The-Player/releases/tag/v1.5.4>
+Repositorio: <https://github.com/Dortecx/The-Player> · Release: <https://github.com/Dortecx/The-Player/releases/tag/v1.5.5>
 
 ## Licencia
 
