@@ -670,6 +670,7 @@ button:focus-visible,
 .video-frame.is-app-fullscreen .generated-subtitle-overlay,
 .video-frame:fullscreen .generated-subtitle-overlay {
   font-size: clamp(1.45rem, 3.333vw, 4.375rem);
+  width: 90%;
 }
 
 .video-controls {

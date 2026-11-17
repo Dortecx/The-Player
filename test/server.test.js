@@ -3293,7 +3293,7 @@ test('selected HLS subtitles use the protected aggregate overlay while native HL
   assert.doesNotMatch(app, /HLS subtitle track diagnostic[\s\S]{0,500}(?:url|token|path|text):/i);
   assert.match(app, /state\.shared\.hls\.subtitleOverlayCleanup\?\.\(\)/);
   assert.match(styles, /\.generated-subtitle-overlay \{[\s\S]*?bottom: clamp\(2\.5rem, 6vw, 3\.25rem\);[\s\S]*?left: 50%;[\s\S]*?transform: translateX\(-50%\);[\s\S]*?max-width: 90%;[\s\S]*?min-width: 10%;[\s\S]*?white-space: pre-wrap;[\s\S]*?width: fit-content;[\s\S]*?z-index: 2;/);
-  assert.match(styles, /\.video-frame\.is-app-fullscreen \.generated-subtitle-overlay,[\s\S]*?\.video-frame:fullscreen \.generated-subtitle-overlay \{[\s\S]*?font-size: clamp\(1\.45rem, 3\.333vw, 4\.375rem\);/);
+  assert.match(styles, /\.video-frame\.is-app-fullscreen \.generated-subtitle-overlay,[\s\S]*?\.video-frame:fullscreen \.generated-subtitle-overlay \{[\s\S]*?font-size: clamp\(1\.45rem, 3\.333vw, 4\.375rem\);[\s\S]*?width: 90%;/);
   assert.match(styles, /\.video-controls \{[\s\S]*?z-index: 3;/);
   assert.match(styles, /\.video-frame video::cue\s*\{\s*background-color: transparent;\s*color: #fff;\s*text-shadow:/);
   assert.match(styles, /\.track-control-fields select\s*\{[\s\S]*?color-scheme: dark;/);
@@ -3581,28 +3581,34 @@ test('browser reconciles screen wake locks for playback, uploads, and HLS prepar
   runtime.elements.video.paused = true;
   await runtime.helpers.reconcileWakeLock();
   assert.equal(sentinels[0].released, 1, 'pausing without background work releases the lock');
+  runtime.state.appFullscreenFallback = true;
+  await runtime.helpers.reconcileWakeLock();
+  assert.equal(sentinels.length, 2, 'paused fullscreen keeps the display awake');
+  runtime.state.appFullscreenFallback = false;
+  await runtime.helpers.reconcileWakeLock();
+  assert.equal(sentinels[1].released, 1, 'leaving paused fullscreen releases the lock without background work');
 
   runtime.state.shared.libraryMutationPending = true;
   await runtime.helpers.reconcileWakeLock();
-  assert.equal(sentinels.length, 2, 'an upload acquires a lock while playback is paused');
-  sentinels[1].emitRelease();
+  assert.equal(sentinels.length, 3, 'an upload acquires a lock while playback is paused');
+  sentinels[2].emitRelease();
   await new Promise((resolve) => setImmediate(resolve));
-  assert.equal(sentinels.length, 3, 'an unexpected release reacquires while activity remains');
+  assert.equal(sentinels.length, 4, 'an unexpected release reacquires while activity remains');
   runtime.state.shared.libraryMutationPending = false;
   runtime.state.shared.roomState = { hls: { status: 'preparing' }, oneAhead: { status: 'preparing' } };
   await runtime.helpers.reconcileWakeLock();
-  assert.equal(sentinels.length, 3, 'selected and one-ahead preparation retain the existing lock');
+  assert.equal(sentinels.length, 4, 'selected and one-ahead preparation retain the existing lock');
   runtime.state.shared.roomState = { hls: { status: 'ready' }, oneAhead: { status: 'idle' } };
   await runtime.helpers.reconcileWakeLock();
-  assert.equal(sentinels[2].released, 1, 'idle preparation releases the lock when playback is paused');
+  assert.equal(sentinels[3].released, 1, 'idle preparation releases the lock when playback is paused');
 
   document.visibilityState = 'hidden';
   runtime.state.shared.roomState = { oneAhead: { status: 'preparing' } };
   await runtime.helpers.reconcileWakeLock();
-  assert.equal(sentinels.length, 3, 'hidden documents never acquire a lock');
+  assert.equal(sentinels.length, 4, 'hidden documents never acquire a lock');
   document.visibilityState = 'visible';
   await runtime.helpers.reconcileWakeLock();
-  assert.equal(sentinels.length, 4, 'returning visible reacquires for active preparation');
+  assert.equal(sentinels.length, 5, 'returning visible reacquires for active preparation');
 
   const unsupported = createRuntime({}, { visibilityState: 'visible' });
   unsupported.state.shared.libraryMutationPending = true;

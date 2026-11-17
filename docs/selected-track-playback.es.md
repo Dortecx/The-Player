@@ -32,7 +32,7 @@ Cuando hace falta convertir video, FFmpeg prueba NVENC, luego QSV y luego AMF; u
 
 Los códecs de subtítulos de texto seleccionables son ASS/SSA, SRT/SubRip, WebVTT, MOV text, text y TTML. Los subtítulos de imagen/mapa de bits no están disponibles.
 
-La conversión de texto es independiente: nunca obliga a convertir audio/video. El reproductor muestra los subtítulos elegidos desde un documento WebVTT agregado, completo y protegido, en lugar de eventos TextTrack segmentados de hls.js o nativos. Esto mantiene estable el tiempo de las cues, las cues tardías y las cursivas seguras entre límites de segmentos. La superposición queda centrada y abarca del 10% al 90% del ancho del video, para dar espacio a cues largas antes de partirlas.
+La conversión de texto es independiente: nunca obliga a convertir audio/video. El reproductor muestra los subtítulos elegidos desde un documento WebVTT agregado, completo y protegido, en lugar de eventos TextTrack segmentados de hls.js o nativos. Esto mantiene estable el tiempo de las cues, las cues tardías y las cursivas seguras entre límites de segmentos. La superposición queda centrada y abarca del 10% al 90% del ancho del video, para dar espacio a cues largas antes de partirlas. En pantalla completa usa el 90% completo, preservando los saltos escritos y evitando saltos automáticos extra.
 
 ## Caché y privacidad
 
@@ -54,7 +54,7 @@ Después de que la transmisión elegida en primer plano queda lista, el servidor
 
 ## Progreso y límites
 
-Al principio el reproductor muestra preparación indeterminada. Cuando FFmpeg informa tiempo de salida para una duración de origen conocida, puede mostrar porcentaje, tiempo transcurrido y un restante solo cuando esa estimación es estable. El estado compartido contiene solo progreso normalizado; nunca expone salida FFmpeg, rutas, comandos, tokens, errores sin procesar ni detalles de controladores. Cada cliente visible, incluida una persona invitada de la sala, solicita un Screen Wake Lock cuando su video se reproduce o una subida/preparación activa necesita mantener encendida la pantalla; el soporte y permiso del navegador siguen aplicando.
+Al principio el reproductor muestra preparación indeterminada. Cuando FFmpeg informa tiempo de salida para una duración de origen conocida, puede mostrar porcentaje, tiempo transcurrido y un restante solo cuando esa estimación es estable. El estado compartido contiene solo progreso normalizado; nunca expone salida FFmpeg, rutas, comandos, tokens, errores sin procesar ni detalles de controladores. Cada cliente visible, incluida una persona invitada de la sala, solicita un Screen Wake Lock cuando su video se reproduce, cuando una subida/preparación activa necesita mantener encendida la pantalla y cuando el video queda pausado en pantalla completa; el soporte y permiso del navegador siguen aplicando.
 
 Un trabajo VOD tiene un plazo según duración: al menos 30 minutos y como máximo 12 horas. Al alcanzarlo se produce `job-timeout` y no hay salida parcial reproducible.
 

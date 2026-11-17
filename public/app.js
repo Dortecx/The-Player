@@ -3286,10 +3286,17 @@ function hasWakeLockActivity() {
   const hls = state.shared.roomState?.hls;
   const oneAhead = state.shared.roomState?.oneAhead;
   const playing = Boolean(elements.video.src) && !elements.video.paused && !elements.video.ended;
+  const fullscreen = state.appFullscreenFallback
+    || (elements.videoFrame && (document.fullscreenElement === elements.videoFrame
+      || document.webkitFullscreenElement === elements.videoFrame
+      || document.mozFullScreenElement === elements.videoFrame
+      || document.msFullscreenElement === elements.videoFrame))
+    || elements.video?.webkitDisplayingFullscreen === true;
   return !state.shared.clearPending && (state.shared.libraryMutationPending
     || hls?.status === 'preparing'
     || oneAhead?.status === 'preparing'
-    || playing);
+    || playing
+    || fullscreen);
 }
 
 function shouldHoldWakeLock() {
