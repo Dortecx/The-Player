@@ -3,3 +3,11 @@
 
 # Generated portable release artifacts
 portable-win/
+portable-win-rc/
+.browser-fixture/
+.playwright-mcp/
+
+# Installed dependencies and generated media fixtures
+node_modules/
+init.mp4
+init_%v.mp4
