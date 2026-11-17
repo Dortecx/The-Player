@@ -37,6 +37,7 @@ const COPY = {
     statusLoaded: ({ count, rejected }) => `Loaded ${count} ${count === 1 ? 'video' : 'videos'}${rejected ? `; ignored ${rejected} unsupported ${rejected === 1 ? 'file' : 'files'}` : ''}.`,
     statusRestored: ({ name, time }) => `Restored ${name} at ${time}.`,
     statusSelected: ({ name }) => `Selected ${name}.`,
+    selectionPending: 'Selecting…',
     statusMarkedWatched: ({ name }) => `Marked ${name} as watched.`,
     statusPlaylistFinished: 'Playlist finished.',
     playerHeading: 'Player',
@@ -62,12 +63,40 @@ const COPY = {
     playbackUnsupported: 'This file type or codec is not supported by this browser.',
     trackControlsHeading: 'Embedded tracks',
     audioTrackLabel: 'Audio',
-    audioTrackOriginal: 'Original video audio',
+    audioTrackOriginal: 'Default embedded audio',
     subtitleTrackLabel: 'Subtitles',
     subtitleTrackOff: 'Off',
-    trackSelectionHostHelp: 'Your selection is shared with everyone in this room.',
-    trackSelectionGuestHelp: 'The host chooses the shared embedded tracks.',
+    trackSelectionHostHelp: 'Choose tracks, then apply them for everyone. Applying reloads playback and resumes approximately.',
+    trackSelectionLocalHelp: 'This local managed session stays on this computer and cannot be shared.',
+    trackSelectionGuestHelp: 'The host chose the shared embedded tracks.',
+    localEmbeddedTracksAction: 'Use local embedded tracks',
+    localEmbeddedTracksHelp: 'Uploads these local files only to create a loopback-only managed session for embedded tracks.',
+    trackSelectionReadyHost: 'Choose tracks, then select Apply tracks and reload to start compatible playback.',
+    trackSelectionReadyGuest: 'Waiting for the host to apply the shared embedded tracks.',
+    applyTrackSelection: 'Apply tracks and reload',
+    hlsLoading: 'Preparing the complete selected compatible stream…',
+    hlsPreparing: 'Converting the complete compatible stream. Playback will be ready when conversion finishes.',
+    conversionProgressTitle: 'Preparing complete stream',
+    conversionProgressIndeterminate: 'Conversion progress is not available yet.',
+    conversionProgressComplete: ({ percent }) => `${percent}% complete`,
+    conversionProgressElapsed: ({ time }) => `Elapsed ${time}`,
+    conversionProgressEta: ({ time }) => `ETA ${time}`,
+    conversionProgressEtaUnavailable: 'ETA unavailable',
+    hlsReady: 'The complete compatible stream is ready.',
+    hlsReadySubtitlePending: 'The complete compatible stream is ready.',
+    hlsReadySubtitleDelayed: 'The complete compatible stream is ready.',
+    hlsFailed: ({ reason }) => `Compatible stream failed (${reason}). You can use the original video instead.`,
+    hlsTimeout: 'Compatible stream startup timed out. You can use the original video instead.',
+    useOriginalVideo: 'Use original video',
     hlsUnavailable: 'Selected embedded tracks could not be played here; continuing with the original video.',
+    hlsPlaybackFailed: ({ stage }) => `Compatible HLS playback failed at the ${stage} stage.`,
+    oneAheadPreparing: 'Preparing next',
+    oneAheadPreparingProgress: ({ percent }) => `Preparing next · ${percent}%`,
+    oneAheadPreparingNotice: ({ name }) => `${name} is still preparing. The current video will continue playing.`,
+    oneAheadReady: 'Next ready',
+    oneAheadUnavailable: 'Next unavailable',
+    oneAheadSelectionRequired: 'Choose embedded tracks to prepare next',
+    oneAheadChoiceRequired: 'Choose matching embedded tracks to prepare next',
     thisFile: 'this file'
   },
   es: {
@@ -97,6 +126,7 @@ const COPY = {
     statusLoaded: ({ count, rejected }) => `Se cargaron ${count} ${count === 1 ? 'video' : 'videos'}${rejected ? `; se ignoraron ${rejected} ${rejected === 1 ? 'archivo no compatible' : 'archivos no compatibles'}` : ''}.`,
     statusRestored: ({ name, time }) => `Se restauró ${name} en ${time}.`,
     statusSelected: ({ name }) => `Seleccionado: ${name}.`,
+    selectionPending: 'Seleccionando…',
     statusMarkedWatched: ({ name }) => `Marcado como visto: ${name}.`,
     statusPlaylistFinished: 'Playlist terminada.',
     playerHeading: 'Reproductor',
@@ -122,12 +152,40 @@ const COPY = {
     playbackUnsupported: 'Este tipo de archivo o codec no es compatible con este navegador.',
     trackControlsHeading: 'Pistas internas',
     audioTrackLabel: 'Audio',
-    audioTrackOriginal: 'Audio original del video',
+    audioTrackOriginal: 'Audio interno predeterminado',
     subtitleTrackLabel: 'Subtítulos',
     subtitleTrackOff: 'Desactivados',
-    trackSelectionHostHelp: 'Tu selección se comparte con todas las personas de esta sala.',
-    trackSelectionGuestHelp: 'El host elige las pistas internas compartidas.',
+    trackSelectionHostHelp: 'Elegí las pistas y aplicalas para todas las personas. Al aplicar se recarga y se reanuda aproximadamente.',
+    trackSelectionLocalHelp: 'Esta sesión local administrada queda en esta computadora y no se puede compartir.',
+    trackSelectionGuestHelp: 'El host eligió las pistas internas compartidas.',
+    localEmbeddedTracksAction: 'Usar pistas internas locales',
+    localEmbeddedTracksHelp: 'Sube estos archivos locales solo para crear una sesión administrada solo por loopback para las pistas internas.',
+    trackSelectionReadyHost: 'Elegí las pistas y seleccioná Aplicar pistas y recargar para iniciar una reproducción compatible.',
+    trackSelectionReadyGuest: 'Esperando que el host aplique las pistas internas compartidas.',
+    applyTrackSelection: 'Aplicar pistas y recargar',
+    hlsLoading: 'Preparando la transmisión compatible completa elegida…',
+    hlsPreparing: 'Convirtiendo la transmisión compatible completa. La reproducción estará lista al terminar la conversión.',
+    conversionProgressTitle: 'Preparando la transmisión completa',
+    conversionProgressIndeterminate: 'El progreso de conversión aún no está disponible.',
+    conversionProgressComplete: ({ percent }) => `${percent}% completado`,
+    conversionProgressElapsed: ({ time }) => `Transcurrido ${time}`,
+    conversionProgressEta: ({ time }) => `Restante ${time}`,
+    conversionProgressEtaUnavailable: 'Tiempo restante no disponible',
+    hlsReady: 'La transmisión compatible completa está lista.',
+    hlsReadySubtitlePending: 'La transmisión compatible completa está lista.',
+    hlsReadySubtitleDelayed: 'La transmisión compatible completa está lista.',
+    hlsFailed: ({ reason }) => `La transmisión compatible falló (${reason}). Podés usar el video original.`,
+    hlsTimeout: 'Se agotó el tiempo de inicio de la transmisión compatible. Podés usar el video original.',
+    useOriginalVideo: 'Usar video original',
     hlsUnavailable: 'Las pistas internas elegidas no se pudieron reproducir aquí; se continúa con el video original.',
+    hlsPlaybackFailed: ({ stage }) => `La reproducción HLS compatible falló en la etapa ${stage}.`,
+    oneAheadPreparing: 'Preparando siguiente',
+    oneAheadPreparingProgress: ({ percent }) => `Preparando siguiente · ${percent}%`,
+    oneAheadPreparingNotice: ({ name }) => `${name} todavía se está preparando. El video actual continuará reproduciéndose.`,
+    oneAheadReady: 'Siguiente listo',
+    oneAheadUnavailable: 'Siguiente no disponible',
+    oneAheadSelectionRequired: 'Elegí las pistas internas para preparar el siguiente',
+    oneAheadChoiceRequired: 'Elegí las pistas internas coincidentes para preparar el siguiente',
     thisFile: 'este archivo'
   }
 };
@@ -146,6 +204,8 @@ const state = {
   activeIndex: -1,
   currentObjectUrl: null,
   selectionId: null,
+  persistence: { generation: 0, contentId: null, sourceGeneration: null, armed: false, allowZeroWrite: false },
+  pendingProgressWrites: new Map(),
   dbPromise: null,
   lastSaveAt: 0,
   clearTransitionTimer: null,
@@ -163,6 +223,8 @@ const state = {
   },
   playlistSearchQuery: '',
   wakeLockSentinel: null,
+  wakeLockRequestPending: false,
+  wakeLockRequestGeneration: 0,
   videoControlsTimer: null,
   videoControlsTouchFocusPending: false,
   videoSeekInteractionActive: false,
@@ -191,20 +253,40 @@ const state = {
     libraryRefreshPromise: null,
     roomRecoveryTimer: null,
     roomUrl: null,
+    session: null,
+    localUploadResume: null,
     libraryMutationPending: false,
+    clearPending: false,
+    pendingPlaylistSelection: null,
+    trackDraft: null,
     applyingRemote: false,
     roomApplyId: 0,
+    roomCommandId: 0,
     desiredPlaying: false,
+    roomState: null,
     playbackIntent: null,
     playbackCommandInFlight: false,
     playbackRetryTimer: null,
     awaitingAudioActivation: false,
+    resume: {
+      contentId: null,
+      position: 0,
+      pending: false
+    },
     hls: {
       client: null,
       sourceKey: null,
+      mediaId: null,
       selectionKey: null,
+      preparationKey: null,
       fallbackKey: null,
-      suppressNextVideoAbort: false
+      playbackFailureStage: null,
+      suppressNextVideoAbort: false,
+      cleared: false,
+      oneAheadKey: null,
+      seenOneAheadMediaIds: new Set(),
+      subtitleOverlayCleanup: null,
+      loadId: 0
     }
   }
 };
@@ -251,8 +333,12 @@ const elements = {
   trackControls: document.querySelector('#trackControls'),
   audioTrackSelect: document.querySelector('#audioTrackSelect'),
   subtitleTrackSelect: document.querySelector('#subtitleTrackSelect'),
+  applyTrackSelectionButton: document.querySelector('#applyTrackSelectionButton'),
   trackSelectionHelp: document.querySelector('#trackSelectionHelp'),
   trackPlaybackStatus: document.querySelector('#trackPlaybackStatus'),
+  useOriginalVideoButton: document.querySelector('#useOriginalVideoButton'),
+  conversionProgress: null,
+  subtitleOverlay: null,
   error: document.querySelector('#errorMessage'),
   layout: document.querySelector('.layout'),
   playerPanel: document.querySelector('.player-panel'),
@@ -651,6 +737,27 @@ async function writeProgress(record) {
   });
 }
 
+function queueProgressWrite(record) {
+  const contentId = record?.id;
+  if (typeof contentId !== 'string' || !contentId) return writeProgress(record);
+  const previous = state.pendingProgressWrites.get(contentId) || Promise.resolve();
+  const next = previous.catch(() => {}).then(() => writeProgress(record));
+  const tracked = next.finally(() => {
+    if (state.pendingProgressWrites.get(contentId) === tracked) state.pendingProgressWrites.delete(contentId);
+  });
+  state.pendingProgressWrites.set(contentId, tracked);
+  return tracked;
+}
+
+async function awaitPendingProgressWrite(contentId) {
+  while (typeof contentId === 'string' && contentId) {
+    const pending = state.pendingProgressWrites.get(contentId);
+    if (!pending) return;
+    await pending;
+    if (state.pendingProgressWrites.get(contentId) === pending) return;
+  }
+}
+
 async function readSession(id) {
   const db = await openDatabase();
   return new Promise((resolve, reject) => {
@@ -1015,6 +1122,40 @@ function itemMatchesPlaylistSearch(item) {
   return normalizePlaylistSearchValue(item.relativePath).includes(query);
 }
 
+function oneAheadStatusFor(item) {
+  const plan = state.shared.roomState?.oneAhead;
+  if (!plan || plan.mediaId !== item?.mediaId) return null;
+  if (plan.status === 'ready' && state.shared.hls.seenOneAheadMediaIds.has(item.mediaId)) return null;
+  if (plan.status === 'preparing') {
+    const percent = Number.isSafeInteger(plan.progress?.percent) && plan.progress.percent >= 0 && plan.progress.percent <= 100
+      ? plan.progress.percent
+      : null;
+    return percent === null ? t('oneAheadPreparing') : t('oneAheadPreparingProgress', { percent });
+  }
+  if (plan.status === 'ready') return t('oneAheadReady');
+  if (plan.status === 'unavailable') return t('oneAheadUnavailable');
+  if (plan.status === 'selection-required') return t('oneAheadSelectionRequired');
+  if (plan.status === 'choice-required') return t('oneAheadChoiceRequired');
+  return null;
+}
+
+function rememberSharedItemSelection(item) {
+  if (item?.mediaId) state.shared.hls.seenOneAheadMediaIds.add(item.mediaId);
+}
+
+function setPendingPlaylistSelection(mediaId) {
+  if (state.shared.pendingPlaylistSelection === mediaId) return;
+  state.shared.pendingPlaylistSelection = mediaId;
+  renderPlaylist();
+}
+
+function clearPendingPlaylistSelection(mediaId = null) {
+  if (mediaId && state.shared.pendingPlaylistSelection !== mediaId) return;
+  if (state.shared.pendingPlaylistSelection === null) return;
+  state.shared.pendingPlaylistSelection = null;
+  renderPlaylist();
+}
+
 function renderPlaylist() {
   elements.playlist.innerHTML = '';
 
@@ -1056,7 +1197,18 @@ function renderPlaylist() {
     const savedTime = item.progress?.currentTime ? ` · ${t('savedAt', { time: formatTime(item.progress.currentTime) })}` : '';
     meta.textContent = `${formatBytes(item.file?.size ?? item.size ?? 0)}${savedTime}`;
 
-    content.append(title, meta);
+    const pendingSelection = state.shared.pendingPlaylistSelection === item.mediaId;
+    const oneAheadStatus = oneAheadStatusFor(item);
+    if (pendingSelection || oneAheadStatus) {
+      const status = document.createElement('span');
+      status.className = pendingSelection ? 'selection-pending-status' : 'one-ahead-status';
+      status.textContent = pendingSelection ? t('selectionPending') : oneAheadStatus;
+      if (pendingSelection) {
+        status.setAttribute('role', 'status');
+        status.setAttribute('aria-live', 'polite');
+      }
+      content.append(title, meta, status);
+    } else content.append(title, meta);
     button.append(number, content);
     listItem.append(button);
     elements.playlist.append(listItem);
@@ -1078,6 +1230,8 @@ function formatTime(totalSeconds) {
 }
 
 function getVideoDuration() {
+  // Selected-track HLS is attached only after a completed VOD validates, so its
+  // media metadata is the full seekable timeline.
   return Number.isFinite(elements.video.duration) ? elements.video.duration : 0;
 }
 
@@ -1133,7 +1287,9 @@ function updateVideoProgress() {
   elements.videoSeekRange.value = String(seekValue);
   elements.videoSeekRange.style.setProperty('--seek-progress', `${seekProgress}%`);
   elements.videoSeekRange.setAttribute('aria-valuetext', formatTime(seekValue));
-  elements.videoTimeDisplay.textContent = formatTime(currentTime);
+  elements.videoTimeDisplay.textContent = duration > 0
+    ? `${formatTime(currentTime)} / ${formatTime(duration)}`
+    : formatTime(currentTime);
 }
 
 function updateVideoControls() {
@@ -1200,6 +1356,9 @@ function handleSeekInput(event) {
   const nextTime = Number.parseFloat(event.target.value);
   if (!Number.isFinite(nextTime)) return;
   const position = clamp(nextTime, 0, getVideoDuration() || nextTime);
+  // A zero produced by a detached/pre-metadata source is never a checkpoint;
+  // this marker is set only by the user-operated seek control.
+  if (position === 0) state.persistence.allowZeroWrite = true;
   if (isSharedMode()) {
     void sendRoomCommand({ type: 'seek', position });
     return;
@@ -1532,6 +1691,10 @@ function isSharedMode() {
   return state.shared.active;
 }
 
+function isManagedLocalSession() {
+  return isSharedMode() && state.shared.session?.shareable === false;
+}
+
 function isSharedHost() {
   return isSharedMode() && state.shared.role === 'host';
 }
@@ -1567,7 +1730,9 @@ async function sharedRequest(path, options = {}) {
     });
     if (!response.ok) {
       const body = await response.json().catch(() => ({}));
-      throw new Error(body.error || `Request failed (${response.status})`);
+      const error = new Error(body.error || `Request failed (${response.status})`);
+      error.status = response.status;
+      throw error;
     }
     return await response.json();
   } catch (error) {
@@ -1579,12 +1744,19 @@ async function sharedRequest(path, options = {}) {
   }
 }
 
+function isExpectedClearCancellation(error) {
+  // A clear is already authoritative and optimistic. The obsolete HLS request
+  // may finish with 503 while its conversion is being cancelled; do not turn
+  // that expected race into a user-visible request failure.
+  return state.shared.clearPending && error?.status === 503;
+}
+
 function currentRoomShareUrl() {
   return state.shared.roomUrl;
 }
 
 function updateRoomShare() {
-  elements.roomShare.hidden = !isSharedMode();
+  elements.roomShare.hidden = !isSharedMode() || isManagedLocalSession();
 }
 
 function showCopyToast(message) {
@@ -1631,35 +1803,97 @@ function leaveSharedMode(message) {
   state.shared.active = false;
   state.shared.role = null;
   state.shared.initializing = false;
+  state.shared.clearPending = false;
+  state.shared.pendingPlaylistSelection = null;
   state.shared.lastSequence = -1;
+  state.shared.roomState = null;
   state.shared.roomApplyId += 1;
   state.shared.desiredPlaying = false;
   state.shared.playbackIntent = null;
   state.shared.playbackCommandInFlight = false;
+  state.shared.resume = { contentId: null, position: 0, pending: false };
   destroyHlsClient();
   state.shared.hls.selectionKey = null;
   state.shared.hls.fallbackKey = null;
+  state.shared.hls.seenOneAheadMediaIds.clear();
   setRemoteAudioPrompt(false);
   if (state.shared.playbackRetryTimer) window.clearTimeout(state.shared.playbackRetryTimer);
   state.shared.playbackRetryTimer = null;
   state.shared.libraryRefreshPromise = null;
   state.shared.roomUrl = null;
+  state.shared.session = null;
+  state.shared.localUploadResume = null;
   if (state.shared.roomRecoveryTimer) window.clearTimeout(state.shared.roomRecoveryTimer);
   state.shared.roomRecoveryTimer = null;
+  void reconcileWakeLock();
   updateRoomShare();
   if (message) updateStatus(message);
   updateControls();
 }
 
+function armSharedProgressRestore(contentId, position) {
+  if (typeof contentId !== 'string' || !Number.isFinite(position) || position <= 0) return;
+  state.shared.resume = { contentId, position, pending: true };
+}
+
+function isSharedProgressRestorePending(item) {
+  return Boolean(isSharedMode() && state.shared.resume.pending && item?.contentId === state.shared.resume.contentId);
+}
+
+function sharedProgressRestorePosition(item, position) {
+  return isSharedProgressRestorePending(item)
+    ? Math.max(position, state.shared.resume.position)
+    : position;
+}
+
+function completeSharedProgressRestore(item) {
+  if (isSharedProgressRestorePending(item)) state.shared.resume.pending = false;
+}
+
+function sharedNavigationResume(item) {
+  const position = Number(item?.progress?.currentTime);
+  return item?.contentId && Number.isFinite(position) && position > 0
+    ? { contentId: item.contentId, position }
+    : null;
+}
+
+async function hydrateSharedNavigationResume(item) {
+  if (!item?.contentId) return sharedNavigationResume(item);
+  try {
+    // Shared library snapshots do not include browser-local progress. Wait for
+    // an in-flight write for this immutable content before reading so the first
+    // click carries its just-saved checkpoint rather than a stale IDB record.
+    await awaitPendingProgressWrite(item.contentId);
+    const persisted = await readProgress(item.contentId);
+    const persistedResume = sharedNavigationResume({ ...item, progress: persisted });
+    const inMemoryResume = sharedNavigationResume(item);
+    const persistedUpdatedAt = Date.parse(persisted?.updatedAt || '');
+    const inMemoryUpdatedAt = Date.parse(item.progress?.updatedAt || '');
+    const usePersisted = persistedResume && (!inMemoryResume
+      || (Number.isFinite(persistedUpdatedAt) && (!Number.isFinite(inMemoryUpdatedAt) || persistedUpdatedAt >= inMemoryUpdatedAt)));
+    if (usePersisted) {
+      item.progress = persisted;
+      return persistedResume;
+    }
+  } catch (error) {
+    console.warn('Could not read shared navigation progress', error);
+  }
+  return sharedNavigationResume(item);
+}
+
 function setSharedItems(media) {
+  // Room/SSE updates recreate these items. Preserve progress already read for
+  // the same immutable content identity rather than resetting it on append.
+  const progressByContentId = new Map(state.items.map((item) => [item.contentId, item.progress]));
   state.items = media.map((item) => ({
     id: item.contentId,
     contentId: item.contentId,
     mediaId: item.id,
     relativePath: item.name,
     size: item.size,
+    duration: item.duration,
     tracks: item.tracks,
-    progress: null
+    progress: progressByContentId.get(item.contentId) || null
   }));
   state.selectionId = null;
   renderPlaylist();
@@ -1673,9 +1907,14 @@ function sharedHlsUrl(mediaId) {
   return roomUrl(`/hls/${encodeURIComponent(mediaId)}/master.m3u8`);
 }
 
+function sharedHlsSubtitleUrl(mediaId) {
+  return roomUrl(`/hls/${encodeURIComponent(mediaId)}/subtitles.vtt`);
+}
+
 function trackSelectionKey(mediaId, selection) {
   return `${mediaId || ''}:${selection?.audioTrackIndex ?? ''}:${selection?.subtitleTrackIndex ?? ''}`;
 }
+
 
 function selectedSharedTracks(item, selection) {
   if (!item || item.tracks?.status !== 'available' || !Number.isSafeInteger(selection?.audioTrackIndex)) return null;
@@ -1691,17 +1930,98 @@ function trackLabel(track, ordinal) {
   return details || `${track.kind === 'audio' ? t('audioTrackLabel') : t('subtitleTrackLabel')} ${ordinal + 1}`;
 }
 
-function setTrackPlaybackStatus(message = '') {
+function setTrackPlaybackStatus(message = '', tone = '', { recovery = false } = {}) {
   elements.trackPlaybackStatus.textContent = message;
   elements.trackPlaybackStatus.hidden = !message;
+  elements.trackPlaybackStatus.classList.toggle('is-fallback', tone === 'fallback');
+  elements.useOriginalVideoButton.hidden = !recovery;
+  elements.useOriginalVideoButton.textContent = t('useOriginalVideo');
+}
+
+function ensureConversionProgressOverlay() {
+  if (elements.conversionProgress || !elements.videoFrame) return elements.conversionProgress;
+  const overlay = document.createElement('section');
+  overlay.className = 'conversion-progress-overlay';
+  overlay.hidden = true;
+  overlay.setAttribute('aria-live', 'polite');
+  const title = document.createElement('strong');
+  const detail = document.createElement('span');
+  detail.className = 'conversion-progress-detail';
+  const metrics = document.createElement('span');
+  metrics.className = 'conversion-progress-metrics';
+  const track = document.createElement('span');
+  track.className = 'conversion-progress-track';
+  track.setAttribute('role', 'progressbar');
+  track.setAttribute('aria-label', t('conversionProgressTitle'));
+  track.setAttribute('aria-valuemin', '0');
+  track.setAttribute('aria-valuemax', '100');
+  const fill = document.createElement('span');
+  fill.className = 'conversion-progress-fill';
+  track.append(fill);
+  overlay.append(title, detail, metrics, track);
+  elements.videoFrame.insertBefore(overlay, elements.videoControls);
+  elements.conversionProgress = { overlay, title, detail, metrics, track, fill };
+  return elements.conversionProgress;
+}
+
+function safeConversionProgress(progress) {
+  if (!progress || typeof progress !== 'object') return {};
+  const readSeconds = (value) => Number.isSafeInteger(value) && value >= 0 ? value : null;
+  const percent = Number.isSafeInteger(progress.percent) && progress.percent >= 0 && progress.percent <= 100 ? progress.percent : null;
+  return { percent, elapsedSeconds: readSeconds(progress.elapsedSeconds), etaSeconds: readSeconds(progress.etaSeconds) };
+}
+
+function renderConversionProgress(lifecycle, matchesSelection) {
+  const progressOverlay = ensureConversionProgressOverlay();
+  if (!progressOverlay) return;
+  const visible = matchesSelection && lifecycle?.status === 'preparing';
+  progressOverlay.overlay.hidden = !visible;
+  if (!visible) return;
+  const progress = safeConversionProgress(lifecycle.progress);
+  const determinate = progress.percent !== null;
+  progressOverlay.title.textContent = t('conversionProgressTitle');
+  progressOverlay.detail.textContent = determinate ? t('conversionProgressComplete', { percent: progress.percent }) : t('conversionProgressIndeterminate');
+  const metrics = [];
+  if (progress.elapsedSeconds !== null) metrics.push(t('conversionProgressElapsed', { time: formatTime(progress.elapsedSeconds) }));
+  metrics.push(progress.etaSeconds !== null ? t('conversionProgressEta', { time: formatTime(progress.etaSeconds) }) : t('conversionProgressEtaUnavailable'));
+  progressOverlay.metrics.textContent = metrics.join(' · ');
+  progressOverlay.fill.style.width = determinate ? `${progress.percent}%` : '28%';
+  progressOverlay.overlay.classList.toggle('is-indeterminate', !determinate);
+  if (determinate) {
+    progressOverlay.track.setAttribute('aria-valuenow', String(progress.percent));
+    progressOverlay.track.setAttribute('aria-valuetext', `${progress.percent}%`);
+  } else {
+    progressOverlay.track.removeAttribute('aria-valuenow');
+    progressOverlay.track.removeAttribute('aria-valuetext');
+  }
+}
+
+function defaultEmbeddedAudioTrackIndex(item) {
+  const audio = item?.tracks?.audio;
+  if (!Array.isArray(audio)) return null;
+  const available = audio.filter((track) => Number.isSafeInteger(track?.index));
+  if (available.length === 1) return available[0].index;
+  return available.find((track) => track.disposition?.includes('default'))?.index ?? null;
+}
+
+function rememberTrackDraft() {
+  const item = state.items[state.activeIndex];
+  if (!isSharedHost() || !item?.mediaId) return;
+  state.shared.trackDraft = {
+    mediaId: item.mediaId,
+    audioValue: elements.audioTrackSelect.value,
+    subtitleValue: elements.subtitleTrackSelect.value
+  };
 }
 
 function renderTrackControls(roomState) {
   const item = state.items[state.activeIndex];
   const tracks = item?.tracks;
   const hasTracks = isSharedMode() && tracks?.status === 'available' && Array.isArray(tracks.audio) && tracks.audio.length > 0;
-  elements.trackControls.hidden = !hasTracks;
-  if (!hasTracks) {
+  const hasTrackChoice = hasTracks && (tracks.audio.length > 1 || (tracks.subtitles?.length || 0) > 0);
+  elements.trackControls.hidden = !hasTrackChoice;
+  if (!hasTrackChoice) {
+    renderConversionProgress(null, false);
     setTrackPlaybackStatus();
     return;
   }
@@ -1718,43 +2038,431 @@ function renderTrackControls(roomState) {
     if (select.value !== selectedValue) select.selectedIndex = 0;
     select.disabled = !host;
   };
-  buildOptions(elements.audioTrackSelect, tracks.audio, t('audioTrackOriginal'), selection.audioTrackIndex === null ? '' : String(selection.audioTrackIndex), selection.audioTrackIndex !== null);
-  buildOptions(elements.subtitleTrackSelect, tracks.subtitles || [], t('subtitleTrackOff'), selection.subtitleTrackIndex === null ? '' : String(selection.subtitleTrackIndex));
-  elements.trackSelectionHelp.textContent = t(host ? 'trackSelectionHostHelp' : 'trackSelectionGuestHelp');
+  // Keep host edits until Apply. SSE can arrive for progress or another item
+  // while the authoritative selection is intentionally still null.
+  const draft = selection.audioTrackIndex === null && state.shared.trackDraft?.mediaId === item?.mediaId
+    ? state.shared.trackDraft
+    : null;
+  if (selection.audioTrackIndex !== null) state.shared.trackDraft = null;
+  buildOptions(elements.audioTrackSelect, tracks.audio, t('audioTrackOriginal'), draft?.audioValue ?? (selection.audioTrackIndex === null ? '' : String(selection.audioTrackIndex)), selection.audioTrackIndex !== null);
+  buildOptions(elements.subtitleTrackSelect, tracks.subtitles || [], t('subtitleTrackOff'), draft?.subtitleValue ?? (selection.subtitleTrackIndex === null ? '' : String(selection.subtitleTrackIndex)));
+  elements.trackSelectionHelp.textContent = t(host ? (isManagedLocalSession() ? 'trackSelectionLocalHelp' : 'trackSelectionHostHelp') : 'trackSelectionGuestHelp');
+  elements.applyTrackSelectionButton.hidden = !host;
+  elements.applyTrackSelectionButton.disabled = !host;
+  elements.applyTrackSelectionButton.textContent = t('applyTrackSelection');
+  if (selection.audioTrackIndex === null) {
+    renderConversionProgress(null, false);
+    setTrackPlaybackStatus(t(host ? 'trackSelectionReadyHost' : 'trackSelectionReadyGuest'));
+    return;
+  }
+  const lifecycle = roomState?.hls;
+  const matchesSelection = lifecycle?.mediaId === item?.mediaId
+    && lifecycle?.audioTrackIndex === selection.audioTrackIndex
+    && lifecycle?.subtitleTrackIndex === selection.subtitleTrackIndex
+    && typeof lifecycle?.selectionId === 'string';
+  renderConversionProgress(lifecycle, matchesSelection);
+  if (!matchesSelection) return;
+  if (lifecycle.status === 'preparing') setTrackPlaybackStatus(t('hlsPreparing'));
+  else if (lifecycle.status === 'ready') {
+    setTrackPlaybackStatus(t(lifecycle.subtitleStatus === 'pending'
+      ? 'hlsReadySubtitlePending'
+      : lifecycle.subtitleStatus === 'delayed' ? 'hlsReadySubtitleDelayed' : 'hlsReady'));
+  }
+  else if (lifecycle.status === 'timeout') setTrackPlaybackStatus(t('hlsTimeout'), 'fallback', { recovery: true });
+  else if (lifecycle.status === 'failed') setTrackPlaybackStatus(t('hlsFailed', { reason: lifecycle.reason || 'failed' }), 'fallback', { recovery: true });
+}
+
+function ensureSubtitleOverlay() {
+  if (elements.subtitleOverlay || !elements.videoFrame) return elements.subtitleOverlay;
+  const overlay = document.createElement('div');
+  overlay.className = 'generated-subtitle-overlay';
+  overlay.hidden = true;
+  overlay.setAttribute('aria-live', 'off');
+  overlay.setAttribute('aria-hidden', 'true');
+  elements.videoFrame.insertBefore(overlay, elements.videoControls);
+  elements.subtitleOverlay = overlay;
+  return overlay;
+}
+
+function clearGeneratedSubtitleOverlay() {
+  const overlay = ensureSubtitleOverlay();
+  if (!overlay) return;
+  overlay.replaceChildren();
+  overlay.hidden = true;
+}
+
+const GENERATED_SETTING_FREE_CUE_ID = '__reproductor_generated_setting_free__';
+
+function isSettingFreeSubtitleCue(cue) {
+  // Browser cue properties cannot reveal every authored WebVTT setting because
+  // some authored values equal the DOM defaults. The server marks only
+  // setting-free generated cue headers, so all authored cues stay native.
+  return typeof cue?.id === 'string' && cue.id.startsWith(GENERATED_SETTING_FREE_CUE_ID);
+}
+
+function safeSubtitleDiagnosticField(value) {
+  return typeof value === 'string' && /^[a-zA-Z0-9 _.-]{1,80}$/.test(value) ? value : 'unknown';
+}
+
+function reportSubtitleTrackDiagnostic(event, client, textTrack, count) {
+  // This is deliberately a bounded metadata-only browser diagnostic: never
+  // include media URLs, tokens, paths, cue text, or hls.js event payloads.
+  console.info('HLS subtitle track diagnostic', {
+    event,
+    count: Math.min(32, Math.max(0, Number.isSafeInteger(count) ? count : 0)),
+    selectedIndex: Number.isSafeInteger(client?.subtitleTrack) ? client.subtitleTrack : -1,
+    subtitleDisplay: client?.subtitleDisplay === true,
+    id: safeSubtitleDiagnosticField(textTrack?.id),
+    label: safeSubtitleDiagnosticField(textTrack?.label),
+    kind: safeSubtitleDiagnosticField(textTrack?.kind),
+    mode: safeSubtitleDiagnosticField(textTrack?.mode),
+    cueCount: Math.min(1024, Array.from(textTrack?.cues || []).length),
+    activeCueCount: Math.min(1024, Array.from(textTrack?.activeCues || []).length)
+  });
+}
+
+function bindGeneratedSubtitleOverlay(subtitleTrackIndex, client = null) {
+  state.shared.hls.subtitleOverlayCleanup?.();
+  // Generated cue placement is encoded in WebVTT server-side. hls.js must own
+  // its selected TextTrack uninterrupted, so never use the custom overlay or
+  // write TextTrack.mode for this path.
+  clearGeneratedSubtitleOverlay();
+  const listeners = [];
+  const textTracks = elements.video.textTracks;
+  const bind = (target, type, listener) => {
+    if (typeof target?.addEventListener !== 'function') return;
+    target.addEventListener(type, listener);
+    listeners.push(() => target.removeEventListener(type, listener));
+  };
+  const refresh = () => {
+    const enabled = Number.isSafeInteger(subtitleTrackIndex);
+    if (client) {
+      client.subtitleTrack = enabled ? 0 : -1;
+      client.subtitleDisplay = enabled;
+      return;
+    }
+    // Native-HLS fallback has no hls.js display switch. Match the selected
+    // rendition semantics directly while leaving authored cue settings intact.
+    for (const textTrack of Array.from(textTracks || [])) {
+      if (!['subtitles', 'captions'].includes(textTrack.kind)) continue;
+      try { textTrack.mode = enabled ? 'showing' : 'disabled'; } catch {}
+    }
+  };
+  bind(textTracks, 'addtrack', (event) => {
+    const textTrack = event?.track;
+    if (!textTrack || !['subtitles', 'captions'].includes(textTrack.kind)) return;
+    refresh();
+    reportSubtitleTrackDiagnostic('addtrack', client, textTrack, Array.from(textTracks || []).length);
+  });
+  bind(elements.video, 'loadedmetadata', refresh);
+  refresh();
+  state.shared.hls.subtitleOverlayCleanup = () => {
+    for (const remove of listeners) remove();
+    state.shared.hls.subtitleOverlayCleanup = null;
+    clearGeneratedSubtitleOverlay();
+  };
+  return refresh;
 }
 
 function destroyHlsClient() {
+  // Invalidate callbacks from a detached client before its destroy event can race a new load.
+  state.shared.hls.loadId += 1;
+  state.shared.hls.subtitleOverlayCleanup?.();
   if (state.shared.hls.client) state.shared.hls.client.destroy();
   state.shared.hls.client = null;
   state.shared.hls.sourceKey = null;
+  state.shared.hls.mediaId = null;
+  state.shared.hls.preparationKey = null;
+}
+
+function clearVideoTextTracks() {
+  for (const textTrack of Array.from(elements.video.textTracks || [])) {
+    try { textTrack.mode = 'disabled'; } catch {}
+    for (const cue of Array.from(textTrack.cues || [])) {
+      try { textTrack.removeCue(cue); } catch {}
+    }
+  }
+}
+
+function clearSharedPlaybackForLibraryClear() {
+  // Clearing is terminal, not a source switch: detach before the request waits
+  // for server-side FFmpeg cancellation.
+  state.shared.roomApplyId += 1;
+  state.shared.applyingRemote = false;
+  state.shared.desiredPlaying = false;
+  state.shared.playbackIntent = null;
+  state.shared.playbackCommandInFlight = false;
+  state.shared.pendingPlaylistSelection = null;
+  state.shared.currentTrackSelection = null;
+  state.shared.hls.playbackFailureStage = null;
+  state.shared.hls.fallbackKey = null;
+  state.shared.hls.selectionKey = null;
+  state.shared.hls.suppressNextVideoAbort = false;
+  state.shared.hls.cleared = true;
+  destroyHlsClient();
+  elements.video.onloadedmetadata = null;
+  clearVideoTextTracks();
+  try { elements.video.pause(); } catch {}
+  elements.video.removeAttribute('src');
+  elements.video.load();
+  renderConversionProgress(null, false);
+  setTrackPlaybackStatus();
+}
+
+function isCurrentSharedHlsLoad(sourceKey, loadId) {
+  return state.shared.hls.sourceKey === sourceKey && state.shared.hls.loadId === loadId;
+}
+
+function hlsPlaybackStage(data) {
+  const details = typeof data?.details === 'string' ? data.details : '';
+  if (data?.frag?.sn === 'initSegment' || /initSegment/i.test(details)) return 'init';
+  if (/manifest/i.test(details)) return 'manifest';
+  if (data?.type === window.Hls?.ErrorTypes?.MEDIA_ERROR || /buffer|decode/i.test(details)) return 'MSE decode';
+  return 'fragment';
+}
+
+const SAFE_HLS_ERROR_TYPES = Object.freeze({
+  networkError: 'network',
+  mediaError: 'media',
+  keySystemError: 'key',
+  otherError: 'other'
+});
+const SAFE_HLS_ERROR_DETAILS = Object.freeze({
+  bufferAppendingError: 'buffer-appending',
+  bufferAppendError: 'buffer-appending',
+  bufferAddCodecError: 'codec-incompatible',
+  bufferIncompatibleCodecsError: 'codec-incompatible'
+});
+const SAFE_HLS_SOURCE_BUFFER_NAMES = new Set(['audio', 'video', 'audiovideo']);
+
+function hlsErrorDiagnostic(data) {
+  const sourceBufferName = typeof data?.sourceBufferName === 'string' && SAFE_HLS_SOURCE_BUFFER_NAMES.has(data.sourceBufferName)
+    ? data.sourceBufferName
+    : undefined;
+  return {
+    type: SAFE_HLS_ERROR_TYPES[data?.type] || 'other',
+    detail: SAFE_HLS_ERROR_DETAILS[data?.details] || 'other',
+    ...(sourceBufferName ? { sourceBuffer: sourceBufferName } : {})
+  };
+}
+
+function hlsFailureCategory(stage, diagnostic) {
+  if (stage === 'init' && diagnostic.detail === 'buffer-appending') return 'init-append-sequencing';
+  if (stage === 'fragment' || diagnostic.detail === 'codec-incompatible') return 'fragment-config-transition';
+  return 'other';
+}
+
+function reportHlsDiagnostic(stage, diagnostic) {
+  // Keep browser diagnostics useful without exposing a request URL, room token,
+  // filesystem path, command line, stack, or an untrusted HLS error string.
+  console.warn('HLS playback diagnostic', {
+    stage,
+    ...diagnostic,
+    category: hlsFailureCategory(stage, diagnostic)
+  });
 }
 
 function canUseNativeHls() {
   return Boolean(elements.video.canPlayType('application/vnd.apple.mpegurl') || elements.video.canPlayType('application/x-mpegURL'));
 }
 
-function fallBackToSharedMedia(item, sourceKey) {
-  if (!isSharedMode() || state.shared.hls.sourceKey !== sourceKey) return;
+function hasPendingOutgoingNavigation(sourceKey) {
+  const roomState = state.shared.roomState;
+  const pending = roomState?.pendingNavigation;
+  // The attached HLS client belongs to the still-authoritative foreground.
+  // Its fatal callbacks are obsolete while a prepared target is pending; the
+  // server lifecycle remains authoritative for genuine current failures.
+  return Boolean(pending?.mediaId && roomState?.mediaId === state.shared.hls.mediaId
+    && sourceKey === state.shared.hls.sourceKey);
+}
+
+function fallBackToSharedMedia(item, sourceKey, playbackFailureStage = null, loadId = state.shared.hls.loadId) {
+  if (!isSharedMode() || !isCurrentSharedHlsLoad(sourceKey, loadId) || hasPendingOutgoingNavigation(sourceKey)) return;
   const fallbackPosition = currentSharedPosition();
+  state.shared.hls.playbackFailureStage = playbackFailureStage;
   state.shared.hls.fallbackKey = sourceKey;
   state.shared.hls.suppressNextVideoAbort = true;
   destroyHlsClient();
   elements.video.onloadedmetadata = null;
   elements.video.src = sharedMediaUrl(item.mediaId);
+  const isCurrentFallback = () => isSharedMode()
+    && state.shared.hls.fallbackKey === sourceKey;
   elements.video.addEventListener('loadedmetadata', () => {
-    if (!isSharedMode() || state.shared.hls.fallbackKey !== sourceKey) return;
+    if (!isCurrentFallback()) return;
     const duration = Number.isFinite(elements.video.duration) ? elements.video.duration : 0;
     elements.video.currentTime = duration > 0
       ? clamp(fallbackPosition, 0, duration)
       : fallbackPosition;
     updateVideoControls();
+    if (state.shared.desiredPlaying) void playSharedRemoteMedia(isCurrentFallback);
+    else {
+      setRemoteAudioPrompt(false);
+      elements.video.pause();
+    }
   }, { once: true });
   elements.video.load();
-  setTrackPlaybackStatus(t('hlsUnavailable'));
+  if (playbackFailureStage) {
+    const message = t('hlsPlaybackFailed', { stage: playbackFailureStage });
+    showError(message);
+    setTrackPlaybackStatus(message, 'fallback');
+  } else setTrackPlaybackStatus(t('hlsUnavailable'), 'fallback');
 }
 
-function loadSharedHls(item, selection) {
-  const sourceKey = trackSelectionKey(item.mediaId, selection);
+function scheduleSharedHlsFallback(item, sourceKey, loadId) {
+  // Browser manifest/metadata readiness is distinct from server readiness.
+  // This has no clock: authoritative SSE decides when CMAF may be loaded.
+  return () => {
+    if (!isCurrentSharedHlsLoad(sourceKey, loadId)) return;
+    clearError();
+    setTrackPlaybackStatus(t('hlsReady'));
+    const beginPlayback = () => {
+      if (isSharedMode() && isCurrentSharedHlsLoad(sourceKey, loadId) && state.shared.desiredPlaying) {
+        void playSharedRemoteMedia(() => isCurrentSharedHlsLoad(sourceKey, loadId));
+      }
+    };
+    if (elements.video.readyState >= HTMLMediaElement.HAVE_METADATA) beginPlayback();
+    else elements.video.addEventListener('loadedmetadata', beginPlayback, { once: true });
+  };
+}
+
+function hlsLifecycleMatches(item, selection, lifecycle) {
+  return lifecycle?.mediaId === item?.mediaId
+    && lifecycle?.audioTrackIndex === selection?.audioTrackIndex
+    && lifecycle?.subtitleTrackIndex === selection?.subtitleTrackIndex
+    && typeof lifecycle?.selectionId === 'string';
+}
+
+function hlsGenerationKey(item, selection, lifecycle) {
+  return `hls:${trackSelectionKey(item?.mediaId, selection)}:${lifecycle?.selectionId || ''}`;
+}
+
+function hlsSourceMatches(item, selection, lifecycle) {
+  return state.shared.hls.sourceKey === hlsGenerationKey(item, selection, lifecycle);
+}
+
+function parseAggregateWebVttCues(vtt) {
+  if (typeof vtt !== 'string' || !vtt.startsWith('WEBVTT')) return [];
+  const timestamp = (value) => {
+    const match = /^(?:(\d{2,}):)?(\d{2}):(\d{2}\.\d{3})$/.exec(value.trim());
+    if (!match) return null;
+    return (Number(match[1] || 0) * 3600) + (Number(match[2]) * 60) + Number(match[3]);
+  };
+  const cues = [];
+  for (const block of vtt.split(/\r?\n\r?\n/)) {
+    const lines = block.split(/\r?\n/);
+    const timingIndex = lines.findIndex((line, index) => index < 2 && line.includes('-->'));
+    if (timingIndex < 0) continue;
+    const [start, endWithSettings] = lines[timingIndex].split('-->');
+    const startTime = timestamp(start || '');
+    const endTime = timestamp((endWithSettings || '').trim().split(/\s+/, 1)[0]);
+    const text = lines.slice(timingIndex + 1).join('\n');
+    if (Number.isFinite(startTime) && Number.isFinite(endTime) && endTime > startTime && text) cues.push({ startTime, endTime, text });
+  }
+  return cues;
+}
+
+function appendWebVttCueText(container, text) {
+  // WebVTT permits a small markup vocabulary. Build the supported emphasis
+  // node directly; every other token remains text rather than executable DOM.
+  const parents = [container];
+  for (const token of String(text).split(/(<\/?i>)/gi)) {
+    const parent = parents[parents.length - 1];
+    if (/^<i>$/i.test(token)) {
+      const italic = document.createElement('i');
+      parent.append(italic);
+      parents.push(italic);
+    } else if (/^<\/i>$/i.test(token) && parents.length > 1) {
+      parents.pop();
+    } else {
+      parent.append(document.createTextNode(token));
+    }
+  }
+}
+
+function bindAggregateSubtitleOverlay(url, subtitleTrackIndex, client = null) {
+  state.shared.hls.subtitleOverlayCleanup?.();
+  clearGeneratedSubtitleOverlay();
+  if (client) {
+    // The aggregate document is the sole presentation path. Keep hls.js from
+    // rendering its incomplete fragment TextTrack beside the overlay.
+    client.subtitleTrack = -1;
+    client.subtitleDisplay = false;
+  }
+  if (!Number.isSafeInteger(subtitleTrackIndex)) return;
+  let disposed = false;
+  let cues = [];
+  const listeners = [];
+  const textTracks = elements.video.textTracks;
+  const disableNativeTextTrack = (textTrack) => {
+    if (!textTrack || !['subtitles', 'captions'].includes(textTrack.kind)) return;
+    try { textTrack.mode = 'disabled'; } catch {}
+  };
+  for (const textTrack of Array.from(textTracks || [])) disableNativeTextTrack(textTrack);
+  const bind = (target, type, listener) => {
+    if (typeof target?.addEventListener !== 'function') return;
+    target.addEventListener(type, listener);
+    listeners.push(() => target.removeEventListener(type, listener));
+  };
+  bind(textTracks, 'addtrack', (event) => disableNativeTextTrack(event?.track));
+  const bindVideo = (type, listener) => {
+    elements.video.addEventListener(type, listener);
+    listeners.push(() => elements.video.removeEventListener(type, listener));
+  };
+  const render = () => {
+    const overlay = ensureSubtitleOverlay();
+    if (!overlay || disposed) return;
+    const now = elements.video.currentTime;
+    const active = Number.isFinite(now) ? cues.filter((cue) => cue.startTime <= now && now < cue.endTime) : [];
+    overlay.replaceChildren(...active.map((cue) => {
+      const line = document.createElement('span');
+      appendWebVttCueText(line, cue.text);
+      return line;
+    }));
+    overlay.hidden = active.length === 0;
+  };
+  bindVideo('timeupdate', render);
+  bindVideo('seeking', render);
+  bindVideo('seeked', render);
+  bindVideo('loadedmetadata', render);
+  state.shared.hls.subtitleOverlayCleanup = () => {
+    disposed = true;
+    for (const remove of listeners) remove();
+    state.shared.hls.subtitleOverlayCleanup = null;
+    clearGeneratedSubtitleOverlay();
+  };
+  // This complete, protected representation is independent from hls.js
+  // progressive WebVTT fragment events, which can stop after the first batch.
+  void window.fetch(url).then((response) => response.ok ? response.text() : Promise.reject(new Error('Subtitle aggregate unavailable')))
+    .then((body) => {
+      if (disposed) return;
+      cues = parseAggregateWebVttCues(body);
+      render();
+    })
+    .catch(() => { if (!disposed) clearGeneratedSubtitleOverlay(); });
+}
+
+function activateSelectedHlsSubtitle(client, subtitleTrackIndex, refreshTextTracks = () => {}) {
+  const apply = () => {
+    if (!client) return;
+    const enabled = Number.isSafeInteger(subtitleTrackIndex);
+    // The server delivers exactly one selected subtitle rendition. Keep it
+    // native so hls.js owns its WebVTT lifecycle and the browser renders cues.
+    client.subtitleTrack = enabled ? 0 : -1;
+    client.subtitleDisplay = enabled;
+    refreshTextTracks();
+  };
+  apply();
+  return apply;
+}
+
+function loadSharedHls(item, selection, lifecycle) {
+  state.shared.hls.cleared = false;
+  // A generation identity prevents a same-track replacement from retaining a
+  // detached old MSE client merely because its stream indexes match.
+  const sourceKey = hlsGenerationKey(item, selection, lifecycle);
+  // Lifecycle state is replayed over SSE. Never replace a client while its CMAF
+  // init is appending merely because the identical ready state arrives again.
+  if (state.shared.hls.sourceKey === sourceKey && state.shared.hls.client) return;
   if (state.shared.hls.fallbackKey === sourceKey) {
     destroyHlsClient();
     elements.video.src = sharedMediaUrl(item.mediaId);
@@ -1763,39 +2471,93 @@ function loadSharedHls(item, selection) {
     return;
   }
   destroyHlsClient();
+  const loadId = state.shared.hls.loadId += 1;
+  state.shared.hls.fallbackKey = null;
+  state.shared.hls.playbackFailureStage = null;
   state.shared.hls.suppressNextVideoAbort = false;
   state.shared.hls.sourceKey = sourceKey;
+  state.shared.hls.mediaId = item.mediaId;
+  clearError();
+  setTrackPlaybackStatus(t('hlsLoading'));
   const source = sharedHlsUrl(item.mediaId);
-  const unavailable = () => fallBackToSharedMedia(item, sourceKey);
+  const unavailable = (stage = 'fragment') => fallBackToSharedMedia(item, sourceKey, stage, loadId);
+  const markReady = scheduleSharedHlsFallback(item, sourceKey, loadId);
   if (window.Hls?.isSupported?.()) {
-    const client = new window.Hls({ enableWorker: true });
+    // Chromium accepts this CMAF init directly, but hls.js worker demuxing can fail its
+    // init append sequencing for the same artifact. Keep this selected muxed flow on
+    // the main thread so MediaSource receives the proven append sequence.
+    const client = new window.Hls({ enableWorker: false, renderTextTracksNatively: true, subtitleDisplay: false, manifestLoadingMaxRetry: 2, levelLoadingMaxRetry: 2, fragLoadingMaxRetry: 2 });
     state.shared.hls.client = client;
+    bindAggregateSubtitleOverlay(sharedHlsSubtitleUrl(item.mediaId), selection.subtitleTrackIndex, client);
+    const disableNativeSubtitles = () => {
+      client.subtitleTrack = -1;
+      client.subtitleDisplay = false;
+    };
+    client.on(window.Hls.Events.MANIFEST_PARSED, () => {
+      disableNativeSubtitles();
+      markReady();
+    });
+    client.on(window.Hls.Events.SUBTITLE_TRACKS_UPDATED, () => {
+      disableNativeSubtitles();
+      reportSubtitleTrackDiagnostic('rendition-update', client, null, Array.from(elements.video.textTracks || []).length);
+    });
     client.on(window.Hls.Events.ERROR, (_, data) => {
-      if (data.fatal) unavailable();
+      if (!isCurrentSharedHlsLoad(sourceKey, loadId) || !data.fatal || hasPendingOutgoingNavigation(sourceKey)) return;
+      const stage = hlsPlaybackStage(data);
+      reportHlsDiagnostic(stage, hlsErrorDiagnostic(data));
+      unavailable(stage);
     });
     client.loadSource(source);
     client.attachMedia(elements.video);
     return;
   }
   if (canUseNativeHls()) {
+    elements.video.addEventListener('loadedmetadata', markReady, { once: true });
+    elements.video.addEventListener('error', () => unavailable('fragment'), { once: true });
     elements.video.src = source;
     elements.video.load();
-    elements.video.addEventListener('error', unavailable, { once: true });
+    bindAggregateSubtitleOverlay(sharedHlsSubtitleUrl(item.mediaId), selection.subtitleTrackIndex);
     return;
   }
   unavailable();
 }
 
-function loadSharedMedia(item, selection) {
-  state.shared.hls.selectionKey = trackSelectionKey(item.mediaId, selection);
-  const selectedTracks = selectedSharedTracks(item, selection);
-  if (selectedTracks) {
-    loadSharedHls(item, selection);
+function loadSharedMedia(item, selection, lifecycle) {
+  state.shared.hls.cleared = false;
+  state.shared.hls.selectionKey = `hls:${trackSelectionKey(item.mediaId, selection)}`;
+  state.shared.currentTrackSelection = selection;
+  const canDeliverHls = Boolean(selectedSharedTracks(item, selection));
+  if (canDeliverHls) {
+    if (hlsLifecycleMatches(item, selection, lifecycle) && lifecycle?.status === 'ready') {
+      loadSharedHls(item, selection, lifecycle);
+      return;
+    }
+    destroyHlsClient();
+    state.shared.hls.suppressNextVideoAbort = true;
+    elements.video.removeAttribute('src');
+    elements.video.load();
+    if (!hlsLifecycleMatches(item, selection, lifecycle) || lifecycle?.status === 'idle' || lifecycle?.status === 'preparing') {
+      clearError();
+      setTrackPlaybackStatus(t(lifecycle?.status === 'preparing' ? 'hlsPreparing' : 'hlsLoading'));
+      // Server room state exclusively admits foreground conversion; clients
+      // only observe lifecycle and attach after this exact generation is ready.
+    }
     return;
   }
+  const hasTrackChoice = item?.tracks?.status === 'available'
+    && ((item.tracks.audio?.length || 0) > 1 || (item.tracks.subtitles?.length || 0) > 0);
   destroyHlsClient();
   state.shared.hls.fallbackKey = null;
   state.shared.hls.suppressNextVideoAbort = false;
+  if (hasTrackChoice && selection?.audioTrackIndex === null) {
+    state.shared.hls.suppressNextVideoAbort = true;
+    elements.video.removeAttribute('src');
+    elements.video.load();
+    clearError();
+    setTrackPlaybackStatus(t(isSharedHost() ? 'trackSelectionReadyHost' : 'trackSelectionReadyGuest'));
+    updateVideoControls();
+    return;
+  }
   elements.video.src = sharedMediaUrl(item.mediaId);
   elements.video.load();
   setTrackPlaybackStatus();
@@ -1823,15 +2585,38 @@ function scheduleSharedRoomRecovery() {
   }, 1000);
 }
 
+function foregroundRoomStateChanged(previousRoomState, roomState) {
+  if (!previousRoomState) return true;
+  return previousRoomState.mediaId !== roomState.mediaId
+    || previousRoomState.position !== roomState.position
+    || previousRoomState.playing !== roomState.playing
+    || JSON.stringify(previousRoomState.trackSelection || {}) !== JSON.stringify(roomState.trackSelection || {})
+    || JSON.stringify(previousRoomState.hls || {}) !== JSON.stringify(roomState.hls || {});
+}
+
+function foregroundSourceIdentity(roomState) {
+  const selection = roomState?.trackSelection || {};
+  const lifecycle = roomState?.hls || {};
+  return [
+    roomState?.mediaId || '',
+    selection.audioTrackIndex ?? '',
+    selection.subtitleTrackIndex ?? '',
+    lifecycle.mediaId || '',
+    lifecycle.selectionId || ''
+  ].join(':');
+}
+
 async function applyRoomState(roomState, { allowCurrentSequence = false } = {}) {
   if (!isSharedMode() || !roomState || !Number.isFinite(roomState.sequence)
     || roomState.sequence < state.shared.lastSequence
-    || (!allowCurrentSequence && roomState.sequence === state.shared.lastSequence)) return;
+    || (!allowCurrentSequence && roomState.sequence === state.shared.lastSequence)
+    || (state.shared.clearPending && roomState.mediaId !== null)) return;
   let index = state.items.findIndex((item) => item.mediaId === roomState.mediaId);
   if (roomState.mediaId && index < 0) {
     try {
       await refreshSharedLibrary();
     } catch (error) {
+      if (state.shared.clearPending) return;
       showError(error.message || t('sharedRequestFailed'));
       if (/token|required|401/i.test(error.message || '')) leaveSharedMode(t('sharedRequestFailed'));
       else scheduleSharedRoomRecovery();
@@ -1844,7 +2629,18 @@ async function applyRoomState(roomState, { allowCurrentSequence = false } = {}) 
       return;
     }
   }
+  const previousRoomState = state.shared.roomState;
+  const activeMediaId = state.items[state.activeIndex]?.mediaId || null;
+  if (state.shared.pendingPlaylistSelection && (roomState.mediaId === state.shared.pendingPlaylistSelection
+    || (roomState.mediaId && roomState.mediaId !== activeMediaId))) {
+    clearPendingPlaylistSelection(state.shared.pendingPlaylistSelection);
+  }
+  const oneAheadChanged = JSON.stringify(previousRoomState?.oneAhead || null) !== JSON.stringify(roomState.oneAhead || null);
+  const foregroundStateChanged = foregroundRoomStateChanged(previousRoomState, roomState);
+  const foregroundIdentity = foregroundSourceIdentity(roomState);
   state.shared.lastSequence = roomState.sequence;
+  state.shared.roomState = roomState;
+  void reconcileWakeLock();
   const hasPlaybackIntent = state.shared.playbackIntent !== null;
   const playing = hasPlaybackIntent ? state.shared.playbackIntent : Boolean(roomState.playing);
   state.shared.desiredPlaying = playing;
@@ -1856,41 +2652,86 @@ async function applyRoomState(roomState, { allowCurrentSequence = false } = {}) 
     && state.shared.lastSequence === roomState.sequence;
   try {
     if (!isCurrentApplication()) return;
-    const selectionKey = index >= 0 ? trackSelectionKey(state.items[index].mediaId, roomState.trackSelection) : null;
+    // Speculative lifecycle SSE updates are playlist-only. In particular, do
+    // not reattach the foreground source or resync its older room position
+    // while the media element is advancing locally.
+    if (!foregroundStateChanged) {
+      renderTrackControls(roomState);
+      if (oneAheadChanged) renderPlaylist();
+      return;
+    }
+    const selectionKey = index >= 0 ? `hls:${trackSelectionKey(state.items[index].mediaId, roomState.trackSelection)}` : null;
+    const persistenceSourceGeneration = index >= 0
+      ? hlsGenerationKey(state.items[index], roomState.trackSelection, roomState.hls)
+      : null;
+    const isCurrentForegroundSource = () => isSharedMode()
+      && state.activeIndex === index
+      && foregroundSourceIdentity(state.shared.roomState) === foregroundIdentity
+      && state.persistence.sourceGeneration === persistenceSourceGeneration;
     let sourceChanged = false;
-    if (index >= 0 && (state.activeIndex !== index || state.shared.hls.selectionKey !== selectionKey)) {
+    if (index >= 0 && (state.activeIndex !== index || state.shared.hls.selectionKey !== selectionKey
+      || state.persistence.sourceGeneration !== persistenceSourceGeneration)) {
       sourceChanged = true;
       revokeCurrentObjectUrl();
       state.activeIndex = index;
       const item = state.items[index];
-      loadSharedMedia(item, roomState.trackSelection);
+      rememberSharedItemSelection(item);
+      const persistenceSourceGeneration = hlsGenerationKey(item, roomState.trackSelection, roomState.hls);
+      const persistenceGeneration = beginProgressPersistence(item, persistenceSourceGeneration);
+      loadSharedMedia(item, roomState.trackSelection, roomState.hls);
+      // Preparing has no attached media; matching metadata later arms this
+      // generation before any pause/timeupdate can write its progress.
+      state.shared.persistenceGeneration = persistenceGeneration;
       elements.nowPlaying.textContent = item.relativePath;
       renderPlaylist();
     }
     if (index >= 0) {
+      const item = state.items[index];
+      const selectionKey = `hls:${trackSelectionKey(item.mediaId, roomState.trackSelection)}`;
+      if (!sourceChanged && state.shared.hls.selectionKey === selectionKey
+        && selectedSharedTracks(item, roomState.trackSelection)
+        && hlsLifecycleMatches(item, roomState.trackSelection, roomState.hls)
+        && roomState.hls.status === 'ready'
+        && !hlsSourceMatches(item, roomState.trackSelection, roomState.hls)
+        && state.shared.hls.fallbackKey !== hlsGenerationKey(item, roomState.trackSelection, roomState.hls)) {
+        loadSharedHls(item, roomState.trackSelection, roomState.hls);
+      }
       const elapsed = roomState.playing
         ? Math.max(0, (Date.now() - Number(roomState.serverTime || roomState.updatedAt || Date.now())) / 1000)
         : 0;
       const roomPosition = Math.max(0, roomState.position + elapsed);
       const position = roomPosition;
+      state.shared.currentTrackSelection = roomState.trackSelection;
+      const persistenceGeneration = state.shared.persistenceGeneration;
+      const persistenceSourceGeneration = hlsGenerationKey(item, roomState.trackSelection, roomState.hls);
       const syncPosition = () => {
-        if (!isCurrentApplication() || hasPlaybackIntent) return;
+        if (!isCurrentForegroundSource() || !armProgressPersistence(item, persistenceGeneration, persistenceSourceGeneration)
+          || (hasPlaybackIntent && !isSharedProgressRestorePending(item))) return;
         try {
+          // HLS can emit low progressive timeupdates before metadata exposes the
+          // full/cached VOD timeline. Keep the content-bound saved position until
+          // this matching source has received its metadata restoration attempt.
+          const restorePosition = sharedProgressRestorePosition(item, position);
           if (Number.isFinite(elements.video.duration) && elements.video.duration > 0) {
-            elements.video.currentTime = clamp(position, 0, elements.video.duration);
+            elements.video.currentTime = clamp(restorePosition, 0, elements.video.duration);
           } else {
-            elements.video.currentTime = position;
+            elements.video.currentTime = restorePosition;
           }
+          completeSharedProgressRestore(item);
           updateVideoControls();
         } catch {
-          if (isCurrentApplication()) showError(t('defaultPlaybackError'));
+          if (isCurrentForegroundSource()) showError(t('defaultPlaybackError'));
         }
       };
       if (!sourceChanged && elements.video.readyState >= HTMLMediaElement.HAVE_METADATA) syncPosition();
-      else if (state.shared.hls.fallbackKey !== selectionKey) elements.video.onloadedmetadata = syncPosition;
-      if (playing) {
+      else if (state.shared.hls.fallbackKey !== hlsGenerationKey(item, roomState.trackSelection, roomState.hls)) elements.video.onloadedmetadata = syncPosition;
+      const generationKey = hlsGenerationKey(item, roomState.trackSelection, roomState.hls);
+      const hlsStarting = selectedSharedTracks(item, roomState.trackSelection)
+        && state.shared.hls.sourceKey !== generationKey
+        && state.shared.hls.fallbackKey !== generationKey;
+      if (playing && !hlsStarting) {
         await playSharedRemoteMedia(isCurrentApplication);
-      } else if (isCurrentApplication()) {
+      } else if (!playing && isCurrentApplication()) {
         setRemoteAudioPrompt(false);
         try {
           elements.video.pause();
@@ -1899,15 +2740,15 @@ async function applyRoomState(roomState, { allowCurrentSequence = false } = {}) 
         }
       }
     } else if (!roomState.mediaId) {
+      clearSharedPlaybackForLibraryClear();
       state.activeIndex = -1;
-      elements.video.removeAttribute('src');
-      elements.video.load();
       elements.nowPlaying.textContent = t('nothingPlaying');
       renderPlaylist();
     }
     renderTrackControls(roomState);
+    if (oneAheadChanged) renderPlaylist();
   } catch {
-    if (isCurrentApplication()) showError(t('defaultPlaybackError'));
+    if (!state.shared.clearPending && isCurrentApplication()) showError(t('defaultPlaybackError'));
   } finally {
     if (state.shared.roomApplyId === applyId) state.shared.applyingRemote = false;
   }
@@ -1925,15 +2766,43 @@ async function recoverSharedRoomState({ allowCurrentSequence = false } = {}) {
 
 async function sendRoomCommand(command) {
   if (!isSharedMode()) return null;
+  // A later command response must not reapply an older navigation transaction.
+  // SSE remains authoritative when it wins the race with this response.
+  const commandId = state.shared.roomCommandId + 1;
+  state.shared.roomCommandId = commandId;
+  if (['select', 'previous', 'next', 'selectTracks'].includes(command.type) && command.position === undefined) {
+    const item = state.items[state.activeIndex];
+    // Before conversion/HLS metadata, currentTime is the element default zero.
+    // Carry the pending content-bound checkpoint instead of overwriting it.
+    command = { ...command, position: sharedProgressRestorePosition(item, currentSharedPosition()) };
+  }
+  if (command.type === 'select') {
+    const destination = state.items.find((item) => item.mediaId === command.mediaId);
+    const resume = await hydrateSharedNavigationResume(destination);
+    // Hydration is asynchronous. A newer click wins while IndexedDB is being
+    // read, so an older command must never reach the authoritative server.
+    if (commandId !== state.shared.roomCommandId) return null;
+    if (resume) {
+      // Send the destination checkpoint on the authoritative navigation path
+      // and retain it locally until this source's metadata seek completes.
+      command = { ...command, resume };
+      armSharedProgressRestore(resume.contentId, resume.position);
+    }
+  }
+  // An intentional seek supersedes a pending restart resume; later saves then
+  // reflect the user's chosen position rather than the old checkpoint.
+  if (command.type === 'seek') completeSharedProgressRestore(state.items[state.activeIndex]);
   try {
     const result = await sharedRequest('/api/room/commands', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(command)
     });
-    void applyRoomState(result.state);
+    if (command.type === 'select' && commandId === state.shared.roomCommandId) clearPendingPlaylistSelection(command.mediaId);
+    if (commandId === state.shared.roomCommandId) void applyRoomState(result.state);
     return result.state;
   } catch (error) {
+    if (command.type === 'select' && commandId === state.shared.roomCommandId) clearPendingPlaylistSelection(command.mediaId);
     showError(error.message || t('sharedRequestFailed'));
     if (/token|required|401/i.test(error.message || '')) leaveSharedMode(t('sharedRequestFailed'));
     else void recoverSharedRoomState();
@@ -1961,7 +2830,10 @@ function uploadSharedFile(file, completed, total) {
         percent: totalBytes ? Math.round(transferred / totalBytes * 100) : 0
       });
     };
-    request.onerror = () => reject(new Error('Network error'));
+    // `onload` handles every HTTP status. `onerror` means the browser received
+    // no HTTP response at all (for example a dropped localhost connection).
+    request.onerror = () => reject(new Error('Upload connection failed'));
+    request.onabort = () => reject(new Error('Upload cancelled'));
     request.onload = () => {
       if (request.status < 200 || request.status >= 300) {
         let body = {};
@@ -1992,6 +2864,7 @@ async function handleSharedFiles(fileList) {
     return;
   }
   state.shared.libraryMutationPending = true;
+  void reconcileWakeLock();
   beginUploadProgress(files);
   updateControls();
   try {
@@ -1999,14 +2872,37 @@ async function handleSharedFiles(fileList) {
       const file = files[index];
       try {
         const uploadedMedia = await uploadSharedFile(file, index + 1, files.length);
+        // Progress is keyed by the server-calculated SHA-256, never filename or
+        // a transient room ID. Supplying it through append lets a restarted
+        // room restore only identical bytes; HLS still applies it on metadata.
+        const savedProgress = await readProgress(uploadedMedia.contentId).catch(() => null);
+        const savedResume = Number.isFinite(savedProgress?.currentTime) && savedProgress.currentTime > 0
+          ? { contentId: uploadedMedia.contentId, position: savedProgress.currentTime }
+          : undefined;
+        const localResume = isManagedLocalSession() && state.shared.localUploadResume?.file === file
+          ? state.shared.localUploadResume.position
+          : 0;
+        const resume = localResume > 0 ? { contentId: uploadedMedia.contentId, position: localResume } : savedResume;
         const { media, state: roomState } = await sharedRequest('/api/library/append', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ mediaIds: [uploadedMedia.id] })
+          body: JSON.stringify({ mediaIds: [uploadedMedia.id], ...(resume ? { resume } : {}) })
         });
         state.uploadProgress.completedBytes += file.size;
         updateUploadProgress('Ready', { completed: index + 1, total: files.length, name: file.name, totalBytes: file.size, transferred: file.size });
         setSharedItems(media);
+        const sharedItem = state.items.find((item) => item.contentId === uploadedMedia.contentId);
+        if (sharedItem && savedProgress) {
+          sharedItem.progress = savedProgress;
+          // Ignore startup timeupdates until matching HLS/raw metadata has applied
+          // this content-bound resume position.
+          armSharedProgressRestore(uploadedMedia.contentId, savedProgress.currentTime);
+        }
+        if (sharedItem && localResume > 0) {
+          sharedItem.progress = { currentTime: localResume, updatedAt: new Date().toISOString() };
+          armSharedProgressRestore(uploadedMedia.contentId, localResume);
+          state.shared.localUploadResume = null;
+        }
         await applyRoomState(roomState, { allowCurrentSequence: true });
         updateStatus(t('statusLoaded', { count: media.length, rejected: allFiles.length - files.length }));
       } catch (error) {
@@ -2023,6 +2919,7 @@ async function handleSharedFiles(fileList) {
     else void recoverSharedRoomState();
   } finally {
     state.shared.libraryMutationPending = false;
+    void reconcileWakeLock();
     updateControls();
   }
 }
@@ -2033,14 +2930,17 @@ async function initialiseSharedRoom() {
     return;
   }
   try {
-    const { role, roomUrl: canonicalRoomUrl } = await sharedRequest('/api/session');
-    if ((role !== 'host' && role !== 'guest') || typeof canonicalRoomUrl !== 'string' || !/^http:\/\//.test(canonicalRoomUrl)) {
+    const { role, roomUrl: canonicalRoomUrl, session } = await sharedRequest('/api/session');
+    if ((role !== 'host' && role !== 'guest') || typeof canonicalRoomUrl !== 'string' || !/^http:\/\//.test(canonicalRoomUrl)
+      || !session || typeof session !== 'object' || typeof session.shareable !== 'boolean') {
       throw new Error('Invalid shared room metadata');
     }
     state.shared.role = role;
     state.shared.roomUrl = canonicalRoomUrl;
+    state.shared.session = session;
     state.shared.initializing = false;
     state.shared.active = true;
+    renderLocalEmbeddedTracksAction();
     const [{ media }, { state: roomState }] = await Promise.all([
       sharedRequest('/api/library'),
       sharedRequest('/api/room')
@@ -2070,6 +2970,58 @@ async function initialiseSharedRoom() {
     updateStatus(t('statusSharedConnected'));
   } catch (error) {
     leaveSharedMode(t('sharedRequestFailed'));
+  }
+}
+
+function ensureLocalEmbeddedTracksAction() {
+  if (elements.localEmbeddedTracksAction || !elements.trackControls) return elements.localEmbeddedTracksAction;
+  const section = document.createElement('section');
+  section.className = 'track-controls';
+  section.hidden = true;
+  const button = document.createElement('button');
+  button.type = 'button';
+  button.className = 'track-selection-apply';
+  const help = document.createElement('p');
+  help.className = 'track-playback-status';
+  help.hidden = false;
+  section.append(button, help);
+  elements.trackControls.before(section);
+  elements.localEmbeddedTracksAction = { section, button, help };
+  button.addEventListener('click', () => { void activateLocalEmbeddedTracks(); });
+  return elements.localEmbeddedTracksAction;
+}
+
+function renderLocalEmbeddedTracksAction() {
+  const action = ensureLocalEmbeddedTracksAction();
+  if (!action) return;
+  const visible = !isSharedMode() && state.items.some((item) => item.file instanceof File);
+  action.section.hidden = !visible;
+  if (!visible) return;
+  action.button.textContent = t('localEmbeddedTracksAction');
+  action.help.textContent = t('localEmbeddedTracksHelp');
+}
+
+async function activateLocalEmbeddedTracks() {
+  if (isSharedMode()) return;
+  const localFiles = state.items.map((item) => item.file).filter((file) => file instanceof File);
+  if (!localFiles.length) return;
+  const activeItem = state.items[state.activeIndex];
+  const activePosition = Number.isFinite(elements.video.currentTime) ? elements.video.currentTime : 0;
+  try {
+    const response = await fetch('/api/local-session', { method: 'POST' });
+    const activation = await response.json().catch(() => null);
+    if (!response.ok || !activation || !/^[A-Za-z0-9_-]+$/.test(activation.token)
+      || activation.session?.mode !== 'managed-local' || activation.session?.shareable !== false) throw new Error(t('sharedRequestFailed'));
+    state.shared.token = activation.token;
+    state.shared.initializing = true;
+    state.shared.localUploadResume = activeItem?.file instanceof File && activePosition > 0
+      ? { file: activeItem.file, position: activePosition }
+      : null;
+    await initialiseSharedRoom();
+    if (!isManagedLocalSession()) return;
+    await handleSharedFiles(localFiles);
+  } catch (error) {
+    showError(error.message || t('sharedRequestFailed'));
   }
 }
 
@@ -2127,6 +3079,7 @@ async function handleFiles(fileList) {
   elements.nowPlaying.textContent = t('nothingPlaying');
 
   renderPlaylist();
+  renderLocalEmbeddedTracksAction();
   if (items.length === 0) {
     updateStatus(rejected > 0 ? t('statusNoSupported') : t('statusNoVideos'));
     return;
@@ -2140,6 +3093,29 @@ async function handleFiles(fileList) {
   });
 }
 
+function beginProgressPersistence(item, sourceGeneration = null) {
+  state.persistence = {
+    generation: state.persistence.generation + 1,
+    contentId: item?.contentId || null,
+    sourceGeneration,
+    armed: false,
+    allowZeroWrite: false
+  };
+  return state.persistence.generation;
+}
+
+function armProgressPersistence(item, generation, sourceGeneration = null) {
+  if (state.persistence.generation !== generation || state.persistence.contentId !== item?.contentId
+    || state.persistence.sourceGeneration !== sourceGeneration) return false;
+  state.persistence.armed = true;
+  return true;
+}
+
+function canPersistActiveProgress(item, generation = state.persistence.generation, sourceGeneration = state.persistence.sourceGeneration) {
+  return Boolean(item && state.persistence.armed && state.persistence.generation === generation
+    && state.persistence.contentId === item.contentId && state.persistence.sourceGeneration === sourceGeneration);
+}
+
 function revokeCurrentObjectUrl() {
   if (state.currentObjectUrl) {
     URL.revokeObjectURL(state.currentObjectUrl);
@@ -2150,8 +3126,15 @@ function revokeCurrentObjectUrl() {
 async function playIndex(index, options = {}) {
   const { autoplay = true, saveCurrent = true, source = null } = options;
   if (index < 0 || index >= state.items.length) return;
-  if (isSharedMode() && !state.shared.applyingRemote) {
-    await sendRoomCommand({ type: 'select', mediaId: state.items[index].mediaId });
+  if (isSharedMode()) {
+    const item = state.items[index];
+    const oneAhead = state.shared.roomState?.oneAhead;
+    if (oneAhead?.mediaId === item.mediaId && oneAhead.status === 'preparing') {
+      updateStatus(t('oneAheadPreparingNotice', { name: item.relativePath }));
+      return;
+    }
+    setPendingPlaylistSelection(item.mediaId);
+    await sendRoomCommand({ type: 'select', mediaId: item.mediaId });
     return;
   }
 
@@ -2161,9 +3144,11 @@ async function playIndex(index, options = {}) {
 
   state.activeIndex = index;
   const item = state.items[index];
+  const persistenceGeneration = beginProgressPersistence(item);
   await rememberActiveItem(item, source);
   state.currentObjectUrl = URL.createObjectURL(item.file);
   elements.video.onloadedmetadata = () => {
+    if (!armProgressPersistence(item, persistenceGeneration)) return;
     const savedTime = item.progress?.currentTime || 0;
     const duration = Number.isFinite(elements.video.duration) ? elements.video.duration : 0;
     if (savedTime > 5 && (!duration || savedTime < duration - 5)) {
@@ -2189,13 +3174,41 @@ async function playIndex(index, options = {}) {
   }
 }
 
+function shouldMarkProgressWatched({ currentTime, duration, isProgressiveHls, allowThresholdWatched = true }) {
+  // A progressive playlist duration is only the currently generated window, not
+  // the movie's full duration. Completion remains explicit; threshold completion
+  // needs a stable source timeline.
+  return allowThresholdWatched
+    && !isProgressiveHls
+    && Number.isFinite(duration)
+    && duration > 0
+    && Number.isFinite(currentTime)
+    && currentTime / duration >= WATCHED_THRESHOLD;
+}
+
 async function saveActiveProgress({ watched = false, allowThresholdWatched = true } = {}) {
   const item = state.items[state.activeIndex];
   if (!item || !elements.video.src) return;
+  // A media event is allowed to persist only after metadata armed the exact
+  // source/content generation. Old pause/timeupdate callbacks can otherwise
+  // arrive after activeIndex points at the destination and corrupt its record.
+  const persistenceGeneration = state.persistence.generation;
+  const persistenceSourceGeneration = state.persistence.sourceGeneration;
+  if (!canPersistActiveProgress(item, persistenceGeneration, persistenceSourceGeneration)) return;
+  if (isSharedProgressRestorePending(item)) return;
 
   const duration = Number.isFinite(elements.video.duration) ? elements.video.duration : 0;
   const currentTime = Number.isFinite(elements.video.currentTime) ? elements.video.currentTime : 0;
-  const thresholdWatched = allowThresholdWatched && duration > 0 && currentTime / duration >= WATCHED_THRESHOLD;
+  // Do not let a detached source's default 0:00 erase a positive checkpoint.
+  // A user seek-to-zero is explicitly marked above; a first play has no
+  // positive checkpoint and remains valid.
+  if (currentTime === 0 && item.progress?.currentTime > 0 && !state.persistence.allowZeroWrite) return;
+  const thresholdWatched = shouldMarkProgressWatched({
+    currentTime,
+    duration,
+    isProgressiveHls: false,
+    allowThresholdWatched
+  });
   const record = {
     id: item.id,
     relativePath: item.relativePath,
@@ -2208,7 +3221,9 @@ async function saveActiveProgress({ watched = false, allowThresholdWatched = tru
   };
 
   try {
-    await writeProgress(record);
+    await queueProgressWrite(record);
+    if (!canPersistActiveProgress(item, persistenceGeneration, persistenceSourceGeneration)) return;
+    state.persistence.allowZeroWrite = false;
     item.progress = record;
     renderPlaylist();
   } catch (error) {
@@ -2250,7 +3265,7 @@ async function markCurrentWatchedAndNext() {
 }
 
 async function handleEnded() {
-  await releaseWakeLock();
+  await reconcileWakeLock();
   if (isSharedMode()) {
     await sendRoomCommand({ type: 'next' });
     return;
@@ -2267,44 +3282,63 @@ function supportsWakeLock() {
   return 'wakeLock' in navigator && typeof navigator.wakeLock?.request === 'function';
 }
 
-function shouldHoldWakeLock() {
-  return document.visibilityState === 'visible'
-    && Boolean(elements.video.src)
-    && !elements.video.paused
-    && !elements.video.ended;
+function hasWakeLockActivity() {
+  const hls = state.shared.roomState?.hls;
+  const oneAhead = state.shared.roomState?.oneAhead;
+  const playing = Boolean(elements.video.src) && !elements.video.paused && !elements.video.ended;
+  return !state.shared.clearPending && (state.shared.libraryMutationPending
+    || hls?.status === 'preparing'
+    || oneAhead?.status === 'preparing'
+    || playing);
 }
 
-async function requestWakeLock() {
-  if (!supportsWakeLock() || state.wakeLockSentinel || !shouldHoldWakeLock()) return;
+function shouldHoldWakeLock() {
+  return document.visibilityState === 'visible' && hasWakeLockActivity();
+}
 
-  try {
-    state.wakeLockSentinel = await navigator.wakeLock.request('screen');
-    state.wakeLockSentinel.addEventListener('release', () => {
-      state.wakeLockSentinel = null;
-    }, { once: true });
-  } catch (error) {
-    console.warn('Could not acquire screen wake lock', error);
+async function reconcileWakeLock() {
+  if (!supportsWakeLock()) return;
+  if (!shouldHoldWakeLock()) {
+    await releaseWakeLock();
+    return;
   }
+  if (state.wakeLockSentinel || state.wakeLockRequestPending) return;
+
+  const generation = ++state.wakeLockRequestGeneration;
+  state.wakeLockRequestPending = true;
+  let sentinel = null;
+  try {
+    sentinel = await navigator.wakeLock.request('screen');
+  } catch {
+    // Screen Wake Lock is best-effort: permission and browser support can change.
+  } finally {
+    state.wakeLockRequestPending = false;
+  }
+  if (!sentinel) return;
+  if (generation !== state.wakeLockRequestGeneration || !shouldHoldWakeLock()) {
+    try { await sentinel.release(); } catch {}
+    void reconcileWakeLock();
+    return;
+  }
+
+  state.wakeLockSentinel = sentinel;
+  sentinel.addEventListener?.('release', () => {
+    if (state.wakeLockSentinel !== sentinel) return;
+    state.wakeLockSentinel = null;
+    void reconcileWakeLock();
+  }, { once: true });
 }
 
 async function releaseWakeLock() {
+  state.wakeLockRequestGeneration += 1;
   const sentinel = state.wakeLockSentinel;
-  if (!sentinel) return;
-
   state.wakeLockSentinel = null;
-  try {
-    await sentinel.release();
-  } catch (error) {
-    console.warn('Could not release screen wake lock', error);
-  }
+  if (!sentinel) return;
+  try { await sentinel.release(); } catch {}
 }
 
 function handleVisibilityChange() {
-  if (document.visibilityState === 'hidden') {
-    void releaseWakeLock();
-    return;
-  }
-  void requestWakeLock();
+  void reconcileWakeLock();
 }
 
 
@@ -2344,7 +3378,12 @@ function setRemoteAudioPrompt(active) {
   elements.remoteAudioPrompt.hidden = !active;
 }
 
+function restoreSharedAudio() {
+  if (!state.userMuted) elements.video.muted = false;
+}
+
 async function playSharedRemoteMedia(isCurrentApplication) {
+  restoreSharedAudio();
   try {
     await elements.video.play();
     if (!isCurrentApplication()) return;
@@ -2388,6 +3427,7 @@ function applySharedPlaybackIntent(playing) {
   try {
     if (playing) {
       setRemoteAudioPrompt(false);
+      restoreSharedAudio();
       // Start while this user gesture is still active; the server command follows separately.
       Promise.resolve(elements.video.play()).then(clearError).catch(reportPlayFailure).finally(updateVideoControls);
     } else {
@@ -2581,6 +3621,10 @@ async function exitDocumentFullscreen() {
 
 async function toggleFullscreen() {
   if (!elements.video.src || !elements.videoFrame || state.fullscreenTransitionInFlight) return;
+  // A mouse click leaves the fullscreen button focused. Release that focus
+  // before the transition so the next Space key reaches the global playback
+  // shortcut instead of re-activating the button.
+  elements.videoFullscreenButton.blur();
   state.fullscreenTransitionInFlight = true;
   syncFullscreenControl();
   try {
@@ -2710,18 +3754,37 @@ async function clearPlaylist() {
       return;
     }
     state.shared.libraryMutationPending = true;
+    state.shared.clearPending = true;
+    void reconcileWakeLock();
+    clearSharedPlaybackForLibraryClear();
+    state.items = [];
+    state.activeIndex = -1;
+    state.selectionId = null;
+    resetPlaylistSearch();
+    elements.nowPlaying.textContent = t('nothingPlaying');
+    clearError();
+    renderPlaylist();
     updateControls();
     try {
       const { media, state: roomState } = await sharedRequest('/api/library/clear', { method: 'POST' });
+      state.shared.clearPending = false;
       setSharedItems(media);
-      await applyRoomState(roomState);
+      await applyRoomState(roomState, { allowCurrentSequence: true });
       clearError();
       stagePlaylistClearTransition();
       updateStatus(t('statusNoVideos'));
     } catch (error) {
-      showError(error.message || t('sharedRequestFailed'));
-      if (/token|required|401/i.test(error.message || '')) leaveSharedMode(t('sharedRequestFailed'));
-      else void recoverSharedRoomState();
+      const expectedCancellation = isExpectedClearCancellation(error);
+      state.shared.clearPending = false;
+      if (expectedCancellation) {
+        clearError();
+        stagePlaylistClearTransition();
+        updateStatus(t('statusNoVideos'));
+      } else {
+        showError(error.message || t('sharedRequestFailed'));
+        if (/token|required|401/i.test(error.message || '')) leaveSharedMode(t('sharedRequestFailed'));
+        else void recoverSharedRoomState();
+      }
     } finally {
       state.shared.libraryMutationPending = false;
       updateControls();
@@ -2730,6 +3793,7 @@ async function clearPlaylist() {
   }
   await saveActiveProgress();
   await releaseWakeLock();
+  clearSharedPlaybackForLibraryClear();
   revokeCurrentObjectUrl();
   state.items = [];
   state.activeIndex = -1;
@@ -2762,14 +3826,28 @@ function preventGuestLibraryPicker(event) {
   showHostLibraryOnlyToast();
 }
 
+function useOriginalSharedMedia() {
+  const item = state.items[state.activeIndex];
+  const sourceKey = state.shared.hls.sourceKey
+    || hlsGenerationKey(item, state.shared.roomState?.trackSelection, state.shared.roomState?.hls);
+  if (item && sourceKey) fallBackToSharedMedia(item, sourceKey);
+}
+
 async function selectSharedTracks() {
   if (!isSharedHost()) return;
-  const audioTrackIndex = Number.parseInt(elements.audioTrackSelect.value, 10);
+  const item = state.items[state.activeIndex];
+  // The visible empty option represents the source's sole/default audio. It is
+  // not itself a stream index, so resolve it only at Apply against current SSE
+  // metadata rather than sending NaN after a subtitle-only selection.
+  const audioTrackIndex = elements.audioTrackSelect.value === ''
+    ? defaultEmbeddedAudioTrackIndex(item)
+    : Number.parseInt(elements.audioTrackSelect.value, 10);
   const subtitleTrackIndex = elements.subtitleTrackSelect.value === ''
     ? null
     : Number.parseInt(elements.subtitleTrackSelect.value, 10);
   if (!Number.isSafeInteger(audioTrackIndex) || (subtitleTrackIndex !== null && !Number.isSafeInteger(subtitleTrackIndex))) return;
-  setTrackPlaybackStatus();
+  clearError();
+  setTrackPlaybackStatus(t('hlsLoading'));
   await sendRoomCommand({ type: 'selectTracks', audioTrackIndex, subtitleTrackIndex });
 }
 
@@ -2782,8 +3860,10 @@ elements.nextButton.addEventListener('click', () => runAsyncAction(skipToNext));
 elements.markWatchedButton.addEventListener('click', () => runAsyncAction(markCurrentWatchedAndNext));
 elements.clearPlaylistButton.addEventListener('click', () => runAsyncAction(clearPlaylist));
 elements.copyRoomUrlButton.addEventListener('click', () => { void copyRoomUrl(); });
-elements.audioTrackSelect.addEventListener('change', () => runAsyncAction(selectSharedTracks));
-elements.subtitleTrackSelect.addEventListener('change', () => runAsyncAction(selectSharedTracks));
+elements.audioTrackSelect.addEventListener('change', rememberTrackDraft);
+elements.subtitleTrackSelect.addEventListener('change', rememberTrackDraft);
+elements.applyTrackSelectionButton.addEventListener('click', () => runAsyncAction(selectSharedTracks));
+elements.useOriginalVideoButton.addEventListener('click', useOriginalSharedMedia);
 elements.videoPlayPauseButton.addEventListener('click', togglePlayback);
 elements.videoSeekRange.addEventListener('pointerdown', beginSeekInteraction);
 elements.videoSeekRange.addEventListener('pointerup', endSeekInteraction);
@@ -2975,19 +4055,32 @@ document.addEventListener('visibilitychange', handleVisibilityChange);
 elements.video.addEventListener('play', () => {
   updateVideoControls();
   showVideoControls({ temporary: true });
-  void requestWakeLock();
+  void reconcileWakeLock();
 });
 elements.video.addEventListener('pause', () => {
   updateVideoControls();
   void saveActiveProgress();
-  void releaseWakeLock();
+  void reconcileWakeLock();
 });
 elements.video.addEventListener('ended', () => {
+  void reconcileWakeLock();
   void handleEnded().catch((error) => showError(error.message || t('sharedRequestFailed')));
 });
 elements.video.addEventListener('error', () => {
+  if (state.shared.hls.cleared && state.items.length === 0) return;
+  const waitingForTrackApply = isSharedMode()
+    && state.shared.currentTrackSelection?.audioTrackIndex === null
+    && !elements.video.src;
+  if (waitingForTrackApply || (state.shared.hls.sourceKey && state.shared.hls.fallbackKey !== state.shared.hls.sourceKey)) return;
   if (state.shared.hls.suppressNextVideoAbort && elements.video.error?.code === MediaError.MEDIA_ERR_ABORTED) {
     state.shared.hls.suppressNextVideoAbort = false;
+    return;
+  }
+  const playbackFailureStage = state.shared.hls.playbackFailureStage;
+  if (isSharedMode() && playbackFailureStage && state.shared.hls.fallbackKey) {
+    const message = t('hlsPlaybackFailed', { stage: playbackFailureStage });
+    showError(message);
+    setTrackPlaybackStatus(message, 'fallback');
     return;
   }
   const message = getVideoErrorMessage(elements.video.error);

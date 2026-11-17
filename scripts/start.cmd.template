@@ -3,10 +3,20 @@ setlocal EnableExtensions
 set "ROOT=%~dp0"
 set "APP_DIR=%ROOT%app"
 set "LOG_DIR=%ROOT%logs"
+set "MEDIA_DIR=%ROOT%runtime-media"
+set "MEDIA_OWNER_FILE=%ROOT%.the-player-runtime-media-owner"
+set "MEDIA_OWNER_LINE=The Player portable runtime media storage"
+set "HLS_CACHE_DIR=%ROOT%hls-cache"
+set "HLS_CACHE_OWNER_FILE=%HLS_CACHE_DIR%\.the-player-hls-cache-owner"
+set "HLS_CACHE_OWNER_LINE=The Player persistent HLS cache storage"
 set "NODE_EXE=%ROOT%runtime\node.exe"
-set "PORT=3000"
+set "REQUESTED_PORT=3000"
+set "PORT="
 set "HOST=127.0.0.1"
 set "SHARE_LAN="
+rem Keep the default browser path direct and untokenized. The page activates
+rem this loopback-only managed session only after the user requests tracks.
+set "REPRODUCTOR_MANAGED_LOCAL_SESSION=1"
 
 if not "%~1"=="" (
   echo [ERROR] start.cmd does not accept options. Run LAN.cmd to share with devices on your LAN.
@@ -14,6 +24,10 @@ if not "%~1"=="" (
 )
 
 if not exist "%LOG_DIR%" mkdir "%LOG_DIR%" || goto :mkdir_failed
+call :prepare_media || exit /b 1
+call :prepare_hls_cache || exit /b 1
+set "REPRODUCTOR_MEDIA_DIR=%MEDIA_DIR%"
+set "REPRODUCTOR_HLS_CACHE_DIR=%HLS_CACHE_DIR%"
 
 if not exist "%NODE_EXE%" (
   echo [ERROR] Missing packaged Node runtime: "%NODE_EXE%"
@@ -27,11 +41,12 @@ if not exist "%APP_DIR%\server.js" (
   exit /b 1
 )
 
-netstat -ano -p tcp | findstr /r /c:":%PORT% .*LISTENING" >nul
-if not errorlevel 1 (
-  echo [ERROR] Port %PORT% is already in use. Close the other local process, then run start.cmd again.
+for /f "usebackq delims=" %%P in (`powershell -NoProfile -Command "$occupied = @(); foreach ($listener in [System.Net.NetworkInformation.IPGlobalProperties]::GetIPGlobalProperties().GetActiveTcpListeners()) { $occupied += $listener.Port }; for ($candidate = [int]$env:REQUESTED_PORT; $candidate -le 3999; $candidate++) { if ($occupied -notcontains $candidate) { [Console]::WriteLine($candidate); exit 0 } }; exit 1"`) do if not defined PORT set "PORT=%%P"
+if not defined PORT (
+  echo [ERROR] No available TCP port was found between %REQUESTED_PORT% and 3999.
   exit /b 1
 )
+if not "%PORT%"=="%REQUESTED_PORT%" echo [NOTICE] Port %REQUESTED_PORT% is occupied. Using available port %PORT%.
 
 echo Starting The Player in local-only mode at http://%HOST%:%PORT%/
 echo Logs: "%LOG_DIR%\server.log"
@@ -46,7 +61,44 @@ if errorlevel 1 (
 )
 
 if not "%THE_PLAYER_NO_OPEN%"=="1" start "" "http://%HOST%:%PORT%/"
+echo Completed compatible streams are kept in "%HLS_CACHE_DIR%" for faster resume. Delete that marked folder manually to clear the cache.
+echo Press Ctrl+C for a normal shutdown. Closing this window with X can terminate Node before cleanup; the next launch removes only this portable runtime-media directory.
+:keep_console_open
+timeout /t 3600 /nobreak >nul
+goto :keep_console_open
+
+:prepare_media
+if not exist "%MEDIA_DIR%" goto :write_media_owner
+if not exist "%MEDIA_OWNER_FILE%" goto :media_not_owned
+findstr /r /x /c:"%MEDIA_OWNER_LINE%" "%MEDIA_OWNER_FILE%" >nul || goto :media_not_owned
+rmdir /s /q "%MEDIA_DIR%" || goto :media_cleanup_failed
+:write_media_owner
+> "%MEDIA_OWNER_FILE%" echo %MEDIA_OWNER_LINE%
 exit /b 0
+
+:prepare_hls_cache
+if not exist "%HLS_CACHE_DIR%" mkdir "%HLS_CACHE_DIR%" || goto :hls_cache_create_failed
+if exist "%HLS_CACHE_OWNER_FILE%" findstr /r /x /c:"%HLS_CACHE_OWNER_LINE%" "%HLS_CACHE_OWNER_FILE%" >nul || goto :hls_cache_not_owned
+if not exist "%HLS_CACHE_OWNER_FILE%" > "%HLS_CACHE_OWNER_FILE%" echo %HLS_CACHE_OWNER_LINE%
+exit /b 0
+
+:hls_cache_not_owned
+echo [ERROR] Refusing to use "%HLS_CACHE_DIR%" because it is not marked as The Player persistent HLS cache storage.
+echo Move or rename that directory; it was not changed.
+exit /b 1
+
+:hls_cache_create_failed
+echo [ERROR] Could not create persistent HLS cache directory beside start.cmd.
+exit /b 1
+
+:media_not_owned
+echo [ERROR] Refusing to remove "%MEDIA_DIR%" because it is not marked as The Player runtime media storage.
+echo Move or rename that directory, then run start.cmd again. Logs and other portable files were not changed.
+exit /b 1
+
+:media_cleanup_failed
+echo [ERROR] Could not remove stale The Player runtime media at "%MEDIA_DIR%".
+exit /b 1
 
 :mkdir_failed
 echo [ERROR] Could not create portable log directory beside start.cmd.
