@@ -434,22 +434,19 @@ function initParticleBackground() {
 
   function createParticles() {
     const particleCount = getParticleCount();
-    const viewportRatio = width / Math.max(height, 1);
-    const rows = Math.max(1, Math.round(Math.sqrt(particleCount / Math.max(viewportRatio, 0.1))));
-    const columns = Math.max(1, Math.ceil(particleCount / rows));
-    const cellWidth = width / columns;
-    const cellHeight = height / rows;
-
-    return Array.from({ length: particleCount }, (_, index) => {
-      const row = Math.floor(index / columns);
-      const column = index % columns;
-      const jitterX = 0.16 + Math.random() * 0.68;
-      const jitterY = 0.16 + Math.random() * 0.68;
-      return createParticle(
-        Math.min(width, (column + jitterX) * cellWidth),
-        Math.min(height, (row + jitterY) * cellHeight)
-      );
-    });
+    const minimumDistance = Math.sqrt((width * height) / particleCount) * 0.42;
+    const particles = [];
+    while (particles.length < particleCount) {
+      let x = Math.random() * width;
+      let y = Math.random() * height;
+      for (let attempt = 0; attempt < 16; attempt += 1) {
+        if (particles.every((particle) => Math.hypot(particle.x - x, particle.y - y) >= minimumDistance)) break;
+        x = Math.random() * width;
+        y = Math.random() * height;
+      }
+      particles.push(createParticle(x, y));
+    }
+    return particles;
   }
 
   function resizeCanvas() {
@@ -619,12 +616,18 @@ function initParticleBackground() {
     if (shouldAnimate()) animationFrameId = window.requestAnimationFrame(animate);
   }
 
+  let particleResizeTimer = null;
   function refreshParticleEnvironment() {
+    pointer.active = false;
     resizeCanvas();
     startAnimation();
   }
+  function scheduleParticleRefresh() {
+    window.clearTimeout(particleResizeTimer);
+    particleResizeTimer = window.setTimeout(refreshParticleEnvironment, 160);
+  }
 
-  window.addEventListener('resize', refreshParticleEnvironment);
+  window.addEventListener('resize', scheduleParticleRefresh);
   document.addEventListener('visibilitychange', refreshParticleEnvironment);
   document.addEventListener('particleanimationchange', refreshParticleEnvironment);
   window.addEventListener('pointermove', (event) => {
