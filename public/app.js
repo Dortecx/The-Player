@@ -619,9 +619,14 @@ function initParticleBackground() {
     if (shouldAnimate()) animationFrameId = window.requestAnimationFrame(animate);
   }
 
-  window.addEventListener('resize', resizeCanvas);
-  document.addEventListener('visibilitychange', startAnimation);
-  document.addEventListener('particleanimationchange', startAnimation);
+  function refreshParticleEnvironment() {
+    resizeCanvas();
+    startAnimation();
+  }
+
+  window.addEventListener('resize', refreshParticleEnvironment);
+  document.addEventListener('visibilitychange', refreshParticleEnvironment);
+  document.addEventListener('particleanimationchange', refreshParticleEnvironment);
   window.addEventListener('pointermove', (event) => {
     pointer.x = event.clientX;
     pointer.y = event.clientY;
@@ -2075,9 +2080,14 @@ function renderTrackControls(roomState) {
     && typeof lifecycle?.selectionId === 'string';
   renderConversionProgress(lifecycle, matchesSelection);
   const canCollapse = matchesSelection && ['preparing', 'ready'].includes(lifecycle?.status);
+  const collapseKey = canCollapse ? `${item.mediaId}:${lifecycle.selectionId}` : null;
+  if (collapseKey && state.shared.trackControlsCollapseKey !== collapseKey) {
+    state.shared.trackControlsCollapseKey = collapseKey;
+    state.shared.trackControlsExpanded = false;
+  }
   const collapsed = canCollapse && !state.shared.trackControlsExpanded;
   elements.trackControls.classList.toggle('is-collapsed', collapsed);
-  elements.trackSelectionSummary.hidden = !canCollapse;
+  elements.trackSelectionSummary.hidden = !collapsed;
   elements.trackSelectionSummary.setAttribute('aria-expanded', String(!collapsed));
   elements.trackSelectionSummaryDetail.textContent = `Audio: ${elements.audioTrackSelect.selectedOptions[0]?.textContent || ''} · ${t('subtitleTrackLabel')}: ${elements.subtitleTrackSelect.selectedOptions[0]?.textContent || ''}`;
   if (!matchesSelection) return;
@@ -3675,6 +3685,8 @@ async function toggleFullscreen() {
       return;
     }
 
+    state.shared.trackControlsExpanded = false;
+    renderTrackControls(state.shared.roomState);
     const request = getFullscreenRequestMethod();
     if (request) {
       try {
