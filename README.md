@@ -6,7 +6,7 @@ The Player is a browser video player for a local playlist. It remembers browser 
 
 ## Download and start
 
-**Windows portable v1.5.5** — [download the ZIP](https://github.com/Dortecx/The-Player/releases/download/v1.5.5/The-Player-1.5.5-windows.zip), unzip it, then open `The-Player-1.5.5-windows`.
+**Windows portable v1.5.7** — [download the ZIP](https://github.com/Dortecx/The-Player/releases/download/v1.5.7/The-Player-1.5.7-windows.zip), unzip it, then open `The-Player-1.5.7-windows`.
 
 ```mermaid
 flowchart TD
@@ -82,7 +82,7 @@ npm run build:portable:win
 
 Building requires Windows PowerShell 5.1, Windows `node.exe` 18+, `curl.exe`, and Internet access. The FFmpeg archive is SHA-256-pinned; an interrupted download keeps only a bounded identity-matched partial for safe resume. The build verifies the final hash before extracting it. End users install nothing extra.
 
-Repository: <https://github.com/Dortecx/The-Player> · Release: <https://github.com/Dortecx/The-Player/releases/tag/v1.5.5>
+Repository: <https://github.com/Dortecx/The-Player> · Release: <https://github.com/Dortecx/The-Player/releases/tag/v1.5.7>
 
 ## License
 

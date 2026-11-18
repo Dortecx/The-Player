@@ -268,7 +268,7 @@ test('GPL runtime notice matches the current approved portable build pin', () =>
   const script = fs.readFileSync(path.join(__dirname, '..', 'scripts', 'build-portable-win.ps1'), 'utf8');
   const notice = fs.readFileSync(path.join(__dirname, '..', 'third_party', 'FFmpeg-GPL-NOTICE.md'), 'utf8');
   const pin = /\$ffmpegAssetSha256 = "([a-f0-9]{64})"/.exec(script)?.[1];
-  assert.equal(pin, '2eaae393fe3ea3e79206d0a37be74e7e68beb57b507d2c20ed58f6f15a58a321');
+  assert.equal(pin, 'ac1364304fa755c892a968a4c5bc5473d3ea94fb4978d4351a392191804657b5');
   assert.match(notice, new RegExp(pin));
   assert.match(notice, /current user-approved build-script pin/i);
 });
@@ -787,6 +787,48 @@ test('room commands update authoritative state and reject invalid commands', asy
   const play = await request(port, { path: '/api/room/commands', method: 'POST', headers }, Buffer.from(JSON.stringify({ type: 'play' })));
   assert.equal(play.status, 200);
   assert.equal(JSON.parse(play.body).state.playing, true);
+});
+
+test('shared playback derives its target position from the server transition clock', () => {
+  const app = fs.readFileSync(path.join(__dirname, '..', 'public', 'app.js'), 'utf8');
+  const source = /function roomPlaybackPosition\(roomState, clockOffsetMs = 0, now = Date\.now\(\)\) \{([\s\S]*?)\n\}/.exec(app);
+  assert.ok(source, 'room playback position helper is missing');
+  const roomPlaybackPosition = new Function(`return function roomPlaybackPosition(roomState, clockOffsetMs = 0, now = Date.now()) {${source[1]}\n}`)();
+  assert.equal(roomPlaybackPosition({ position: 20, playing: true, updatedAt: 10_000 }, 250, 12_250), 22.5);
+  assert.equal(roomPlaybackPosition({ position: 20, playing: false, updatedAt: 10_000 }, 250, 12_250), 20);
+});
+
+test('particle canvas detects a stale rendered or backing-store size', () => {
+  const app = fs.readFileSync(path.join(__dirname, '..', 'public', 'app.js'), 'utf8');
+  const source = /function particleCanvasNeedsRefresh\(canvas, width, height, pixelRatio, viewportWidth, viewportHeight\) \{([\s\S]*?)\n\}/.exec(app);
+  assert.ok(source, 'particle canvas health helper is missing');
+  const particleCanvasNeedsRefresh = new Function(`return function particleCanvasNeedsRefresh(canvas, width, height, pixelRatio, viewportWidth, viewportHeight) {${source[1]}\n}`)();
+  const canvas = { width: 1600, height: 900, getBoundingClientRect: () => ({ width: 800, height: 450 }) };
+  assert.equal(particleCanvasNeedsRefresh(canvas, 800, 450, 2, 800, 450), false);
+  assert.equal(particleCanvasNeedsRefresh(canvas, 800, 450, 2, 1000, 450), true);
+  assert.equal(particleCanvasNeedsRefresh({ ...canvas, width: 800 }, 800, 450, 2, 800, 450), true);
+});
+
+test('particle canvas resets a pathological corner cluster', () => {
+  const app = fs.readFileSync(path.join(__dirname, '..', 'public', 'app.js'), 'utf8');
+  const source = /function particleDistributionNeedsReset\(particles, width, height\) \{([\s\S]*?)\n\}/.exec(app);
+  assert.ok(source, 'particle distribution health helper is missing');
+  const particleDistributionNeedsReset = new Function(`return function particleDistributionNeedsReset(particles, width, height) {${source[1]}\n}`)();
+  const normal = Array.from({ length: 100 }, (_, index) => ({ x: (index % 10) * 90 + 20, y: Math.floor(index / 10) * 80 + 20 }));
+  const clustered = [...normal.slice(0, 60), ...Array.from({ length: 40 }, () => ({ x: 8, y: 8 }))];
+  assert.equal(particleDistributionNeedsReset(normal, 1000, 800), false);
+  assert.equal(particleDistributionNeedsReset(clustered, 1000, 800), true);
+});
+
+test('shared playback uses rate correction before seeking for larger drift', () => {
+  const app = fs.readFileSync(path.join(__dirname, '..', 'public', 'app.js'), 'utf8');
+  const source = /function sharedDriftCorrection\(driftSeconds\) \{([\s\S]*?)\n\}/.exec(app);
+  assert.ok(source, 'shared drift correction helper is missing');
+  const sharedDriftCorrection = new Function(`return function sharedDriftCorrection(driftSeconds) {${source[1]}\n}`)();
+  assert.deepEqual(sharedDriftCorrection(0.08), { kind: 'none', rate: 1 });
+  assert.deepEqual(sharedDriftCorrection(0.3), { kind: 'rate', rate: 1.03 });
+  assert.deepEqual(sharedDriftCorrection(-0.3), { kind: 'rate', rate: 0.97 });
+  assert.deepEqual(sharedDriftCorrection(0.5), { kind: 'seek', rate: 1 });
 });
 
 test('play and pause commands preserve the caller position, while rate commands are rejected', async (t) => {

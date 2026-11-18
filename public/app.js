@@ -275,6 +275,10 @@ const state = {
     playbackIntent: null,
     playbackCommandInFlight: false,
     playbackRetryTimer: null,
+    clockOffsetMs: null,
+    clockRoundTripMs: Infinity,
+    lastDriftCheckAt: 0,
+    driftPlaybackRate: 1,
     awaitingAudioActivation: false,
     resume: {
       contentId: null,
@@ -360,6 +364,27 @@ const elements = {
 
 const particleCanvas = document.querySelector('#particleCanvas');
 
+function particleCanvasNeedsRefresh(canvas, width, height, pixelRatio, viewportWidth, viewportHeight) {
+  const rect = canvas.getBoundingClientRect();
+  return Math.abs(width - viewportWidth) > 1 || Math.abs(height - viewportHeight) > 1
+    || Math.abs(rect.width - viewportWidth) > 1 || Math.abs(rect.height - viewportHeight) > 1
+    || canvas.width !== Math.floor(viewportWidth * pixelRatio)
+    || canvas.height !== Math.floor(viewportHeight * pixelRatio);
+}
+
+function particleDistributionNeedsReset(particles, width, height) {
+  if (!particles.length || width < 1 || height < 1) return true;
+  const bandWidth = Math.min(180, width * 0.18);
+  const bandHeight = Math.min(180, height * 0.18);
+  const corners = [
+    particles.filter((particle) => particle.x <= bandWidth && particle.y <= bandHeight).length,
+    particles.filter((particle) => particle.x >= width - bandWidth && particle.y <= bandHeight).length,
+    particles.filter((particle) => particle.x <= bandWidth && particle.y >= height - bandHeight).length,
+    particles.filter((particle) => particle.x >= width - bandWidth && particle.y >= height - bandHeight).length
+  ];
+  return Math.max(...corners) >= Math.max(24, Math.ceil(particles.length * 0.15));
+}
+
 function initDesktopPlaylistHeightSync() {
   if (!elements.layout || !elements.playerPanel) return;
 
@@ -411,6 +436,7 @@ function initParticleBackground() {
   let width = 0;
   let height = 0;
   let lastFrameTime = 0;
+  let lastCanvasHealthCheckAt = 0;
 
   function getParticleCount() {
     const area = window.innerWidth * window.innerHeight;
@@ -487,10 +513,10 @@ function initParticleBackground() {
       particle.x += particle.vx * deltaSeconds;
       particle.y += particle.vy * deltaSeconds;
 
-      if (particle.x < -10) particle.x = width + 10;
-      if (particle.x > width + 10) particle.x = -10;
-      if (particle.y < -10) particle.y = height + 10;
-      if (particle.y > height + 10) particle.y = -10;
+      if (particle.x < -10 || particle.x > width + 10 || particle.y < -10 || particle.y > height + 10) {
+        particle.x = Math.random() * width;
+        particle.y = Math.random() * height;
+      }
     });
   }
 
@@ -603,6 +629,15 @@ function initParticleBackground() {
       stopAnimation();
       return;
     }
+    if (timestamp - lastCanvasHealthCheckAt >= 1_500) {
+      lastCanvasHealthCheckAt = timestamp;
+      const pixelRatio = Math.min(window.devicePixelRatio || 1, 2);
+      if (particleCanvasNeedsRefresh(particleCanvas, width, height, pixelRatio, window.innerWidth, window.innerHeight)
+        || particleDistributionNeedsReset(particles, width, height)) {
+        refreshParticleEnvironment();
+        return;
+      }
+    }
     drawFrame(timestamp);
     animationFrameId = window.requestAnimationFrame(animate);
   }
@@ -634,6 +669,7 @@ function initParticleBackground() {
 
   window.addEventListener('resize', scheduleParticleRefresh);
   window.visualViewport?.addEventListener('resize', scheduleParticleRefresh);
+  if ('ResizeObserver' in window) new ResizeObserver(scheduleParticleRefresh).observe(particleCanvas);
   document.addEventListener('visibilitychange', refreshParticleEnvironment);
   document.addEventListener('particleanimationchange', refreshParticleEnvironment);
   window.addEventListener('pointermove', (event) => {
@@ -1738,8 +1774,54 @@ function roomUrl(path) {
   return `${url.pathname}${url.search}`;
 }
 
+function updateSharedClockOffset(roomState, startedAt, receivedAt) {
+  if (!Number.isFinite(roomState?.serverTime)) return;
+  const roundTripMs = Math.max(0, receivedAt - startedAt);
+  const offsetMs = roomState.serverTime - (startedAt + roundTripMs / 2);
+  if (state.shared.clockOffsetMs === null || roundTripMs <= state.shared.clockRoundTripMs) {
+    state.shared.clockOffsetMs = offsetMs;
+    state.shared.clockRoundTripMs = roundTripMs;
+  }
+}
+
+function roomPlaybackPosition(roomState, clockOffsetMs = 0, now = Date.now()) {
+  if (!roomState || !Number.isFinite(roomState.position) || !roomState.playing) return roomState?.position || 0;
+  const updatedAt = Number(roomState.updatedAt || roomState.serverTime || now + clockOffsetMs);
+  return Math.max(0, roomState.position + ((now + clockOffsetMs - updatedAt) / 1000));
+}
+
+function sharedDriftCorrection(driftSeconds) {
+  if (Math.abs(driftSeconds) < 0.12) return { kind: 'none', rate: 1 };
+  if (Math.abs(driftSeconds) < 0.5) return { kind: 'rate', rate: driftSeconds > 0 ? 1.03 : 0.97 };
+  return { kind: 'seek', rate: 1 };
+}
+
+function setSharedDriftPlaybackRate(rate) {
+  state.shared.driftPlaybackRate = rate;
+  enforcePlaybackRate();
+}
+
+function reconcileSharedPlaybackDrift() {
+  const roomState = state.shared.roomState;
+  if (!isSharedMode() || !roomState?.playing || !state.shared.desiredPlaying
+    || elements.video.readyState < HTMLMediaElement.HAVE_METADATA) return;
+  const now = Date.now();
+  if (now - state.shared.lastDriftCheckAt < 1_000) return;
+  state.shared.lastDriftCheckAt = now;
+  const expected = roomPlaybackPosition(roomState, state.shared.clockOffsetMs || 0, now);
+  const correction = sharedDriftCorrection(expected - elements.video.currentTime);
+  setSharedDriftPlaybackRate(correction.rate);
+  if (correction.kind !== 'seek') return;
+  try {
+    elements.video.currentTime = Number.isFinite(elements.video.duration) && elements.video.duration > 0
+      ? clamp(expected, 0, elements.video.duration)
+      : expected;
+  } catch { /* A transient source switch will be reconciled by its next room state. */ }
+}
+
 async function sharedRequest(path, options = {}) {
   const { timeoutMs = 12_000, signal: externalSignal, ...requestOptions } = options;
+  const startedAt = Date.now();
   const controller = new AbortController();
   const abort = () => controller.abort();
   const timeout = window.setTimeout(abort, timeoutMs);
@@ -1759,7 +1841,9 @@ async function sharedRequest(path, options = {}) {
       error.status = response.status;
       throw error;
     }
-    return await response.json();
+    const result = await response.json();
+    updateSharedClockOffset(result?.state, startedAt, Date.now());
+    return result;
   } catch (error) {
     if (controller.signal.aborted && !externalSignal?.aborted) throw new Error('Shared room request timed out');
     throw error;
@@ -1836,6 +1920,10 @@ function leaveSharedMode(message) {
   state.shared.desiredPlaying = false;
   state.shared.playbackIntent = null;
   state.shared.playbackCommandInFlight = false;
+  state.shared.clockOffsetMs = null;
+  state.shared.clockRoundTripMs = Infinity;
+  state.shared.lastDriftCheckAt = 0;
+  state.shared.driftPlaybackRate = 1;
   state.shared.resume = { contentId: null, position: 0, pending: false };
   destroyHlsClient();
   state.shared.hls.selectionKey = null;
@@ -2232,6 +2320,7 @@ function clearSharedPlaybackForLibraryClear() {
   state.shared.desiredPlaying = false;
   state.shared.playbackIntent = null;
   state.shared.playbackCommandInFlight = false;
+  state.shared.driftPlaybackRate = 1;
   state.shared.pendingPlaylistSelection = null;
   state.shared.currentTrackSelection = null;
   state.shared.hls.playbackFailureStage = null;
@@ -2736,11 +2825,7 @@ async function applyRoomState(roomState, { allowCurrentSequence = false } = {}) 
         && state.shared.hls.fallbackKey !== hlsGenerationKey(item, roomState.trackSelection, roomState.hls)) {
         loadSharedHls(item, roomState.trackSelection, roomState.hls);
       }
-      const elapsed = roomState.playing
-        ? Math.max(0, (Date.now() - Number(roomState.serverTime || roomState.updatedAt || Date.now())) / 1000)
-        : 0;
-      const roomPosition = Math.max(0, roomState.position + elapsed);
-      const position = roomPosition;
+      const position = roomPlaybackPosition(roomState, state.shared.clockOffsetMs || 0);
       state.shared.currentTrackSelection = roomState.trackSelection;
       const persistenceGeneration = state.shared.persistenceGeneration;
       const persistenceSourceGeneration = hlsGenerationKey(item, roomState.trackSelection, roomState.hls);
@@ -2772,6 +2857,7 @@ async function applyRoomState(roomState, { allowCurrentSequence = false } = {}) 
       if (playing && !hlsStarting) {
         await playSharedRemoteMedia(isCurrentApplication);
       } else if (!playing && isCurrentApplication()) {
+        setSharedDriftPlaybackRate(1);
         setRemoteAudioPrompt(false);
         try {
           elements.video.pause();
@@ -4167,7 +4253,8 @@ elements.video.addEventListener('error', () => {
   showError(message);
 });
 function enforcePlaybackRate() {
-  if (elements.video.playbackRate !== 1) elements.video.playbackRate = 1;
+  const rate = isSharedMode() ? state.shared.driftPlaybackRate : 1;
+  if (elements.video.playbackRate !== rate) elements.video.playbackRate = rate;
   if (elements.video.defaultPlaybackRate !== 1) elements.video.defaultPlaybackRate = 1;
 }
 
@@ -4181,6 +4268,7 @@ elements.video.addEventListener('ratechange', enforcePlaybackRate);
 elements.video.addEventListener('volumechange', updateVideoControls);
 elements.video.addEventListener('timeupdate', () => {
   updateVideoProgress();
+  reconcileSharedPlaybackDrift();
   const now = Date.now();
   if (now - state.lastSaveAt >= SAVE_INTERVAL_MS) {
     state.lastSaveAt = now;
