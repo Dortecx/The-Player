@@ -1552,6 +1552,10 @@ body.is-app-fullscreen {
 .track-selection-summary-copy small { display: block; }
 .track-selection-summary-copy small { color: var(--muted); font-weight: 400; margin-top: 0.2rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .track-controls.is-collapsed > :not(.track-selection-summary) { display: none; }
+.track-selection-summary,
+.track-controls:not(.is-collapsed) > :not(.track-selection-summary) { animation: track-controls-reveal 180ms ease both; }
+@keyframes track-controls-reveal { from { opacity: 0; transform: translateY(-0.35rem); } to { opacity: 1; transform: translateY(0); } }
+@media (prefers-reduced-motion: reduce) { .track-selection-summary, .track-controls:not(.is-collapsed) > :not(.track-selection-summary) { animation: none; } }
 
 .track-control-fields {
   align-items: center;
