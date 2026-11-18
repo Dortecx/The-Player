@@ -624,10 +624,16 @@ function initParticleBackground() {
   }
   function scheduleParticleRefresh() {
     window.clearTimeout(particleResizeTimer);
-    particleResizeTimer = window.setTimeout(refreshParticleEnvironment, 160);
+    particleResizeTimer = window.setTimeout(() => {
+      refreshParticleEnvironment();
+      // Chrome can report the old viewport/DPR during a resize drag or a display
+      // handoff. Re-read it once layout has settled to avoid edge-clustered nodes.
+      window.setTimeout(refreshParticleEnvironment, 280);
+    }, 160);
   }
 
   window.addEventListener('resize', scheduleParticleRefresh);
+  window.visualViewport?.addEventListener('resize', scheduleParticleRefresh);
   document.addEventListener('visibilitychange', refreshParticleEnvironment);
   document.addEventListener('particleanimationchange', refreshParticleEnvironment);
   window.addEventListener('pointermove', (event) => {
