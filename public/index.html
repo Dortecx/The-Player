@@ -81,6 +81,9 @@
           </div>
           <section id="trackControls" class="track-controls" aria-labelledby="trackControlsHeading" hidden>
             <h3 id="trackControlsHeading" data-i18n="trackControlsHeading">Embedded tracks</h3>
+            <button id="trackSelectionSummary" class="track-selection-summary" type="button" aria-expanded="false" hidden>
+              <span aria-hidden="true">☷</span><span class="track-selection-summary-copy"><strong data-i18n="trackSummaryTitle">Selected tracks</strong><small id="trackSelectionSummaryDetail"></small></span><span data-i18n="trackSummaryChange">Change</span>
+            </button>
             <div class="track-control-fields">
               <label for="audioTrackSelect" data-i18n="audioTrackLabel">Audio</label>
               <select id="audioTrackSelect" aria-describedby="trackSelectionHelp"></select>

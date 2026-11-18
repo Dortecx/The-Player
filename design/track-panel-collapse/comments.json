@@ -1,0 +1,29 @@
+{
+  "version": 1,
+  "comments": [
+    {
+      "id": "f6dtfqxy",
+      "file": "01-summary-row.html",
+      "selector": "body > main > section > div:nth-of-type(2) > b",
+      "excerpt": "♫",
+      "comment": "Esta bien, solo que en vez de que sea un simbolo de musica/sonido, algo que abarque ambos, subs y audio",
+      "createdAt": "2026-11-17T23:42:27.297Z",
+      "status": "resolved",
+      "sentAt": "2026-11-17T23:42:27.334Z",
+      "resolvedAt": "2026-11-17T23:42:37.918Z",
+      "resolution": "Reemplacé la nota musical por “A · CC”, que representa audio y subtítulos."
+    },
+    {
+      "id": "gbaq5xa3",
+      "file": "01-summary-row.html",
+      "selector": "body > main > section > div:nth-of-type(2) > b",
+      "excerpt": "A · CC",
+      "comment": "No me convence, otra opción",
+      "createdAt": "2026-11-17T23:43:04.713Z",
+      "status": "resolved",
+      "sentAt": "2026-11-17T23:43:04.749Z",
+      "resolvedAt": "2026-11-17T23:43:15.436Z",
+      "resolution": "Reemplacé “A · CC” por un glifo de lista de pistas, neutral para audio y subtítulos."
+    }
+  ]
+}

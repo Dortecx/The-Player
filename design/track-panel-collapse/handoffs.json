@@ -1,0 +1,14 @@
+{
+  "version": 1,
+  "chosen": "01-summary-row.html",
+  "handoffs": {
+    "01-summary-row.html": {
+      "status": "implemented",
+      "queued": false,
+      "sentAt": "2026-11-17T23:45:59.849Z",
+      "startedAt": "2026-11-17T23:46:04.315Z",
+      "implementedAt": "2026-11-17T23:59:38.635Z",
+      "note": "Added the compact selected-track summary and a Change control that reopens the existing selectors."
+    }
+  }
+}

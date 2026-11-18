@@ -75,6 +75,8 @@ const COPY = {
     localEmbeddedTracksHelp: 'Uploads these local files only to create a loopback-only managed session for embedded tracks.',
     trackSelectionReadyHost: 'Choose tracks, then select Apply tracks and reload to start compatible playback.',
     trackSelectionReadyGuest: 'Waiting for the host to apply the shared embedded tracks.',
+    trackSummaryTitle: 'Selected tracks',
+    trackSummaryChange: 'Change',
     applyTrackSelection: 'Apply tracks and reload',
     hlsLoading: 'Preparing the complete selected compatible stream…',
     hlsPreparing: 'Converting the complete compatible stream. Playback will be ready when conversion finishes.',
@@ -166,6 +168,8 @@ const COPY = {
     localEmbeddedTracksHelp: 'Sube estos archivos locales solo para crear una sesión administrada solo por loopback para las pistas internas.',
     trackSelectionReadyHost: 'Elegí las pistas y seleccioná Aplicar pistas y recargar para iniciar una reproducción compatible.',
     trackSelectionReadyGuest: 'Esperando que el host aplique las pistas internas compartidas.',
+    trackSummaryTitle: 'Pistas seleccionadas',
+    trackSummaryChange: 'Cambiar',
     applyTrackSelection: 'Aplicar pistas y recargar',
     hlsLoading: 'Preparando la transmisión compatible completa elegida…',
     hlsPreparing: 'Convirtiendo la transmisión compatible completa. La reproducción estará lista al terminar la conversión.',
@@ -339,6 +343,8 @@ const elements = {
   subtitleTrackSelect: document.querySelector('#subtitleTrackSelect'),
   applyTrackSelectionButton: document.querySelector('#applyTrackSelectionButton'),
   trackSelectionHelp: document.querySelector('#trackSelectionHelp'),
+  trackSelectionSummary: document.querySelector('#trackSelectionSummary'),
+  trackSelectionSummaryDetail: document.querySelector('#trackSelectionSummaryDetail'),
   trackPlaybackStatus: document.querySelector('#trackPlaybackStatus'),
   useOriginalVideoButton: document.querySelector('#useOriginalVideoButton'),
   conversionProgress: null,
@@ -2025,6 +2031,8 @@ function renderTrackControls(roomState) {
   const hasTracks = isSharedMode() && tracks?.status === 'available' && Array.isArray(tracks.audio) && tracks.audio.length > 0;
   const hasTrackChoice = hasTracks && (tracks.audio.length > 1 || (tracks.subtitles?.length || 0) > 0);
   elements.trackControls.hidden = !hasTrackChoice;
+  elements.trackControls.classList.remove('is-collapsed');
+  elements.trackSelectionSummary.hidden = true;
   if (!hasTrackChoice) {
     renderConversionProgress(null, false);
     setTrackPlaybackStatus();
@@ -2066,6 +2074,12 @@ function renderTrackControls(roomState) {
     && lifecycle?.subtitleTrackIndex === selection.subtitleTrackIndex
     && typeof lifecycle?.selectionId === 'string';
   renderConversionProgress(lifecycle, matchesSelection);
+  const canCollapse = matchesSelection && ['preparing', 'ready'].includes(lifecycle?.status);
+  const collapsed = canCollapse && !state.shared.trackControlsExpanded;
+  elements.trackControls.classList.toggle('is-collapsed', collapsed);
+  elements.trackSelectionSummary.hidden = !canCollapse;
+  elements.trackSelectionSummary.setAttribute('aria-expanded', String(!collapsed));
+  elements.trackSelectionSummaryDetail.textContent = `Audio: ${elements.audioTrackSelect.selectedOptions[0]?.textContent || ''} · ${t('subtitleTrackLabel')}: ${elements.subtitleTrackSelect.selectedOptions[0]?.textContent || ''}`;
   if (!matchesSelection) return;
   if (lifecycle.status === 'preparing') setTrackPlaybackStatus(t('hlsPreparing'));
   else if (lifecycle.status === 'ready') {
@@ -3904,6 +3918,10 @@ elements.copyRoomUrlButton.addEventListener('click', () => { void copyRoomUrl();
 elements.audioTrackSelect.addEventListener('change', rememberTrackDraft);
 elements.subtitleTrackSelect.addEventListener('change', rememberTrackDraft);
 elements.applyTrackSelectionButton.addEventListener('click', () => runAsyncAction(selectSharedTracks));
+elements.trackSelectionSummary.addEventListener('click', () => {
+  state.shared.trackControlsExpanded = !state.shared.trackControlsExpanded;
+  renderTrackControls(state.shared.roomState);
+});
 elements.useOriginalVideoButton.addEventListener('click', useOriginalSharedMedia);
 elements.videoPlayPauseButton.addEventListener('click', togglePlayback);
 elements.videoSeekRange.addEventListener('pointerdown', beginSeekInteraction);

@@ -1537,6 +1537,22 @@ body.is-app-fullscreen {
   margin: 0 0 0.55rem;
 }
 
+.track-selection-summary {
+  align-items: center;
+  display: grid;
+  gap: 0.65rem;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  margin: 0;
+  text-align: left;
+  width: 100%;
+}
+
+.track-selection-summary-copy { min-width: 0; }
+.track-selection-summary-copy strong,
+.track-selection-summary-copy small { display: block; }
+.track-selection-summary-copy small { color: var(--muted); font-weight: 400; margin-top: 0.2rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.track-controls.is-collapsed > :not(.track-selection-summary) { display: none; }
+
 .track-control-fields {
   align-items: center;
   display: grid;
